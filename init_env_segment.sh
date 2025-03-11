@@ -15,9 +15,9 @@ function log_time() {
 log_time "Step 1: Installing Software Dependencies..."
 
 ## Change to the valid yum source
-curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.huaweicloud.com/repository/conf/CentOS-7-anon.repo
-yum clean all
-yum makecache
+# curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.huaweicloud.com/repository/conf/CentOS-7-anon.repo
+# yum clean all
+# yum makecache
 
 yum install -y epel-release
 

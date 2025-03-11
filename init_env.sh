@@ -81,9 +81,9 @@ function init_segment_password()
 
 log_time "Step 1: Installing Software Dependencies..."
 
-curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.huaweicloud.com/repository/conf/CentOS-7-anon.repo
-yum clean all
-yum makecache
+# curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.huaweicloud.com/repository/conf/CentOS-7-anon.repo
+# yum clean all
+# yum makecache
 
 yum install -y epel-release
 
