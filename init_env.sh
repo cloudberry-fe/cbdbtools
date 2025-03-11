@@ -170,12 +170,14 @@ systemctl restart sshd
 #Step 4: Create database user
 log_time "Step 4: Create database user ${ADMIN_USER}..."
 
-groupadd ${ADMIN_USER} 
-useradd ${ADMIN_USER} -r -m -g ${ADMIN_USER}
-usermod -aG wheel ${ADMIN_USER}
-echo "Hashdata@123"|passwd --stdin ${ADMIN_USER}
-echo "%wheel        ALL=(ALL)       NOPASSWD: ALL" >> /etc/sudoers
-chown -R ${ADMIN_USER}:${ADMIN_USER} /home/${ADMIN_USER}
+if ! id "$ADMIN_USER" &>/dev/null; then
+  groupadd ${ADMIN_USER} 
+  useradd ${ADMIN_USER} -r -m -g ${ADMIN_USER}
+  usermod -aG wheel ${ADMIN_USER}
+  echo "Hashdata@123"|passwd --stdin ${ADMIN_USER}
+  echo "%wheel        ALL=(ALL)       NOPASSWD: ALL" >> /etc/sudoers
+  chown -R ${ADMIN_USER}:${ADMIN_USER} /home/${ADMIN_USER}
+fi
 
 #Step 5: Installing database software
 log_time "Step 5: Installing database software..."
