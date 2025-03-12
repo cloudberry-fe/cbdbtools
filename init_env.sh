@@ -24,6 +24,12 @@ function copyfile_segment_keyfile()
   log_time "copy init_env_segment.sh id_rsa.pub Cloudberry rpms to segment hosts"
   for i in $(cat /tmp/segment_hosts.txt); do
     (
+      echo "Copying files to ${i}"
+      echo "scp -i ${SEGMENT_ACCESS_KEYFILE} init_env_segment.sh ${SEGMENT_ACCESS_USER}@${i}:/tmp"
+      echo "scp -i ${SEGMENT_ACCESS_KEYFILE} deploycluster_parameter.sh ${SEGMENT_ACCESS_USER}@${i}:/tmp"
+      echo "scp -i ${SEGMENT_ACCESS_KEYFILE} /tmp/hostsfile ${SEGMENT_ACCESS_USER}@${i}:/tmp"
+      echo "scp -i ${SEGMENT_ACCESS_KEYFILE} /home/${ADMIN_USER}/.ssh/id_rsa.pub ${SEGMENT_ACCESS_USER}@${i}:/tmp"
+      echo "scp -i ${SEGMENT_ACCESS_KEYFILE} ${CLOUDBERRY_RPM} ${SEGMENT_ACCESS_USER}@${i}:${CLOUDBERRY_RPM}"
       scp -i ${SEGMENT_ACCESS_KEYFILE} init_env_segment.sh ${SEGMENT_ACCESS_USER}@${i}:/tmp
       scp -i ${SEGMENT_ACCESS_KEYFILE} deploycluster_parameter.sh ${SEGMENT_ACCESS_USER}@${i}:/tmp
       scp -i ${SEGMENT_ACCESS_KEYFILE} /tmp/hostsfile ${SEGMENT_ACCESS_USER}@${i}:/tmp
@@ -32,6 +38,7 @@ function copyfile_segment_keyfile()
     ) &
   done
   wait
+  log_time "Finished copy init_env_segment.sh id_rsa.pub Cloudberry rpms to segment hosts"
 }
 
 
@@ -54,26 +61,31 @@ function copyfile_segment_password()
     ) &
   done
   wait
+  log_time "Finished copy init_env_segment.sh id_rsa.pub Cloudberry rpms to segment hosts"
 }
 
 function init_segment_keyfile()
 {
+  log_time "Start init configuration on segment hosts"
   logfilename=$(date +%Y%m%d)_$(date +%H%M%S)
   for i in $(cat /tmp/segment_hosts.txt); do
     echo "ssh -n -q -i ${SEGMENT_ACCESS_KEYFILE} root@${i} \"bash -c 'sh /tmp/init_env_segment.sh &> /tmp/init_env_segment_${i}_$logfilename.log'\""
     ssh -n -q -i ${SEGMENT_ACCESS_KEYFILE} root@${i} "bash -c 'sh /tmp/init_env_segment.sh &> /tmp/init_env_segment_${i}_$logfilename.log'" &
   done
   wait
+  log_time "Finished init configuration on segment hosts"
 }
 
 function init_segment_password()
 {
+  log_time "Start init configuration on segment hosts"
   logfilename=$(date +%Y%m%d)_$(date +%H%M%S)
   for i in $(cat /tmp/segment_hosts.txt); do
     echo "sshpass -p ${SEGMENT_ACCESS_PASSWORD} ssh -n -q root@${i} \"bash -c 'sh /tmp/init_env_segment.sh &> /tmp/init_env_segment_${i}_$logfilename.log'\""
     sshpass -p ${SEGMENT_ACCESS_PASSWORD} ssh -n -q root@${i} "bash -c 'sh /tmp/init_env_segment.sh &> /tmp/init_env_segment_${i}_$logfilename.log'" &
   done
   wait
+  log_time "Finished init configuration on segment hosts"
 }
 
 
@@ -89,7 +101,7 @@ log_time "Step 1: Installing Software Dependencies..."
 
 yum install -y epel-release
 
-yum install -y apr apr-util bash bzip2 curl iproute krb5-devel libcgroup-tools libcurl libevent libuuid libuv libxml2 libyaml libzstd openldap openssh openssh-clients openssh-server openssl openssl-libs perl python3 python3-psycopg2 python3-psutil python3-pyyaml python39 readline rsync sed tar which zip zlib git passwd wget
+yum install -y apr apr-util bash bzip2 curl iproute krb5-devel libcgroup-tools libcurl libevent libuuid libuv libxml2 libyaml libzstd openldap openssh openssh-clients openssh-server openssl openssl-libs perl python3 python3-psycopg2 python3-psutil python3-pyyaml python3-setuptools python39 readline rsync sed tar which zip zlib git passwd wget
 
 #Step 2: Turn off firewalls
 log_time "Step 2: Turn off firewalls..."
@@ -267,9 +279,6 @@ if [ "$cluster_type" = "multi" ]; then
     su ${ADMIN_USER} -l -c "ssh ${i} 'date;exit'"
   done
   
-  export COORDINATOR_HOSTNAME=$(sed -n '/##Coordinator hosts/,/##Segment hosts/p' segmenthosts.conf|sed '1d;$d'|awk '{print $2}')
-  echo ${COORDINATOR_HOSTNAME} >> /tmp/segment_hosts.txt
-
   echo "su ${ADMIN_USER} -l -c \"source ${CLOUDBERRY_BINARY_PATH}/greenplum_path.sh;gpssh-exkeys -f /tmp/segment_hosts.txt\""
   su ${ADMIN_USER} -l -c "source ${CLOUDBERRY_BINARY_PATH}/greenplum_path.sh;gpssh-exkeys -f /tmp/segment_hosts.txt"
 fi
