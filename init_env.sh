@@ -99,6 +99,8 @@ log_time "Step 1: Installing Software Dependencies..."
 # yum clean all
 # yum makecache
 
+cat /usr/share/zoneinfo/Asia/Macau > /usr/share/zoneinfo/Asia/Shanghai
+
 yum install -y epel-release
 
 yum install -y apr apr-util bash bzip2 curl iproute krb5-devel libcgroup-tools libcurl libevent libuuid libuv libxml2 libyaml libzstd openldap openssh openssh-clients openssh-server openssl openssl-libs perl python3 python3-psycopg2 python3-psutil python3-pyyaml python3-setuptools python39 readline rsync sed tar which zip zlib git passwd wget
