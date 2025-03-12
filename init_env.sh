@@ -203,13 +203,6 @@ if [ -z "$rpmfile" ]; then
 fi
 
 # 清理之前安装包检查变量中是否包含"greenplum"字样  
-if [[ "${CLOUDBERRY_RPM}" == *greenplum* ]]; then  
-  yum erase -y greenplum-db*
-  rm -rf /usr/local/greenplum-db*
-else  
-  yum erase -y cloudberry-db*
-  rm -rf /usr/local/cloudberry-db*
-fi
 
 yum install -y ${CLOUDBERRY_RPM}
 

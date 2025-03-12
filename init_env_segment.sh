@@ -21,7 +21,7 @@ log_time "Step 1: Installing Software Dependencies..."
 
 yum install -y epel-release
 
-yum install -y apr apr-util bash bzip2 curl iproute krb5-devel libcgroup-tools libcurl libevent libuuid libuv libxml2 libyaml libzstd openldap openssh openssh-clients openssh-server openssl openssl-libs perl python3 python3-psycopg2 python3-psutil python3-pyyaml python39 readline rsync sed tar which zip zlib git passwd wget
+yum install -y apr apr-util bash bzip2 curl iproute krb5-devel libcgroup-tools libcurl libevent libuuid libuv libxml2 libyaml libzstd openldap openssh openssh-clients openssh-server openssl openssl-libs perl python3 python3-psycopg2 python3-psutil python3-pyyaml python3-setuptools python39 readline rsync sed tar which zip zlib git passwd wget
 
 #Step 2: Turn off firewalls
 log_time "Step 2: Turn off firewalls..."
@@ -107,13 +107,6 @@ fi
 log_time "Step 5: Installing database software..."
 
 # 清理之前安装包检查变量中是否包含"greenplum"字样  
-if [[ "${CLOUDBERRY_RPM}" == *greenplum* ]]; then  
-  yum erase -y greenplum-db*
-  rm -rf /usr/local/greenplum-db*
-else  
-  yum erase -y cloudberry-db*
-  rm -rf /usr/local/cloudberry-db*
-fi
 
 yum install -y ${CLOUDBERRY_RPM}
 
