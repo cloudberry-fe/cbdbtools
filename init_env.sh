@@ -69,8 +69,8 @@ function init_segment_keyfile()
   log_time "Start init configuration on segment hosts"
   logfilename=$(date +%Y%m%d)_$(date +%H%M%S)
   for i in $(cat /tmp/segment_hosts.txt); do
-    echo "ssh -n -q -i ${SEGMENT_ACCESS_KEYFILE} root@${i} \"bash -c 'sh /tmp/init_env_segment.sh &> /tmp/init_env_segment_${i}_$logfilename.log'\""
-    ssh -n -q -i ${SEGMENT_ACCESS_KEYFILE} root@${i} "bash -c 'sh /tmp/init_env_segment.sh &> /tmp/init_env_segment_${i}_$logfilename.log'" &
+    echo "ssh -n -q -i ${SEGMENT_ACCESS_KEYFILE} root@${i} \"bash -c 'sh /tmp/init_env_segment.sh ${i} &> /tmp/init_env_segment_${i}_$logfilename.log'\""
+    ssh -n -q -i ${SEGMENT_ACCESS_KEYFILE} root@${i} "bash -c 'sh /tmp/init_env_segment.sh ${i} &> /tmp/init_env_segment_${i}_$logfilename.log'" &
   done
   wait
   log_time "Finished init configuration on segment hosts"
@@ -81,8 +81,8 @@ function init_segment_password()
   log_time "Start init configuration on segment hosts"
   logfilename=$(date +%Y%m%d)_$(date +%H%M%S)
   for i in $(cat /tmp/segment_hosts.txt); do
-    echo "sshpass -p ${SEGMENT_ACCESS_PASSWORD} ssh -n -q root@${i} \"bash -c 'sh /tmp/init_env_segment.sh &> /tmp/init_env_segment_${i}_$logfilename.log'\""
-    sshpass -p ${SEGMENT_ACCESS_PASSWORD} ssh -n -q root@${i} "bash -c 'sh /tmp/init_env_segment.sh &> /tmp/init_env_segment_${i}_$logfilename.log'" &
+    echo "sshpass -p ${SEGMENT_ACCESS_PASSWORD} ssh -n -q root@${i} \"bash -c 'sh /tmp/init_env_segment.sh ${i} &> /tmp/init_env_segment_${i}_$logfilename.log'\""
+    sshpass -p ${SEGMENT_ACCESS_PASSWORD} ssh -n -q root@${i} "bash -c 'sh /tmp/init_env_segment.sh ${i} &> /tmp/init_env_segment_${i}_$logfilename.log'" &
   done
   wait
   log_time "Finished init configuration on segment hosts"

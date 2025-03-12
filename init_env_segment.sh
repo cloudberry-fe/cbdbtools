@@ -4,6 +4,8 @@ VARS_FILE="deploycluster_parameter.sh"
 
 source /tmp/${VARS_FILE}
 
+SEGMENT_HOSTNAME="$1"
+
 function log_time() {
   printf "[%s] %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
 }
@@ -148,4 +150,5 @@ fi
 log_time "Step8: Set /etc/hosts on $(hostname)..."
 sed -i '/#Hashdata hosts begin/,/#Hashdata hosts end/d' /etc/hosts
 cat /tmp/hostsfile >> /etc/hosts
+hostname ${SEGMENT_HOSTNAME}
 log_time "Finished env init setting on $(hostname)..."
