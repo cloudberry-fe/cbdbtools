@@ -23,11 +23,13 @@ function copyfile_segment_keyfile()
 { 
   log_time "copy init_env_segment.sh id_rsa.pub Cloudberry rpms to segment hosts"
   for i in $(cat /tmp/segment_hosts.txt); do
-  scp -i ${SEGMENT_ACCESS_KEYFILE} init_env_segment.sh ${SEGMENT_ACCESS_USER}@${i}:/tmp &
-  scp -i ${SEGMENT_ACCESS_KEYFILE} deploycluster_parameter.sh ${SEGMENT_ACCESS_USER}@${i}:/tmp &
-  scp -i ${SEGMENT_ACCESS_KEYFILE} /tmp/hostsfile ${SEGMENT_ACCESS_USER}@${i}:/tmp &
-  scp -i ${SEGMENT_ACCESS_KEYFILE} /home/${ADMIN_USER}/.ssh/id_rsa.pub ${SEGMENT_ACCESS_USER}@${i}:/tmp &
-  scp -i ${SEGMENT_ACCESS_KEYFILE} ${CLOUDBERRY_RPM} ${SEGMENT_ACCESS_USER}@${i}:${CLOUDBERRY_RPM} &
+    (
+      scp -i ${SEGMENT_ACCESS_KEYFILE} init_env_segment.sh ${SEGMENT_ACCESS_USER}@${i}:/tmp
+      scp -i ${SEGMENT_ACCESS_KEYFILE} deploycluster_parameter.sh ${SEGMENT_ACCESS_USER}@${i}:/tmp
+      scp -i ${SEGMENT_ACCESS_KEYFILE} /tmp/hostsfile ${SEGMENT_ACCESS_USER}@${i}:/tmp
+      scp -i ${SEGMENT_ACCESS_KEYFILE} /home/${ADMIN_USER}/.ssh/id_rsa.pub ${SEGMENT_ACCESS_USER}@${i}:/tmp
+      scp -i ${SEGMENT_ACCESS_KEYFILE} ${CLOUDBERRY_RPM} ${SEGMENT_ACCESS_USER}@${i}:${CLOUDBERRY_RPM}
+    ) &
   done
   wait
 }
@@ -240,6 +242,10 @@ if [ "$cluster_type" = "multi" ]; then
   sed -n '/##Segment hosts/,/#Hashdata hosts end/p' segmenthosts.conf|sed '1d;$d'|awk '{print $2}' >> /tmp/segment_hosts.txt
   
   config_hostsfile
+
+  for i in $(cat /tmp/segment_hosts.txt); do
+    ssh-keyscan ${i} >> ~/.ssh/known_hosts
+  done
   
   if [ "${SEGMENT_ACCESS_METHOD}" = "keyfile" ]; then
     copyfile_segment_keyfile
@@ -260,7 +266,6 @@ if [ "$cluster_type" = "multi" ]; then
     su ${ADMIN_USER} -l -c "ssh-keyscan ${i} >> ~/.ssh/known_hosts"
     su ${ADMIN_USER} -l -c "ssh ${i} 'date;exit'"
   done
-  wait
   
   export COORDINATOR_HOSTNAME=$(sed -n '/##Coordinator hosts/,/##Segment hosts/p' segmenthosts.conf|sed '1d;$d'|awk '{print $2}')
   echo ${COORDINATOR_HOSTNAME} >> /tmp/segment_hosts.txt
