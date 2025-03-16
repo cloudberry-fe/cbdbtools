@@ -1,7 +1,7 @@
 ## environment options
 export ADMIN_USER="gpadmin"
 export CLOUDBERRY_RPM="/tmp/hashdata-lightning-release.rpm"
-export CLOUDBERRY_RPM_URL="http://cbdb-repository-2.obs.cn-north-4.myhuaweicloud.com/cbdb/centos9/aarch64/release/1.x/rpms/hashdata-lightning-1.7.0-1.el9.aarch64-87486-release.rpm"
+export CLOUDBERRY_RPM_URL="http://downloadlink.com/cloudberry.rpm"
 export CLOUDBERRY_BINARY_PATH="/usr/local/cloudberry-db"
 export INIT_CONFIGFILE="/tmp/gpinitsystem_config"
 export WITH_MIRROR="false"
@@ -31,8 +31,8 @@ export MIRROR_DATA_DIRECTORY="/data0/database/mirror /data0/database/mirror"
 ##Define segment host access info, "keyfile" and "password" accees are supported to setup remote servers
 export SEGMENT_ACCESS_METHOD="keyfile"
 export SEGMENT_ACCESS_USER="root"
-export SEGMENT_ACCESS_KEYFILE="/tmp/id_rsa"
-export SEGMENT_ACCESS_PASSWORD="Hashdata@123"
+export SEGMENT_ACCESS_KEYFILE="/tmp/keyfiles"
+export SEGMENT_ACCESS_PASSWORD="XXXXXXXX"
 
 function log_time() {
   printf "[%s] %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
