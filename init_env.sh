@@ -191,9 +191,20 @@ if ! id "$ADMIN_USER" &>/dev/null; then
   useradd ${ADMIN_USER} -r -m -g ${ADMIN_USER}
   usermod -aG wheel ${ADMIN_USER}
   echo "Hashdata@123"|passwd --stdin ${ADMIN_USER}
-  echo "%wheel        ALL=(ALL)       NOPASSWD: ALL" >> /etc/sudoers
+  echo "%wheel ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
   chown -R ${ADMIN_USER}:${ADMIN_USER} /home/${ADMIN_USER}
+else 
+  if grep -q "COORDINATOR_DATA_DIRECTORY" /home/${ADMIN_USER}/.bashrc; then
+    echo "存在 COORDINATOR_DATA_DIRECTORY 设置，将其注释掉..."
+    sed -i "/COORDINATOR_DATA_DIRECTORY/s/^/#/" /home/${ADMIN_USER}/.bashrc
+  fi
+  if grep -q "greenplum_path.sh" /home/${ADMIN_USER}/.bashrc; then
+    echo "存在 greenplum_path.sh 设置，将其注释掉..."
+    sed -i "/greenplum_path.sh/s/^/#/" /home/${ADMIN_USER}/.bashrc
+  fi
 fi
+
+
 
 #Step 5: Installing database software
 log_time "Step 5: Installing database software..."
