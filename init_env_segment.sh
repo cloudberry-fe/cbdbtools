@@ -40,6 +40,8 @@ setenforce 0
 #Step 3: Configuring system parameters
 log_time "Step 3: Configuring system parameters..."
 
+timedatectl set-timezone Asia/Macau
+
 shmall=$(expr $(getconf _PHYS_PAGES) / 2)
 shmmax=$(expr $(getconf _PHYS_PAGES) / 2 \* $(getconf PAGE_SIZE))
 
