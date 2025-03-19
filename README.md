@@ -31,7 +31,6 @@ CBDBTools is a set of scripts designed to automate the deployment and initializa
    - `wget`
    - `sshpass`
    - `epel-release`
-   - Various system utilities (installed automatically by the scripts).
 
 3. **Environment**:
    - Ensure passwordless SSH access is configured between the coordinator and segment nodes.
@@ -60,59 +59,39 @@ Options:
 - `multi`: Forces multi-node deployment
 - `--help`: Shows usage information
 
-### 4. Monitor Logs
-Deployment logs are saved in a file named `deploy_cluster_<timestamp>.log`. Check this file for detailed output:
-```bash
-tail -f deploy_cluster_<timestamp>.log
-```
-
 ## Scripts Overview
 
 ### `deploycluster.sh`
-The main deployment script that:
-- Validates the environment
-- Sets up required dependencies
-- Orchestrates the deployment process
-- Handles error reporting
+The main deployment script that orchestrates the deployment process.
 
 ### `deploycluster_parameter.sh`
 Contains environment variables and configuration parameters used across all scripts.
 
 ### `init_env.sh`
-Sets up the environment on the coordinator node, including installing dependencies, configuring system parameters, and preparing the database user.
+Sets up the environment on the coordinator node.
 
 ### `init_env_segment.sh`
-Sets up the environment on segment nodes, including installing dependencies and configuring system parameters.
+Sets up the environment on segment nodes.
 
 ### `init_cluster.sh`
-Initializes the database cluster using the `gpinitsystem` tool.
+Initializes the database cluster.
 
 ### `mirrorlessfailover.sh`
-Handles failover scenarios in a mirrorless cluster setup.
+Handles failover scenarios in a mirrorless setup.
 
 ### `run.sh`
-Entry point script to start the deployment process in the background.
+Entry point script to start the deployment process.
 
 ### `segmenthosts.conf`
 Defines the coordinator and segment hosts for the cluster.
 
 ## Notes
 
-- Default ports used: 5432 (Coordinator), 40000-40007 (Segments)
-- Minimum system requirements:
-  - RAM: 8GB
-  - CPU: 4 cores
-  - Storage: 50GB free space
-- Log files are stored in `/var/log/hashdata/`
-- Configuration backups are created before modifications
-- Ensure that the `CLOUDBERRY_RPM` file or URL in `deploycluster_parameter.sh` is valid and accessible.
 - The scripts modify system files such as `/etc/hosts` and `/etc/sysctl.conf`. Use with caution on production systems.
 - For multi-node deployments, ensure all segment nodes are reachable via SSH from the coordinator.
 
 ## Support
 
 For issues or questions:
-1. Check the logs in `/var/log/hashdata/`
-2. Review the [HashData documentation](https://docs.hashdata.xyz)
-3. File an issue in this repository
-4. Contact the repository maintainer
+1. File an issue in this repository
+2. Contact the repository maintainer
