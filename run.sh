@@ -20,6 +20,6 @@ log_time "Started deploy the cluster in backgroud with mode ${DEPLOY_TYPE}."
 
 logfilename=$(date +%Y%m%d)_$(date +%H%M%S)
 
-log_time "Check delopy_cluster_$logfilename.log for more detail."
+log_time "Check deploy_cluster_$logfilename.log for more detail."
 
-nohup sh delopycluster.sh $cluster_type > delopy_cluster_$logfilename.log 2>&1 &
+nohup sh deploycluster.sh $cluster_type > deploy_cluster_$logfilename.log 2>&1 &
