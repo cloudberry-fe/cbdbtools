@@ -103,7 +103,8 @@ echo "######################
 
 ClientAliveInterval 60
 ClientAliveCountMax 3
-MaxStartups 1000:30:3000" >> /etc/ssh/sshd_config
+MaxStartups 1000:30:3000
+MaxSessions 3000" >> /etc/ssh/sshd_config
 
 systemctl restart sshd
 
