@@ -97,6 +97,16 @@ cat /usr/share/zoneinfo/Asia/Shanghai > /etc/localtime
 sysctl -p
 log_time "More optimization parameters need to be configured manually for production purpose, please refer to documentation..."
 
+echo "######################
+# HashData SSH PARAMS #
+######################
+
+ClientAliveInterval 60
+ClientAliveCountMax 3
+MaxStartups 1000:30:3000" >> /etc/ssh/sshd_config
+
+systemctl restart sshd
+
 #Step 4: Create database user
 log_time "Step 4: Create database user ${ADMIN_USER}..."
 
