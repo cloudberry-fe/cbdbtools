@@ -167,14 +167,11 @@ if [ "${keyword}" != "none" ]; then
         echo "未找到${keyword}目录，使用YUM安装..."
         yum install -y "${CLOUDBERRY_RPM}"
     fi
-  # 修改目录权限  
-  find /usr/local/ -type d -iname "*$keyword*" | while read dir; do
-    echo "找到目录: $dir"
-    chown -R ${ADMIN_USER}:${ADMIN_USER} "$dir"
-    echo "已将 $dir 的所有者修改为 ${ADMIN_USER}:${ADMIN_USER}"
-  done
+   # 修改目录权限  
+  chown -R ${ADMIN_USER}:${ADMIN_USER} /usr/local/${keyword}*
+  echo "已将 $dir 的所有者修改为 ${ADMIN_USER}:${ADMIN_USER}"
 else
-    echo "未检测到关键字，使用YUM安装..."
+    echo "未检测到相关产品关键字，尝试使用YUM安装，可能需要手工配置权限等..."
     yum install -y ${CLOUDBERRY_RPM}
 fi
 

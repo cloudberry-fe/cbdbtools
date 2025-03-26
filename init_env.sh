@@ -221,13 +221,47 @@ fi
 
 # 清理之前安装包检查变量中是否包含"greenplum"字样  
 
-yum install -y ${CLOUDBERRY_RPM}
+# 确保CLOUDBERRY_RPM变量已设置
+if [ -z "${CLOUDBERRY_RPM}" ]; then
+    echo "错误：环境变量CLOUDBERRY_RPM未设置。"
+    exit 1
+fi
 
-# 检查变量中是否包含"greenplum"字样  
-if [[ "${CLOUDBERRY_RPM}" == *greenplum* ]]; then  
-  chown -R ${ADMIN_USER}:${ADMIN_USER} /usr/local/greenplum*
-else  
-  chown -R ${ADMIN_USER}:${ADMIN_USER} /usr/local/cloudberry* 
+# 判断RPM包名称是否包含greenplum或cloudberry
+if [[ "${CLOUDBERRY_RPM}" =~ greenplum ]]; then
+    keyword="greenplum"
+elif [[ "${CLOUDBERRY_RPM}" =~ cloudberry ]]; then
+    keyword="cloudberry"
+else
+    keyword="none"
+fi
+
+# 根据关键字处理安装和权限
+if [ "${keyword}" != "none" ]; then
+    # 检查/usr/local下是否存在包含关键字的目录
+  if find /usr/local -maxdepth 1 -type d -name "*${keyword}*" -print -quit | grep -q .; then
+        echo "检测到${keyword}目录，强制安装RPM并修改权限..."
+        soft_link="/usr/local/${keyword}-db"
+        # 检查软链接是否存在
+        if [ -L "$soft_link" ]; then
+        # 删除软链接
+          rm -f "$soft_link"
+          echo "软链接 $soft_link 已删除"
+        else
+          echo "软链接 $soft_link 不存在"
+        fi
+        echo "操作完成！"
+        rpm -ivh ${CLOUDBERRY_RPM} --force
+    else
+        echo "未找到${keyword}目录，使用YUM安装..."
+        yum install -y "${CLOUDBERRY_RPM}"
+    fi
+  # 修改目录权限  
+  chown -R ${ADMIN_USER}:${ADMIN_USER} /usr/local/${keyword}*
+  echo "已将 $dir 的所有者修改为 ${ADMIN_USER}:${ADMIN_USER}"
+else
+    echo "未检测到相关产品关键字，尝试使用YUM安装，可能需要手工配置权限等..."
+    yum install -y ${CLOUDBERRY_RPM}
 fi
 
 #Step 6: Setup user no-password access
