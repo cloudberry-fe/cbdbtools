@@ -152,18 +152,27 @@ if [ "${keyword}" != "none" ]; then
     # 检查/usr/local下是否存在包含关键字的目录
     if find /usr/local -maxdepth 1 -type d -name "*${keyword}*" -print -quit | grep -q .; then
         echo "检测到${keyword}目录，强制安装RPM并修改权限..."
+        soft_link="/usr/local/${keyword}-db"
+        # 检查软链接是否存在
+        if [ -L "$soft_link" ]; then
+        # 删除软链接
+          rm -f "$soft_link"
+          echo "软链接 $soft_link 已删除"
+        else
+          echo "软链接 $soft_link 不存在"
+        fi
+        echo "操作完成！"
         rpm -ivh ${CLOUDBERRY_RPM} --force
-        
-        # 获取目标目录路径
-        install_dir=$(find /usr/local -maxdepth 1 -type d -name "*${keyword}*" -print -quit)
-        
-        # 修改权限（根据实际需求调整用户/组和权限设置）
-        echo "正在设置${install_dir}的权限..."
-        chown -R ${ADMIN_USER}:${ADMIN_USER} ${install_dir}
     else
         echo "未找到${keyword}目录，使用YUM安装..."
         yum install -y "${CLOUDBERRY_RPM}"
     fi
+  # 修改目录权限  
+  find /usr/local/ -type d -iname "*$keyword*" | while read dir; do
+    echo "找到目录: $dir"
+    chown -R ${ADMIN_USER}:${ADMIN_USER} "$dir"
+    echo "已将 $dir 的所有者修改为 ${ADMIN_USER}:${ADMIN_USER}"
+  done
 else
     echo "未检测到关键字，使用YUM安装..."
     yum install -y ${CLOUDBERRY_RPM}
