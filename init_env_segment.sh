@@ -132,15 +132,41 @@ fi
 #Step 5: Installing database software
 log_time "Step 5: Installing database software..."
 
-# 清理之前安装包检查变量中是否包含"greenplum"字样  
+# 确保CLOUDBERRY_RPM变量已设置
+if [ -z "${CLOUDBERRY_RPM}" ]; then
+    echo "错误：环境变量CLOUDBERRY_RPM未设置。"
+    exit 1
+fi
 
-yum install -y ${CLOUDBERRY_RPM}
+# 判断RPM包名称是否包含greenplum或cloudberry
+if [[ "${CLOUDBERRY_RPM}" =~ greenplum ]]; then
+    keyword="greenplum"
+elif [[ "${CLOUDBERRY_RPM}" =~ cloudberry ]]; then
+    keyword="cloudberry"
+else
+    keyword="none"
+fi
 
-# 检查变量中是否包含"greenplum"字样  
-if [[ "${CLOUDBERRY_RPM}" == *greenplum* ]]; then  
-  chown -R ${ADMIN_USER}:${ADMIN_USER} /usr/local/greenplum*
-else  
-  chown -R ${ADMIN_USER}:${ADMIN_USER} /usr/local/cloudberry* 
+# 根据关键字处理安装和权限
+if [ "${keyword}" != "none" ]; then
+    # 检查/usr/local下是否存在包含关键字的目录
+    if find /usr/local -maxdepth 1 -type d -name "*${keyword}*" -print -quit | grep -q .; then
+        echo "检测到${keyword}目录，强制安装RPM并修改权限..."
+        rpm -ivh ${CLOUDBERRY_RPM} --force
+        
+        # 获取目标目录路径
+        install_dir=$(find /usr/local -maxdepth 1 -type d -name "*${keyword}*" -print -quit)
+        
+        # 修改权限（根据实际需求调整用户/组和权限设置）
+        echo "正在设置${install_dir}的权限..."
+        chown -R ${ADMIN_USER}:${ADMIN_USER} ${install_dir}
+    else
+        echo "未找到${keyword}目录，使用YUM安装..."
+        yum install -y "${CLOUDBERRY_RPM}"
+    fi
+else
+    echo "未检测到关键字，使用YUM安装..."
+    yum install -y ${CLOUDBERRY_RPM}
 fi
 
 #Step 6: Setup user no-password access
