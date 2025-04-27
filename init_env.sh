@@ -325,8 +325,20 @@ if [ "$cluster_type" = "multi" ]; then
     su ${ADMIN_USER} -l -c "ssh-keyscan ${i} >> ~/.ssh/known_hosts"
     su ${ADMIN_USER} -l -c "ssh ${i} 'date;exit'"
   done
+
+  for node in $(cat /tmp/segment_hosts.txt); do
+    # 生成 SSH 密钥对
+    su ${ADMIN_USER} -l -c "ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N '' -q"
+    # 分发公钥到所有节点
+    for target in $(cat /tmp/segment_hosts.txt); do
+      if [ "$node" != "$target" ]; then
+        su ${ADMIN_USER} -l -c "sshpass -p ${SEGMENT_ACCESS_PASSWORD} ssh-copy-id -o StrictHostKeyChecking=no ${ADMIN_USER}@${target}"
+      fi
+    done
+  done
   
-  echo "su ${ADMIN_USER} -l -c \"source ${CLOUDBERRY_BINARY_PATH}/greenplum_path.sh;gpssh-exkeys -f /tmp/segment_hosts.txt\""
-  su ${ADMIN_USER} -l -c "source ${CLOUDBERRY_BINARY_PATH}/greenplum_path.sh;gpssh-exkeys -f /tmp/segment_hosts.txt"
+  # echo "su ${ADMIN_USER} -l -c \"source ${CLOUDBERRY_BINARY_PATH}/greenplum_path.sh;gpssh-exkeys -f /tmp/segment_hosts.txt\""
+  # su ${ADMIN_USER} -l -c "source ${CLOUDBERRY_BINARY_PATH}/greenplum_path.sh;gpssh-exkeys -f /tmp/segment_hosts.txt"
 fi
+
 log_time "Finished env init setting on coordinator and segment nodes..."
