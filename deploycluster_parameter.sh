@@ -1,5 +1,6 @@
 # environment options
 export ADMIN_USER="gpadmin"
+export ADMIN_USER_PASSWORD="Hashdata@123"
 
 ## set to 'true' if you want to setup OS parameters only
 export INIT_ENV_ONLY="false"

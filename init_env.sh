@@ -187,14 +187,14 @@ MaxSessions 3000" >> /etc/ssh/sshd_config
 
 systemctl restart sshd
 
-#Step 4: Create database user
+#Step 4: Create database admin user
 log_time "Step 4: Create database user ${ADMIN_USER}..."
 
 if ! id "$ADMIN_USER" &>/dev/null; then
   groupadd ${ADMIN_USER} 
   useradd ${ADMIN_USER} -r -m -g ${ADMIN_USER}
   usermod -aG wheel ${ADMIN_USER}
-  echo "Hashdata@123"|passwd --stdin ${ADMIN_USER}
+  echo ${ADMIN_USER_PASSWORD}|passwd --stdin ${ADMIN_USER}
   echo "%wheel ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
   chown -R ${ADMIN_USER}:${ADMIN_USER} /home/${ADMIN_USER}
 else 
@@ -283,8 +283,8 @@ if [ "${INIT_ENV_ONLY}" != "true" ]; then
   rm -rf /home/${ADMIN_USER}/.ssh/
   su ${ADMIN_USER} -l -c "ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ''"
   su ${ADMIN_USER} -l -c "cat /home/${ADMIN_USER}/.ssh/id_rsa.pub > /home/${ADMIN_USER}/.ssh/authorized_keys"
-  su ${ADMIN_USER} -l -c "source ${CLOUDBERRY_BINARY_PATH}/greenplum_path.sh;gpssh-exkeys -h "$(hostname)""
-  su ${ADMIN_USER} -l -c "echo \"UserKnownHostsFile /home/${ADMIN_USER}/.ssh/known_hosts\" >> /home/${ADMIN_USER}/.ssh/config"
+  #su ${ADMIN_USER} -l -c "source ${CLOUDBERRY_BINARY_PATH}/greenplum_path.sh;gpssh-exkeys -h "$(hostname)""
+  #su ${ADMIN_USER} -l -c "echo \"UserKnownHostsFile /home/${ADMIN_USER}/.ssh/known_hosts\" >> /home/${ADMIN_USER}/.ssh/config"
 fi
 
 
@@ -327,12 +327,9 @@ if [ "$cluster_type" = "multi" ]; then
   done
 
   for node in $(cat /tmp/segment_hosts.txt); do
-    # 生成 SSH 密钥对
-    su ${ADMIN_USER} -l -c "ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N '' -q"
-    # 分发公钥到所有节点
     for target in $(cat /tmp/segment_hosts.txt); do
       if [ "$node" != "$target" ]; then
-        su ${ADMIN_USER} -l -c "sshpass -p ${SEGMENT_ACCESS_PASSWORD} ssh-copy-id -o StrictHostKeyChecking=no ${ADMIN_USER}@${target}"
+        su ${ADMIN_USER} -l -c "sshpass -p ${ADMIN_USER_PASSWORD} ssh-copy-id -o StrictHostKeyChecking=no ${ADMIN_USER}@${target}"
       fi
     done
   done

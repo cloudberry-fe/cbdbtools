@@ -115,7 +115,7 @@ if ! id "$ADMIN_USER" &>/dev/null; then
   groupadd ${ADMIN_USER} 
   useradd ${ADMIN_USER} -r -m -g ${ADMIN_USER}
   usermod -aG wheel ${ADMIN_USER}
-  echo "Hashdata@123"|passwd --stdin ${ADMIN_USER}
+  echo ${ADMIN_USER_PASSWORD}|passwd --stdin ${ADMIN_USER}
   echo "%wheel        ALL=(ALL)       NOPASSWD: ALL" >> /etc/sudoers
   chown -R ${ADMIN_USER}:${ADMIN_USER} /home/${ADMIN_USER}
 else
@@ -201,7 +201,7 @@ if [ "${INIT_ENV_ONLY}" != "true" ]; then
   su ${ADMIN_USER} -l -c "cat /tmp/id_rsa.pub >> /home/${ADMIN_USER}/.ssh/authorized_keys"
   #su ${ADMIN_USER} -l -c "cat /tmp/known_hosts >> /home/${ADMIN_USER}/.ssh/known_hosts"
   #su ${ADMIN_USER} -l -c "echo \"UserKnownHostsFile /home/${ADMIN_USER}/.ssh/known_hosts\" >> /home/${ADMIN_USER}/.ssh/config"
-  su ${ADMIN_USER} -l -c "source ${CLOUDBERRY_BINARY_PATH}/greenplum_path.sh;gpssh-exkeys -h "$(hostname)""
+  #su ${ADMIN_USER} -l -c "source ${CLOUDBERRY_BINARY_PATH}/greenplum_path.sh;gpssh-exkeys -h "$(hostname)""
 fi
 
 #Step 8: Set /etc/hosts on $(hostname)...
