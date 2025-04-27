@@ -320,20 +320,32 @@ if [ "$cluster_type" = "multi" ]; then
   echo ${COORDINATOR_HOSTNAME} >> /tmp/segment_hosts.txt
   hostname ${COORDINATOR_HOSTNAME}
 
-  for i in $(cat /tmp/segment_hosts.txt); do
-    echo "su ${ADMIN_USER} -l -c \"ssh ${i} 'date;exit'"\"
-    su ${ADMIN_USER} -l -c "ssh-keyscan ${i} >> ~/.ssh/known_hosts"
-    su ${ADMIN_USER} -l -c "ssh ${i} 'date;exit'"
-  done
+  #for i in $(cat /tmp/segment_hosts.txt); do
+  #  echo "su ${ADMIN_USER} -l -c \"ssh ${i} 'date;exit'"\"
+  #  su ${ADMIN_USER} -l -c "ssh-keyscan ${i} >> ~/.ssh/known_hosts"
+  #  su ${ADMIN_USER} -l -c "ssh ${i} 'date;exit'"
+  #done
+  
+  mkdir -p /tmp/ssh_keys
 
+  # 使用 sshpass 收集所有节点的公钥
   for node in $(cat /tmp/segment_hosts.txt); do
-    for target in $(cat /tmp/segment_hosts.txt); do
-      if [ "$node" != "$target" ]; then
-        su ${ADMIN_USER} -l -c "sshpass -p ${ADMIN_USER_PASSWORD} ssh-copy-id -o StrictHostKeyChecking=no ${ADMIN_USER}@${target}"
-      fi
-    done
+    sshpass -p "${ADMIN_USER_PASSWORD}" scp -o StrictHostKeyChecking=no ${ADMIN_USER}@${node}:/home/${ADMIN_USER}/.ssh/id_rsa.pub /tmp/ssh_keys/${node}.pub
   done
   
+  # 分发公钥到所有节点
+  for target in $(cat /tmp/segment_hosts.txt); do
+    # 清空目标节点的 authorized_keys 文件
+    sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no ${ADMIN_USER}@${target} "echo '' > /home/${ADMIN_USER}/.ssh/authorized_keys"
+    
+    # 将所有节点的公钥添加到目标节点的 authorized_keys 文件中
+    for keyfile in /tmp/ssh_keys/*.pub; do
+      cat ${keyfile} | sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no ${ADMIN_USER}@${target} "cat >> /home/${ADMIN_USER}/.ssh/authorized_keys"
+    done
+    
+    # 设置正确的权限
+    sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no ${ADMIN_USER}@${target} "chmod 700 /home/${ADMIN_USER}/.ssh && chmod 600 /home/${ADMIN_USER}/.ssh/authorized_keys"
+  done
   # echo "su ${ADMIN_USER} -l -c \"source ${CLOUDBERRY_BINARY_PATH}/greenplum_path.sh;gpssh-exkeys -f /tmp/segment_hosts.txt\""
   # su ${ADMIN_USER} -l -c "source ${CLOUDBERRY_BINARY_PATH}/greenplum_path.sh;gpssh-exkeys -f /tmp/segment_hosts.txt"
 fi
