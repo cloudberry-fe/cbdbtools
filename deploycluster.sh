@@ -10,8 +10,9 @@ fi
 
 function delopycluster() {
   sh init_env.sh $cluster_type
+
   if [ "${INIT_ENV_ONLY}" != "true" ]; then
-    sh init_env_segment.sh $cluster_type
+    sh init_cluster.sh $cluster_type
   fi
 }
 
