@@ -129,65 +129,8 @@ else
   fi
 fi
 
-#Step 5: Installing database software
-log_time "Step 5: Installing database software..."
-
-# 确保CLOUDBERRY_RPM变量已设置
-if [ -z "${CLOUDBERRY_RPM}" ]; then
-    echo "错误：环境变量CLOUDBERRY_RPM未设置。"
-    exit 1
-fi
-
-# 判断RPM包名称是否包含greenplum或cloudberry
-if [[ "${CLOUDBERRY_RPM}" =~ greenplum ]]; then
-    keyword="greenplum"
-elif [[ "${CLOUDBERRY_RPM}" =~ cloudberry ]]; then
-    keyword="cloudberry"
-else
-    keyword="none"
-fi
-
-# 根据关键字处理安装和权限
-if [ "${keyword}" != "none" ]; then
-    # 检查/usr/local下是否存在包含关键字的目录
-    if find /usr/local -maxdepth 1 -type d -name "*${keyword}*" -print -quit | grep -q .; then
-        echo "检测到${keyword}目录，强制安装RPM并修改权限..."
-        soft_link="/usr/local/${keyword}-db"
-        # 检查软链接是否存在
-        if [ -L "$soft_link" ]; then
-        # 删除软链接
-          rm -f "$soft_link"
-          echo "软链接 $soft_link 已删除"
-        else
-          echo "软链接 $soft_link 不存在"
-        fi
-        echo "操作完成！"
-        rpm -ivh ${CLOUDBERRY_RPM} --force
-    else
-        echo "未找到${keyword}目录，使用YUM安装..."
-        yum install -y "${CLOUDBERRY_RPM}"
-    fi
-   # 修改目录权限  
-  chown -R ${ADMIN_USER}:${ADMIN_USER} /usr/local/${keyword}*
-  echo "已将 $dir 的所有者修改为 ${ADMIN_USER}:${ADMIN_USER}"
-else
-    echo "未检测到相关产品关键字，尝试使用YUM安装，可能需要手工配置权限等..."
-    yum install -y ${CLOUDBERRY_RPM}
-fi
-
-#Step 6: Setup user no-password access
-log_time "Step 6: Setup user no-password access..."
-
-rm -rf /home/${ADMIN_USER}/.ssh/
-su ${ADMIN_USER} -l -c "ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ''"
-su ${ADMIN_USER} -l -c "cat /home/${ADMIN_USER}/.ssh/id_rsa.pub > /home/${ADMIN_USER}/.ssh/authorized_keys"
-su ${ADMIN_USER} -l -c "cat /tmp/id_rsa.pub >> /home/${ADMIN_USER}/.ssh/authorized_keys"
-#su ${ADMIN_USER} -l -c "cat /tmp/known_hosts >> /home/${ADMIN_USER}/.ssh/known_hosts"
-#su ${ADMIN_USER} -l -c "echo \"UserKnownHostsFile /home/${ADMIN_USER}/.ssh/known_hosts\" >> /home/${ADMIN_USER}/.ssh/config"
-su ${ADMIN_USER} -l -c "source ${CLOUDBERRY_BINARY_PATH}/greenplum_path.sh;gpssh-exkeys -h "$(hostname)""
-
-#Step7: Create folders needed for the cluster
-log_time "Step7: Create folders needed..."
+#Step 5: Create folders needed for the cluster
+log_time "Step 5: Create folders needed..."
 rm -rf ${DATA_DIRECTORY}
 echo "mkdir -p ${DATA_DIRECTORY}"
 mkdir -p ${DATA_DIRECTORY}
@@ -200,8 +143,69 @@ if [ "${WITH_MIRROR}" = "true" ]; then
   chown -R ${ADMIN_USER}:${ADMIN_USER} ${MIRROR_DATA_DIRECTORY}
 fi
 
+# 检查 INIT_ENV_ONLY 环境变量
+if [ "${INIT_ENV_ONLY}" != "true" ]; then
+
+  #Step 6: Installing database software
+  log_time "Step 6: Installing database software..."
+  
+  # 确保CLOUDBERRY_RPM变量已设置
+  if [ -z "${CLOUDBERRY_RPM}" ]; then
+      echo "错误：环境变量CLOUDBERRY_RPM未设置。"
+      exit 1
+  fi
+  
+  # 判断RPM包名称是否包含greenplum或cloudberry
+  if [[ "${CLOUDBERRY_RPM}" =~ greenplum ]]; then
+      keyword="greenplum"
+  elif [[ "${CLOUDBERRY_RPM}" =~ cloudberry ]]; then
+      keyword="cloudberry"
+  else
+      keyword="none"
+  fi
+  
+  # 根据关键字处理安装和权限
+  if [ "${keyword}" != "none" ]; then
+      # 检查/usr/local下是否存在包含关键字的目录
+      if find /usr/local -maxdepth 1 -type d -name "*${keyword}*" -print -quit | grep -q .; then
+          echo "检测到${keyword}目录，强制安装RPM并修改权限..."
+          soft_link="/usr/local/${keyword}-db"
+          # 检查软链接是否存在
+          if [ -L "$soft_link" ]; then
+          # 删除软链接
+            rm -f "$soft_link"
+            echo "软链接 $soft_link 已删除"
+          else
+            echo "软链接 $soft_link 不存在"
+          fi
+          echo "操作完成！"
+          rpm -ivh ${CLOUDBERRY_RPM} --force
+      else
+          echo "未找到${keyword}目录，使用YUM安装..."
+          yum install -y "${CLOUDBERRY_RPM}"
+      fi
+     # 修改目录权限  
+    chown -R ${ADMIN_USER}:${ADMIN_USER} /usr/local/${keyword}*
+    echo "已将 $dir 的所有者修改为 ${ADMIN_USER}:${ADMIN_USER}"
+  else
+      echo "未检测到相关产品关键字，尝试使用YUM安装，可能需要手工配置权限等..."
+      yum install -y ${CLOUDBERRY_RPM}
+  fi
+  
+  #Step 7: Setup user no-password access
+  log_time "Step 7: Setup user no-password access..."
+  
+  rm -rf /home/${ADMIN_USER}/.ssh/
+  su ${ADMIN_USER} -l -c "ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ''"
+  su ${ADMIN_USER} -l -c "cat /home/${ADMIN_USER}/.ssh/id_rsa.pub > /home/${ADMIN_USER}/.ssh/authorized_keys"
+  su ${ADMIN_USER} -l -c "cat /tmp/id_rsa.pub >> /home/${ADMIN_USER}/.ssh/authorized_keys"
+  #su ${ADMIN_USER} -l -c "cat /tmp/known_hosts >> /home/${ADMIN_USER}/.ssh/known_hosts"
+  #su ${ADMIN_USER} -l -c "echo \"UserKnownHostsFile /home/${ADMIN_USER}/.ssh/known_hosts\" >> /home/${ADMIN_USER}/.ssh/config"
+  su ${ADMIN_USER} -l -c "source ${CLOUDBERRY_BINARY_PATH}/greenplum_path.sh;gpssh-exkeys -h "$(hostname)""
+fi
+
 #Step 8: Set /etc/hosts on $(hostname)...
-log_time "Step8: Set /etc/hosts on $(hostname)..."
+log_time "Step 8: Set /etc/hosts on $(hostname)..."
 sed -i '/#Hashdata hosts begin/,/#Hashdata hosts end/d' /etc/hosts
 cat /tmp/hostsfile >> /etc/hosts
 hostname ${SEGMENT_HOSTNAME}
