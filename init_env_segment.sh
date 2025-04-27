@@ -191,18 +191,18 @@ if [ "${INIT_ENV_ONLY}" != "true" ]; then
       echo "未检测到相关产品关键字，尝试使用YUM安装，可能需要手工配置权限等..."
       yum install -y ${CLOUDBERRY_RPM}
   fi
-  
-  #Step 7: Setup user no-password access
-  log_time "Step 7: Setup user no-password access..."
-  
-  rm -rf /home/${ADMIN_USER}/.ssh/
-  su ${ADMIN_USER} -l -c "ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ''"
-  su ${ADMIN_USER} -l -c "cat /home/${ADMIN_USER}/.ssh/id_rsa.pub > /home/${ADMIN_USER}/.ssh/authorized_keys"
-  su ${ADMIN_USER} -l -c "cat /tmp/id_rsa.pub >> /home/${ADMIN_USER}/.ssh/authorized_keys"
-  #su ${ADMIN_USER} -l -c "cat /tmp/known_hosts >> /home/${ADMIN_USER}/.ssh/known_hosts"
-  #su ${ADMIN_USER} -l -c "echo \"UserKnownHostsFile /home/${ADMIN_USER}/.ssh/known_hosts\" >> /home/${ADMIN_USER}/.ssh/config"
-  #su ${ADMIN_USER} -l -c "source ${CLOUDBERRY_BINARY_PATH}/greenplum_path.sh;gpssh-exkeys -h "$(hostname)""
 fi
+
+#Step 7: Setup user no-password access
+log_time "Step 7: Setup user no-password access..."
+
+rm -rf /home/${ADMIN_USER}/.ssh/
+su ${ADMIN_USER} -l -c "ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ''"
+su ${ADMIN_USER} -l -c "cat /home/${ADMIN_USER}/.ssh/id_rsa.pub > /home/${ADMIN_USER}/.ssh/authorized_keys"
+#su ${ADMIN_USER} -l -c "cat /tmp/id_rsa.pub >> /home/${ADMIN_USER}/.ssh/authorized_keys"
+#su ${ADMIN_USER} -l -c "cat /tmp/known_hosts >> /home/${ADMIN_USER}/.ssh/known_hosts"
+#su ${ADMIN_USER} -l -c "echo \"UserKnownHostsFile /home/${ADMIN_USER}/.ssh/known_hosts\" >> /home/${ADMIN_USER}/.ssh/config"
+#su ${ADMIN_USER} -l -c "source ${CLOUDBERRY_BINARY_PATH}/greenplum_path.sh;gpssh-exkeys -h "$(hostname)""
 
 #Step 8: Set /etc/hosts on $(hostname)...
 log_time "Step 8: Set /etc/hosts on $(hostname)..."
