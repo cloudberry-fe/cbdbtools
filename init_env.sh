@@ -349,8 +349,6 @@ if [ "$cluster_type" = "multi" ]; then
     # 设置正确的权限
     sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no ${ADMIN_USER}@${target} "chmod 700 /home/${ADMIN_USER}/.ssh && chmod 600 /home/${ADMIN_USER}/.ssh/authorized_keys && chmod 644 /home/${ADMIN_USER}/.ssh/known_hosts"
   done
-  # echo "su ${ADMIN_USER} -l -c \"source ${CLOUDBERRY_BINARY_PATH}/greenplum_path.sh;gpssh-exkeys -f /tmp/segment_hosts.txt\""
-  # su ${ADMIN_USER} -l -c "source ${CLOUDBERRY_BINARY_PATH}/greenplum_path.sh;gpssh-exkeys -f /tmp/segment_hosts.txt"
 fi
 
 log_time "Finished env init setting on coordinator and segment nodes..."
