@@ -316,16 +316,18 @@ if [ "$cluster_type" = "multi" ]; then
 
   #Step 9: Setup no-password access for all nodes...
   log_time "Step 9: Setup no-password access for all nodes..."
+
+  for i in $(cat /tmp/segment_hosts.txt); do
+    #echo "su ${ADMIN_USER} -l -c \"ssh ${i} 'date;exit'"\"
+    su ${ADMIN_USER} -l -c "ssh-keyscan ${i} >> ~/.ssh/known_hosts"
+    #su ${ADMIN_USER} -l -c "ssh ${i} 'date;exit'"
+  done
   
   export COORDINATOR_HOSTNAME=$(sed -n '/##Coordinator hosts/,/##Segment hosts/p' segmenthosts.conf|sed '1d;$d'|awk '{print $2}')
   echo ${COORDINATOR_HOSTNAME} >> /tmp/segment_hosts.txt
   hostname ${COORDINATOR_HOSTNAME}
 
-  #for i in $(cat /tmp/segment_hosts.txt); do
-  #  echo "su ${ADMIN_USER} -l -c \"ssh ${i} 'date;exit'"\"
-  #  su ${ADMIN_USER} -l -c "ssh-keyscan ${i} >> ~/.ssh/known_hosts"
-  #  su ${ADMIN_USER} -l -c "ssh ${i} 'date;exit'"
-  #done
+
   
   mkdir -p /tmp/ssh_keys
 
