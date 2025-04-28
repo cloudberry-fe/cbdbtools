@@ -48,8 +48,10 @@ function init_segment()
   USER="root"
   COMMAND="bash -c 'sh /tmp/init_env_segment.sh \$1 &> /tmp/init_env_segment_\$1_$logfilename.log'"
   if [ -n "${SEGMENT_ACCESS_KEYFILE}" ]; then
+    echo "ssh -n -q -i ${SEGMENT_ACCESS_KEYFILE} root@${i} \"bash -c 'sh /tmp/init_env_segment.sh ${i} &> /tmp/init_env_segment_${i}_$logfilename.log'\""
     ./multissh.sh -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} "$COMMAND"
   else
+    echo "sshpass -p ${SEGMENT_ACCESS_PASSWORD} ssh -n -q root@${i} \"bash -c 'sh /tmp/init_env_segment.sh ${i} &> /tmp/init_env_segment_${i}_$logfilename.log'\""
     ./multissh.sh -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} "$COMMAND"
   fi
   log_time "Finished init configuration on segment hosts"
