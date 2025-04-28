@@ -21,6 +21,7 @@ function show_help() {
     echo "  -t, --timeout         指定 SSH 超时时间 (秒, 默认为 30)"
     echo "  -v, --verbose         启用详细输出"
     echo "  -o, --output          指定输出结果文件"
+    echo "  -c, --concurrency     指定并发执行的最大数量 (默认为 5)"
     echo ""
     echo "服务器列表文件格式:"
     echo "  每行一个服务器，可以是 IP 地址或主机名"
@@ -38,6 +39,7 @@ PORT=22
 TIMEOUT=30
 VERBOSE=0
 OUTPUT_FILE=""
+CONCURRENCY=5
 
 # 解析命令行参数
 while [[ $# -gt 0 ]]; do
@@ -78,6 +80,10 @@ while [[ $# -gt 0 ]]; do
             OUTPUT_FILE="$2"
             shift 2
             ;;
+        -c|--concurrency)
+            CONCURRENCY="$2"
+            shift 2
+            ;;
         *)
             # 剩余参数作为要执行的命令
             COMMAND="$*"
@@ -112,6 +118,7 @@ fi
 # 创建临时目录
 TMP_DIR="/tmp/multissh_$(date +%s)"
 mkdir -p "$TMP_DIR"
+mkdir -p "$TMP_DIR/results"
 
 # 读取服务器列表
 HOSTS=()
@@ -133,6 +140,7 @@ fi
 # 输出执行信息
 echo -e "${GREEN}执行信息:${NC}"
 echo -e "${GREEN}  服务器数量: ${#HOSTS[@]}${NC}"
+echo -e "${GREEN}  并发数: ${CONCURRENCY}${NC}"
 echo -e "${GREEN}  命令: ${COMMAND}${NC}"
 if [ -n "$OUTPUT_FILE" ]; then
     echo -e "${GREEN}  输出文件: ${OUTPUT_FILE}${NC}"
@@ -142,7 +150,8 @@ echo ""
 # 定义执行函数
 function execute_on_host() {
     local host=$1
-    local output_file="$TMP_DIR/${host}.log"
+    local output_file="$TMP_DIR/results/${host}.log"
+    local status_file="$TMP_DIR/results/${host}.status"
     local exit_code=0
     
     echo -e "${YELLOW}[$host] 正在执行命令...${NC}"
@@ -156,6 +165,9 @@ function execute_on_host() {
         sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=$TIMEOUT -p $PORT "$USER@$host" "$COMMAND" > "$output_file" 2>&1
         exit_code=$?
     fi
+    
+    # 保存状态
+    echo "$exit_code" > "$status_file"
     
     if [ $exit_code -eq 0 ]; then
         echo -e "${GREEN}[$host] 成功 (退出码: $exit_code)${NC}"
@@ -182,26 +194,44 @@ function execute_on_host() {
     return $exit_code
 }
 
-# 顺序执行命令
+# 并发执行命令，控制并发数
 echo -e "${GREEN}开始执行命令...${NC}"
 echo ""
 
+ACTIVE_JOBS=0
 SUCCESS_COUNT=0
 FAILED_HOSTS=()
 
 for host in "${HOSTS[@]}"; do
-  {
-    execute_on_host "$host"
-    exit_code=$?
+    # 控制并发数
+    while [ $ACTIVE_JOBS -ge $CONCURRENCY ]; do
+        sleep 1
+        # 计算当前活跃的作业数
+        ACTIVE_JOBS=$(jobs -r | wc -l)
+    done
     
-    if [ $exit_code -eq 0 ]; then
-        SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+    execute_on_host "$host" &
+    ACTIVE_JOBS=$(jobs -r | wc -l)
+done
+
+# 等待所有作业完成
+wait
+
+# 汇总结果
+for host in "${HOSTS[@]}"; do
+    status_file="$TMP_DIR/results/${host}.status"
+    if [ -f "$status_file" ]; then
+        exit_code=$(cat "$status_file")
+        if [ "$exit_code" -eq 0 ]; then
+            SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+        else
+            FAILED_HOSTS+=("$host")
+        fi
     else
+        # 如果状态文件不存在，视为失败
         FAILED_HOSTS+=("$host")
     fi
-  } &
 done
-wait
 
 # 汇总结果
 echo ""
