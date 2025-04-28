@@ -24,17 +24,17 @@ function copyfile_segment()
   log_time "copy init_env_segment.sh id_rsa.pub Cloudberry rpms to segment hosts"
   HOSTS_FILE="/tmp/segment_hosts.txt"
   if [ "${SEGMENT_ACCESS_METHOD}" = "keyfile" ]; then
-    ./multiscp.sh -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} init_env_segment.sh /tmp
-    ./multiscp.sh -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} deploycluster_parameter.sh /tmp
-    ./multiscp.sh -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /tmp/hostsfile /tmp
-    ./multiscp.sh -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /home/${ADMIN_USER}/.ssh/id_rsa.pub /tmp
-    ./multiscp.sh -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${CLOUDBERRY_RPM} ${CLOUDBERRY_RPM}
+    sh multiscp.sh -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} init_env_segment.sh /tmp
+    sh multiscp.sh -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} deploycluster_parameter.sh /tmp
+    sh multiscp.sh -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /tmp/hostsfile /tmp
+    sh multiscp.sh -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /home/${ADMIN_USER}/.ssh/id_rsa.pub /tmp
+    sh multiscp.sh -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${CLOUDBERRY_RPM} ${CLOUDBERRY_RPM}
   else
-    ./multiscp.sh -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} init_env_segment.sh /tmp
-    ./multiscp.sh -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} deploycluster_parameter.sh /tmp
-    ./multiscp.sh -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /tmp/hostsfile /tmp
-    ./multiscp.sh -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /home/${ADMIN_USER}/.ssh/id_rsa.pub /tmp
-    ./multiscp.sh -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${CLOUDBERRY_RPM} ${CLOUDBERRY_RPM}
+    sh multiscp.sh -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} init_env_segment.sh /tmp
+    sh multiscp.sh -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} deploycluster_parameter.sh /tmp
+    sh multiscp.sh -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /tmp/hostsfile /tmp
+    sh multiscp.sh -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /home/${ADMIN_USER}/.ssh/id_rsa.pub /tmp
+    sh multiscp.sh -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${CLOUDBERRY_RPM} ${CLOUDBERRY_RPM}
   fi
   log_time "Finished copy init_env_segment.sh id_rsa.pub Cloudberry rpms to segment hosts"
 }
@@ -46,11 +46,11 @@ function init_segment()
   HOSTS_FILE="/tmp/segment_hosts.txt"
   COMMAND="bash -c 'sh /tmp/init_env_segment.sh \$1 &> /tmp/init_env_segment_\$1_$logfilename.log'"
   if [ "${SEGMENT_ACCESS_METHOD}" = "keyfile" ]; then
-    echo "./multissh.sh -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} \"$COMMAND\""
-    ./multissh.sh -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} "$COMMAND"
+    echo "sh multissh.sh -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} \"$COMMAND\""
+    sh multissh.sh -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} "$COMMAND"
   else
-    echo "./multissh.sh -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} \"$COMMAND\""
-    ./multissh.sh -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} "$COMMAND"
+    echo "sh multissh.sh -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} \"$COMMAND\""
+    sh multissh.sh -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} "$COMMAND"
   fi
   log_time "Finished init configuration on segment hosts"
 }
