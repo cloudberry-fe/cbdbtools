@@ -10,89 +10,55 @@ else
   cluster_type="${DEPLOY_TYPE}"
 fi  
 
+# Log a message with timestamp
+function log_time() {
+  printf "[%s] %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
+}
 
+# Configure the /etc/hosts file on the coordinator
 function config_hostsfile()
 {
-  log_time "set /etc/hosts on coordinator..."
+  log_time "Set /etc/hosts on coordinator..."
   awk '/#Hashdata hosts begin/,/#Hashdata hosts end/' segmenthosts.conf > /tmp/hostsfile
   sed -i '/#Hashdata hosts begin/,/#Hashdata hosts end/d' /etc/hosts
   cat /tmp/hostsfile >> /etc/hosts
 }
 
-function copyfile_segment_keyfile()
+# Copy necessary files to segment hosts
+function copyfile_segment()
 { 
-  log_time "copy init_env_segment.sh id_rsa.pub Cloudberry rpms to segment hosts"
-  for i in $(cat /tmp/segment_hosts.txt); do
-    (
-      echo "Copying files to ${i}"
-      echo "scp -i ${SEGMENT_ACCESS_KEYFILE} init_env_segment.sh ${SEGMENT_ACCESS_USER}@${i}:/tmp"
-      echo "scp -i ${SEGMENT_ACCESS_KEYFILE} deploycluster_parameter.sh ${SEGMENT_ACCESS_USER}@${i}:/tmp"
-      echo "scp -i ${SEGMENT_ACCESS_KEYFILE} /tmp/hostsfile ${SEGMENT_ACCESS_USER}@${i}:/tmp"
-      echo "scp -i ${SEGMENT_ACCESS_KEYFILE} /home/${ADMIN_USER}/.ssh/id_rsa.pub ${SEGMENT_ACCESS_USER}@${i}:/tmp"
-      echo "scp -i ${SEGMENT_ACCESS_KEYFILE} ${CLOUDBERRY_RPM} ${SEGMENT_ACCESS_USER}@${i}:${CLOUDBERRY_RPM}"
-      scp -i ${SEGMENT_ACCESS_KEYFILE} init_env_segment.sh ${SEGMENT_ACCESS_USER}@${i}:/tmp
-      scp -i ${SEGMENT_ACCESS_KEYFILE} deploycluster_parameter.sh ${SEGMENT_ACCESS_USER}@${i}:/tmp
-      scp -i ${SEGMENT_ACCESS_KEYFILE} /tmp/hostsfile ${SEGMENT_ACCESS_USER}@${i}:/tmp
-      scp -i ${SEGMENT_ACCESS_KEYFILE} /home/${ADMIN_USER}/.ssh/id_rsa.pub ${SEGMENT_ACCESS_USER}@${i}:/tmp
-      scp -i ${SEGMENT_ACCESS_KEYFILE} ${CLOUDBERRY_RPM} ${SEGMENT_ACCESS_USER}@${i}:${CLOUDBERRY_RPM}
-    ) &
-  done
-  wait
-  log_time "Finished copy init_env_segment.sh id_rsa.pub Cloudberry rpms to segment hosts"
+  log_time "Copy init_env_segment.sh id_rsa.pub Cloudberry rpms to segment hosts"
+  if [ "${SEGMENT_ACCESS_METHOD}" == "keyfile" ]; then
+    bash multiscp.sh -f /tmp/segment_hosts.txt -u ${SEGMENT_ACCESS_USER} -k ${SEGMENT_ACCESS_KEYFILE} -P 22 -t 60 -v -c 10 init_env_segment.sh /tmp
+    bash multiscp.sh -f /tmp/segment_hosts.txt -u ${SEGMENT_ACCESS_USER} -k ${SEGMENT_ACCESS_KEYFILE} -P 22 -t 60 -v -c 10 deploycluster_parameter.sh /tmp
+    bash multiscp.sh -f /tmp/segment_hosts.txt -u ${SEGMENT_ACCESS_USER} -k ${SEGMENT_ACCESS_KEYFILE} -P 22 -t 60 -v -c 10 /tmp/hostsfile /tmp
+    bash multiscp.sh -f /tmp/segment_hosts.txt -u ${SEGMENT_ACCESS_USER} -k ${SEGMENT_ACCESS_KEYFILE} -P 22 -t 60 -v -c 10 /home/${ADMIN_USER}/.ssh/id_rsa.pub /tmp
+    bash multiscp.sh -f /tmp/segment_hosts.txt -u ${SEGMENT_ACCESS_USER} -k ${SEGMENT_ACCESS_KEYFILE} -P 22 -t 60 -v -c 10 ${CLOUDBERRY_RPM} ${CLOUDBERRY_RPM}
+  elif [ "${SEGMENT_ACCESS_METHOD}" == "password" ]; then
+    bash multiscp.sh -f /tmp/segment_hosts.txt -u ${SEGMENT_ACCESS_USER} -p ${SEGMENT_ACCESS_PASSWORD} -P 22 -t 60 -v -c 10 init_env_segment.sh /tmp
+    bash multiscp.sh -f /tmp/segment_hosts.txt -u ${SEGMENT_ACCESS_USER} -p ${SEGMENT_ACCESS_PASSWORD} -P 22 -t 60 -v -c 10 deploycluster_parameter.sh /tmp
+    bash multiscp.sh -f /tmp/segment_hosts.txt -u ${SEGMENT_ACCESS_USER} -p ${SEGMENT_ACCESS_PASSWORD} -P 22 -t 60 -v -c 10 /tmp/hostsfile /tmp
+    bash multiscp.sh -f /tmp/segment_hosts.txt -u ${SEGMENT_ACCESS_USER} -p ${SEGMENT_ACCESS_PASSWORD} -P 22 -t 60 -v -c 10 /home/${ADMIN_USER}/.ssh/id_rsa.pub /tmp
+    bash multiscp.sh -f /tmp/segment_hosts.txt -u ${SEGMENT_ACCESS_USER} -p ${SEGMENT_ACCESS_PASSWORD} -P 22 -t 60 -v -c 10 ${CLOUDBERRY_RPM} ${CLOUDBERRY_RPM}
+  fi
+  log_time "Finished copying init_env_segment.sh id_rsa.pub Cloudberry rpms to segment hosts"
 }
 
-
-function copyfile_segment_password()
-{ 
-  log_time "copy init_env_segment.sh id_rsa.pub Cloudberry rpms to segment hosts"
-  for i in $(cat /tmp/segment_hosts.txt); do
-    (
-      echo "Copying files to ${i}"
-      echo "sshpass -p ${SEGMENT_ACCESS_PASSWORD} scp -o StrictHostKeyChecking=no init_env_segment.sh ${SEGMENT_ACCESS_USER}@${i}:/tmp"
-      echo "sshpass -p ${SEGMENT_ACCESS_PASSWORD} scp -o StrictHostKeyChecking=no deploycluster_parameter.sh ${SEGMENT_ACCESS_USER}@${i}:/tmp"
-      echo "sshpass -p ${SEGMENT_ACCESS_PASSWORD} scp -o StrictHostKeyChecking=no /tmp/hostsfile ${SEGMENT_ACCESS_USER}@${i}:/tmp"
-      echo "sshpass -p ${SEGMENT_ACCESS_PASSWORD} scp -o StrictHostKeyChecking=no /home/${ADMIN_USER}/.ssh/id_rsa.pub ${SEGMENT_ACCESS_USER}@${i}:/tmp"
-      echo "sshpass -p ${SEGMENT_ACCESS_PASSWORD} scp -o StrictHostKeyChecking=no ${CLOUDBERRY_RPM} ${SEGMENT_ACCESS_USER}@${i}:${CLOUDBERRY_RPM}"
-      sshpass -p ${SEGMENT_ACCESS_PASSWORD} scp -o StrictHostKeyChecking=no init_env_segment.sh ${SEGMENT_ACCESS_USER}@${i}:/tmp
-      sshpass -p ${SEGMENT_ACCESS_PASSWORD} scp -o StrictHostKeyChecking=no deploycluster_parameter.sh ${SEGMENT_ACCESS_USER}@${i}:/tmp
-      sshpass -p ${SEGMENT_ACCESS_PASSWORD} scp -o StrictHostKeyChecking=no /tmp/hostsfile ${SEGMENT_ACCESS_USER}@${i}:/tmp
-      sshpass -p ${SEGMENT_ACCESS_PASSWORD} scp -o StrictHostKeyChecking=no /home/${ADMIN_USER}/.ssh/id_rsa.pub ${SEGMENT_ACCESS_USER}@${i}:/tmp
-      sshpass -p ${SEGMENT_ACCESS_PASSWORD} scp -o StrictHostKeyChecking=no ${CLOUDBERRY_RPM} ${SEGMENT_ACCESS_USER}@${i}:${CLOUDBERRY_RPM}
-    ) &
-  done
-  wait
-  log_time "Finished copy init_env_segment.sh id_rsa.pub Cloudberry rpms to segment hosts"
-}
-
-function init_segment_keyfile()
+# Initialize the environment on segment hosts
+function init_segment()
 {
-  log_time "Start init configuration on segment hosts"
+  log_time "Start initializing configuration on segment hosts"
   logfilename=$(date +%Y%m%d)_$(date +%H%M%S)
-  for i in $(cat /tmp/segment_hosts.txt); do
-    echo "ssh -n -q -i ${SEGMENT_ACCESS_KEYFILE} root@${i} \"bash -c 'sh /tmp/init_env_segment.sh ${i} &> /tmp/init_env_segment_${i}_$logfilename.log'\""
-    ssh -n -q -i ${SEGMENT_ACCESS_KEYFILE} root@${i} "bash -c 'sh /tmp/init_env_segment.sh ${i} &> /tmp/init_env_segment_${i}_$logfilename.log'" &
-  done
-  wait
-  log_time "Finished init configuration on segment hosts"
+  if [ "${SEGMENT_ACCESS_METHOD}" == "keyfile" ]; then
+    bash multissh.sh -f /tmp/segment_hosts.txt -u ${SEGMENT_ACCESS_USER} -k ${SEGMENT_ACCESS_KEYFILE} -P 22 -t 60 -v -c 10 "bash -c 'sh /tmp/init_env_segment.sh \$(hostname) &> /tmp/init_env_segment_\$(hostname)_$logfilename.log'"
+  elif [ "${SEGMENT_ACCESS_METHOD}" == "password" ]; then
+    bash multissh.sh -f /tmp/segment_hosts.txt -u ${SEGMENT_ACCESS_USER} -p ${SEGMENT_ACCESS_PASSWORD} -P 22 -t 60 -v -c 10 "bash -c 'sh /tmp/init_env_segment.sh \$(hostname) &> /tmp/init_env_segment_\$(hostname)_$logfilename.log'"
+  fi
+  log_time "Finished initializing configuration on segment hosts"
 }
 
-function init_segment_password()
-{
-  log_time "Start init configuration on segment hosts"
-  logfilename=$(date +%Y%m%d)_$(date +%H%M%S)
-  for i in $(cat /tmp/segment_hosts.txt); do
-    echo "sshpass -p ${SEGMENT_ACCESS_PASSWORD} ssh -n -q root@${i} \"bash -c 'sh /tmp/init_env_segment.sh ${i} &> /tmp/init_env_segment_${i}_$logfilename.log'\""
-    sshpass -p ${SEGMENT_ACCESS_PASSWORD} ssh -n -q root@${i} "bash -c 'sh /tmp/init_env_segment.sh ${i} &> /tmp/init_env_segment_${i}_$logfilename.log'" &
-  done
-  wait
-  log_time "Finished init configuration on segment hosts"
-}
-
-
-#Setup the env setting on Linux OS for Hashdata database
-
-#Step 1: Installing Software Dependencies
-
+# Setup the environment on the coordinator node for the Hashdata database
+# Step 1: Installing Software Dependencies
 log_time "Step 1: Installing Software Dependencies..."
 
 # curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.huaweicloud.com/repository/conf/CentOS-7-anon.repo
@@ -103,9 +69,9 @@ cat /usr/share/zoneinfo/Asia/Macau > /usr/share/zoneinfo/Asia/Shanghai
 
 yum install -y epel-release
 
-yum install -y apr apr-util bash bzip2 curl iproute krb5-devel libcurl libevent libuuid libuv libxml2 libyaml libzstd openldap openssh openssh-clients openssh-server openssl openssl-libs perl python3 python3-psycopg2 python3-psutil python3-pyyaml python3-setuptools python3-devel python39 readline rsync sed tar which zip zlib git passwd wget net-tools
+yum install -y apr apr-util bash bzip2 curl iproute krb5-devel libcurl libevent libuuid libuv libxml2 libyaml libzstd openldap openssh openssh-clients openssh-server openssl openssl-libs perl python3 python3-psycopg2 python3-psutil python3-devel python3-pyyaml python3-setuptools python39 readline rsync sed tar which zip zlib git passwd wget net-tools
 
-#Step 2: Turn off firewalls
+# Step 2: Turn off firewalls
 log_time "Step 2: Turn off firewalls..."
 
 systemctl stop firewalld.service
@@ -114,8 +80,7 @@ systemctl disable firewalld.service
 sed s/^SELINUX=.*$/SELINUX=disabled/ -i /etc/selinux/config
 setenforce 0
 
-
-#Step 3: Configuring system parameters
+# Step 3: Configuring system parameters
 log_time "Step 3: Configuring system parameters..."
 
 timedatectl set-timezone Asia/Macau
@@ -170,7 +135,6 @@ echo "######################
 * hard nproc 131072
 * soft  core unlimited" >> /etc/security/limits.conf
 
-
 cat /usr/share/zoneinfo/Asia/Shanghai > /etc/localtime 
 
 sysctl -p
@@ -187,7 +151,7 @@ MaxSessions 3000" >> /etc/ssh/sshd_config
 
 systemctl restart sshd
 
-#Step 4: Create database admin user
+# Step 4: Create database admin user
 log_time "Step 4: Create database user ${ADMIN_USER}..."
 
 if ! id "$ADMIN_USER" &>/dev/null; then
@@ -199,16 +163,16 @@ if ! id "$ADMIN_USER" &>/dev/null; then
   chown -R ${ADMIN_USER}:${ADMIN_USER} /home/${ADMIN_USER}
 else 
   if grep -q "COORDINATOR_DATA_DIRECTORY" /home/${ADMIN_USER}/.bashrc; then
-    echo "存在 COORDINATOR_DATA_DIRECTORY 设置，将其注释掉..."
+    echo "The COORDINATOR_DATA_DIRECTORY setting exists, commenting it out..."
     sed -i "/COORDINATOR_DATA_DIRECTORY/s/^/#/" /home/${ADMIN_USER}/.bashrc
   fi
   if grep -q "greenplum_path.sh" /home/${ADMIN_USER}/.bashrc; then
-    echo "存在 greenplum_path.sh 设置，将其注释掉..."
+    echo "The greenplum_path.sh setting exists, commenting it out..."
     sed -i "/greenplum_path.sh/s/^/#/" /home/${ADMIN_USER}/.bashrc
   fi
 fi
 
-#Step 5: Create folders needed for the cluster
+# Step 5: Create folders needed for the cluster
 log_time "Step 5: Create folders needed..."
 rm -rf ${COORDINATOR_DIRECTORY} ${DATA_DIRECTORY}
 mkdir -p ${COORDINATOR_DIRECTORY} ${DATA_DIRECTORY}
@@ -220,10 +184,10 @@ if [ "${WITH_MIRROR}" = "true" ]; then
   chown -R ${ADMIN_USER}:${ADMIN_USER} ${MIRROR_DATA_DIRECTORY}
 fi
 
-# 检查 INIT_ENV_ONLY 环境变量
+# Check the INIT_ENV_ONLY environment variable
 if [ "${INIT_ENV_ONLY}" != "true" ]; then
 
-  #Step 6: Installing database software
+  # Step 6: Installing database software
   log_time "Step 5: Installing database software..."
   
   rpmfile=$(ls ${CLOUDBERRY_RPM} 2>/dev/null)
@@ -232,15 +196,15 @@ if [ "${INIT_ENV_ONLY}" != "true" ]; then
     wget ${CLOUDBERRY_RPM_URL} -O ${CLOUDBERRY_RPM}
   fi
   
-  # 清理之前安装包检查变量中是否包含"greenplum"字样  
+  # Clean up previous installation checks and check if the variable contains the word "greenplum"
   
-  # 确保CLOUDBERRY_RPM变量已设置
+  # Ensure the CLOUDBERRY_RPM variable is set
   if [ -z "${CLOUDBERRY_RPM}" ]; then
-      echo "错误：环境变量CLOUDBERRY_RPM未设置。"
+      echo "Error: The environment variable CLOUDBERRY_RPM is not set."
       exit 1
   fi
   
-  # 判断RPM包名称是否包含greenplum或cloudberry
+  # Check if the RPM package name contains greenplum or cloudberry
   if [[ "${CLOUDBERRY_RPM}" =~ greenplum ]]; then
       keyword="greenplum"
   elif [[ "${CLOUDBERRY_RPM}" =~ cloudberry ]]; then
@@ -249,109 +213,38 @@ if [ "${INIT_ENV_ONLY}" != "true" ]; then
       keyword="none"
   fi
   
-  # 根据关键字处理安装和权限
+  # Handle installation and permissions based on the keyword
   if [ "${keyword}" != "none" ]; then
-      # 检查/usr/local下是否存在包含关键字的目录
-    if find /usr/local -maxdepth 1 -type d -name "*${keyword}*" -print -quit | grep -q .; then
-          echo "检测到${keyword}目录，强制安装RPM并修改权限..."
+      # Check if there is a directory containing the keyword under /usr/local
+      if find /usr/local -maxdepth 1 -type d -name "*${keyword}*" -print -quit | grep -q .; then
+          echo "The ${keyword} directory is detected, force installing the RPM and modifying permissions..."
           soft_link="/usr/local/${keyword}-db"
-          # 检查软链接是否存在
+          # Check if the symbolic link exists
           if [ -L "$soft_link" ]; then
-          # 删除软链接
+          # Remove the symbolic link
             rm -f "$soft_link"
-            echo "软链接 $soft_link 已删除"
+            echo "The symbolic link $soft_link has been removed"
           else
-            echo "软链接 $soft_link 不存在"
+            echo "The symbolic link $soft_link does not exist"
           fi
-          echo "操作完成！"
+          echo "Operation completed!"
           rpm -ivh ${CLOUDBERRY_RPM} --force
       else
-          echo "未找到${keyword}目录，使用YUM安装..."
+          echo "The ${keyword} directory is not found, using YUM to install..."
           yum install -y "${CLOUDBERRY_RPM}"
       fi
-    # 修改目录权限  
+     # Modify directory permissions  
     chown -R ${ADMIN_USER}:${ADMIN_USER} /usr/local/${keyword}*
-    echo "已将 $dir 的所有者修改为 ${ADMIN_USER}:${ADMIN_USER}"
+    echo "The owner of /usr/local/${keyword}* has been changed to ${ADMIN_USER}:${ADMIN_USER}"
   else
-      echo "未检测到相关产品关键字，尝试使用YUM安装，可能需要手工配置权限等..."
+      echo "No relevant product keyword is detected, trying to use YUM to install, manual permission configuration may be required..."
       yum install -y ${CLOUDBERRY_RPM}
   fi
 fi
-  
-#Step 7: Setup user no-password access
-log_time "Step 6: Setup user no-password access..."
 
-rm -rf /home/${ADMIN_USER}/.ssh/
-su ${ADMIN_USER} -l -c "ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ''"
-su ${ADMIN_USER} -l -c "cat /home/${ADMIN_USER}/.ssh/id_rsa.pub > /home/${ADMIN_USER}/.ssh/authorized_keys"
-su ${ADMIN_USER} -l -c "ssh-keyscan ${COORDINATOR_HOSTNAME} >> ~/.ssh/known_hosts"
-#su ${ADMIN_USER} -l -c "source ${CLOUDBERRY_BINARY_PATH}/greenplum_path.sh;gpssh-exkeys -h "$(hostname)""
-#su ${ADMIN_USER} -l -c "echo \"UserKnownHostsFile /home/${ADMIN_USER}/.ssh/known_hosts\" >> /home/${ADMIN_USER}/.ssh/config"
+# Execute file copying and remote initialization
+config_hostsfile
+copyfile_segment
+init_segment
 
-
-log_time "Finished env init setting on coordinator..."
-
-#Step 8: Setup env on segments if needed
-
-#set -e
-
-if [ "$cluster_type" = "multi" ]; then
-  log_time "Step 8: Setup env on segment nodes..."
-  rm -rf /tmp/segment_hosts.txt
-  sed -n '/##Segment hosts/,/#Hashdata hosts end/p' segmenthosts.conf|sed '1d;$d'|awk '{print $2}' >> /tmp/segment_hosts.txt
-  
-  config_hostsfile
-
-  for i in $(cat /tmp/segment_hosts.txt); do
-    ssh-keyscan ${i} >> ~/.ssh/known_hosts
-  done
-  
-  if [ "${SEGMENT_ACCESS_METHOD}" = "keyfile" ]; then
-    copyfile_segment_keyfile
-    init_segment_keyfile
-  else
-    copyfile_segment_password
-    init_segment_password
-  fi
-
-  #Step 9: Setup no-password access for all nodes...
-  log_time "Step 9: Setup no-password access for all nodes..."
-
-  for i in $(cat /tmp/segment_hosts.txt); do
-    #echo "su ${ADMIN_USER} -l -c \"ssh ${i} 'date;exit'"\"
-    su ${ADMIN_USER} -l -c "ssh-keyscan ${i} >> ~/.ssh/known_hosts"
-    #su ${ADMIN_USER} -l -c "ssh ${i} 'date;exit'"
-  done
-  
-  export COORDINATOR_HOSTNAME=$(sed -n '/##Coordinator hosts/,/##Segment hosts/p' segmenthosts.conf|sed '1d;$d'|awk '{print $2}')
-  echo ${COORDINATOR_HOSTNAME} >> /tmp/segment_hosts.txt
-  hostname ${COORDINATOR_HOSTNAME}
-
-
-  
-  mkdir -p /tmp/ssh_keys
-
-  # 使用 sshpass 收集所有节点的公钥
-  for node in $(cat /tmp/segment_hosts.txt); do
-    sshpass -p "${ADMIN_USER_PASSWORD}" scp -o StrictHostKeyChecking=no ${ADMIN_USER}@${node}:/home/${ADMIN_USER}/.ssh/id_rsa.pub /tmp/ssh_keys/${node}.pub
-  done
-  
-  # 分发公钥到所有节点
-  for target in $(cat /tmp/segment_hosts.txt); do
-    # 清空目标节点的 authorized_keys 文件
-    sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no ${ADMIN_USER}@${target} "echo '' > /home/${ADMIN_USER}/.ssh/authorized_keys"
-    
-    # 将所有节点的公钥添加到目标节点的 authorized_keys 文件中
-    for keyfile in /tmp/ssh_keys/*.pub; do
-      cat ${keyfile} | sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no ${ADMIN_USER}@${target} "cat >> /home/${ADMIN_USER}/.ssh/authorized_keys"
-    done
-    
-    # 复制 mdw 的 known_hosts 文件到目标节点
-    cat /home/${ADMIN_USER}/.ssh/known_hosts | sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no ${ADMIN_USER}@${target} "cat > /home/${ADMIN_USER}/.ssh/known_hosts"
-
-    # 设置正确的权限
-    sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no ${ADMIN_USER}@${target} "chmod 700 /home/${ADMIN_USER}/.ssh && chmod 600 /home/${ADMIN_USER}/.ssh/authorized_keys && chmod 644 /home/${ADMIN_USER}/.ssh/known_hosts"
-  done
-fi
-
-log_time "Finished env init setting on coordinator and segment nodes..."
+log_time "Finished environment initialization on the coordinator and segment nodes..."
