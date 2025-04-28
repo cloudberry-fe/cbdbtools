@@ -1,36 +1,36 @@
 #!/bin/bash
 
-# 颜色定义
+# Color definitions
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 NC='\033[0m' # No Color
 
-# 使用帮助
+# Usage help
 function show_help() {
-    echo "用法: $0 [选项] <命令>"
-    echo "通过 SSH 连接到多个服务器执行命令"
+    echo "Usage: $0 [options] <command>"
+    echo "Execute commands on multiple servers via SSH"
     echo ""
-    echo "选项:"
-    echo "  -h, --help            显示此帮助信息"
-    echo "  -f, --hosts-file      指定包含服务器列表的文件 (默认为 segment_hosts.txt)"
-    echo "  -u, --user            指定 SSH 用户名 (默认为当前用户)"
-    echo "  -p, --password        指定 SSH 密码 (用于密码认证)"
-    echo "  -k, --key-file        指定 SSH 私钥文件 (用于密钥认证)"
-    echo "  -P, --port            指定 SSH 端口 (默认为 22)"
-    echo "  -t, --timeout         指定 SSH 超时时间 (秒, 默认为 30)"
-    echo "  -v, --verbose         启用详细输出"
-    echo "  -o, --output          指定输出结果文件"
-    echo "  -c, --concurrency     指定并发执行的最大数量 (默认为 5, 0表示不限制)"
+    echo "Options:"
+    echo "  -h, --help            Show this help message"
+    echo "  -f, --hosts-file      Specify file containing server list (default: segment_hosts.txt)"
+    echo "  -u, --user            Specify SSH username (default: current user)"
+    echo "  -p, --password        Specify SSH password (for password authentication)"
+    echo "  -k, --key-file        Specify SSH private key file (for key authentication)"
+    echo "  -P, --port            Specify SSH port (default: 22)"
+    echo "  -t, --timeout         Specify SSH timeout in seconds (default: 30)"
+    echo "  -v, --verbose         Enable verbose output"
+    echo "  -o, --output          Specify output results file"
+    echo "  -c, --concurrency     Specify maximum number of concurrent executions (default: 5, 0 means unlimited)"
     echo ""
-    echo "服务器列表文件格式:"
-    echo "  每行一个服务器，可以是 IP 地址或主机名"
-    echo "  示例:"
+    echo "Server list file format:"
+    echo "  One server per line, can be IP address or hostname"
+    echo "  Example:"
     echo "    192.168.1.1"
     echo "    server2.example.com"
 }
 
-# 默认参数
+# Default parameters
 HOSTS_FILE="segment_hosts.txt"
 USER=$(whoami)
 PASSWORD=""
@@ -41,18 +41,19 @@ VERBOSE=0
 OUTPUT_FILE=""
 CONCURRENCY=5
 
-# 创建锁文件
+# Create lock file
 LOCK_FILE="/tmp/multissh_lock.$$"
 touch "$LOCK_FILE"
 
-# 存储后台进程ID的数组
+# Array to store background process IDs
 BACKGROUND_PIDS=()
 
-# 清理函数
+# Cleanup function
 function cleanup() {
     rm -f "$LOCK_FILE"
     [ -n "$TMP_DIR" ] && rm -rf "$TMP_DIR"
-    # 遍历并杀死所有后台进程
+    
+    # Iterate and kill all background processes
     for pid in "${BACKGROUND_PIDS[@]}"; do
         if kill -0 "$pid" 2>/dev/null; then
             kill "$pid" 2>/dev/null
@@ -60,22 +61,22 @@ function cleanup() {
     done
 }
 
-# 注册清理函数
+# Register cleanup function
 trap cleanup EXIT
 
-# 输出锁定函数
+# Output locking function
 function output_lock() {
     while ! ln "$LOCK_FILE" "$LOCK_FILE.lock" 2>/dev/null; do
         sleep 0.1
     done
 }
 
-# 输出解锁函数
+# Output unlocking function
 function output_unlock() {
     rm -f "$LOCK_FILE.lock"
 }
 
-# 解析命令行参数
+# Parse command line arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
         -h|--help)
@@ -119,72 +120,72 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         *)
-            # 剩余参数作为要执行的命令
+            # Remaining arguments as the command to execute
             COMMAND="$*"
             break
             ;;
     esac
 done
 
-# 检查是否提供了命令
+# Check if command is provided
 if [ -z "$COMMAND" ]; then
-    echo -e "${RED}错误: 未指定要执行的命令${NC}" >&2
+    echo -e "${RED}Error: No command specified${NC}" >&2
     show_help
     exit 1
 fi
 
-# 检查服务器列表文件是否存在
+# Check if hosts file exists
 if [ ! -f "$HOSTS_FILE" ]; then
-    echo -e "${RED}错误: 服务器列表文件 '$HOSTS_FILE' 不存在${NC}" >&2
+    echo -e "${RED}Error: Server list file '$HOSTS_FILE' does not exist${NC}" >&2
     exit 1
 fi
 
-# 检查认证方式
+# Check authentication method
 if [ -z "$PASSWORD" ] && [ -z "$KEY_FILE" ]; then
-    echo -e "${RED}错误: 必须指定密码 (-p) 或密钥文件 (-k)${NC}" >&2
+    echo -e "${RED}Error: Must specify either password (-p) or key file (-k)${NC}" >&2
     exit 1
 fi
 
 if [ -n "$PASSWORD" ] && [ -n "$KEY_FILE" ]; then
-    echo -e "${YELLOW}警告: 同时指定了密码和密钥文件，将优先使用密钥文件${NC}" >&2
+    echo -e "${YELLOW}Warning: Both password and key file specified, key file will be used first${NC}" >&2
 fi
 
-# 创建临时目录
+# Create temporary directory
 TMP_DIR="/tmp/multissh_$(date +%s)"
 mkdir -p "$TMP_DIR"
 
-# 读取服务器列表
+# Read server list
 HOSTS=()
 while IFS= read -r line || [ -n "$line" ]; do
-    # 跳过空行和注释
+    # Skip empty lines and comments
     if [[ "$line" =~ ^[[:space:]]*$ || "$line" =~ ^[[:space:]]*# ]]; then
         continue
     fi
     HOSTS+=("$line")
 done < "$HOSTS_FILE"
 
-# 检查是否有服务器
+# Check if there are any servers
 if [ ${#HOSTS[@]} -eq 0 ]; then
-    echo -e "${RED}错误: 服务器列表文件 '$HOSTS_FILE' 中没有有效服务器${NC}" >&2
+    echo -e "${RED}Error: No valid servers in file '$HOSTS_FILE'${NC}" >&2
     rm -rf "$TMP_DIR"
     exit 1
 fi
 
-# 输出执行信息
-echo -e "${GREEN}执行信息:${NC}"
-echo -e "${GREEN}  服务器数量: ${#HOSTS[@]}${NC}"
+# Output execution information
+echo -e "${GREEN}Execution Information:${NC}"
+echo -e "${GREEN}  Number of servers: ${#HOSTS[@]}${NC}"
 if [ "$CONCURRENCY" -eq 0 ]; then
-    echo -e "${GREEN}  并发数: 不限制${NC}"
+    echo -e "${GREEN}  Concurrency: Unlimited${NC}"
 else
-    echo -e "${GREEN}  并发数: ${CONCURRENCY}${NC}"
+    echo -e "${GREEN}  Concurrency: ${CONCURRENCY}${NC}"
 fi
-echo -e "${GREEN}  命令: ${COMMAND}${NC}"
+echo -e "${GREEN}  Command: ${COMMAND}${NC}"
 if [ -n "$OUTPUT_FILE" ]; then
-    echo -e "${GREEN}  输出文件: ${OUTPUT_FILE}${NC}"
+    echo -e "${GREEN}  Output file: ${OUTPUT_FILE}${NC}"
 fi
 echo ""
 
-# 定义执行函数
+# Define execution function
 function execute_on_host() {
     local host=$1
     local output_file="$TMP_DIR/${host}.log"
@@ -192,38 +193,38 @@ function execute_on_host() {
     local exit_code=0
     
     output_lock
-    echo -e "${YELLOW}[$host] 正在执行命令...${NC}"
+    echo -e "${YELLOW}[$host] Executing command...${NC}"
     output_unlock
     
     if [ -n "$KEY_FILE" ]; then
-        # 使用密钥文件认证
+        # Use key file authentication
         ssh -o StrictHostKeyChecking=no -o ConnectTimeout=$TIMEOUT -p $PORT -i "$KEY_FILE" "$USER@$host" "$COMMAND" > "$output_file" 2>&1
         exit_code=$?
     else
-        # 使用密码认证 (需要 sshpass)
+        # Use password authentication (requires sshpass)
         sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=$TIMEOUT -p $PORT "$USER@$host" "$COMMAND" > "$output_file" 2>&1
         exit_code=$?
     fi
     
-    # 保存状态
+    # Save status
     echo "$exit_code" > "$status_file"
     
-    # 输出结果，确保完整输出
+    # Output results, ensuring complete output
     output_lock
     if [ $exit_code -eq 0 ]; then
-        echo -e "${GREEN}[$host] 成功 (退出码: $exit_code)${NC}"
+        echo -e "${GREEN}[$host] Success (Exit code: $exit_code)${NC}"
     else
-        echo -e "${RED}[$host] 失败 (退出码: $exit_code)${NC}"
+        echo -e "${RED}[$host] Failed (Exit code: $exit_code)${NC}"
     fi
     
-    # 输出结果
+    # Output results
     if [ $VERBOSE -eq 1 ] || [ $exit_code -ne 0 ]; then
-        echo -e "${YELLOW}[$host] 输出:${NC}"
+        echo -e "${YELLOW}[$host] Output:${NC}"
         cat "$output_file"
         echo ""
     fi
     
-    # 追加到总输出文件
+    # Append to total output file
     if [ -n "$OUTPUT_FILE" ]; then
         {
             echo ">>>>>>>>>> $host <<<<<<<<<<"
@@ -236,30 +237,30 @@ function execute_on_host() {
     return $exit_code
 }
 
-# 并发执行命令
-echo -e "${GREEN}开始执行命令...${NC}"
+# Execute commands concurrently
+echo -e "${GREEN}Starting command execution...${NC}"
 echo ""
 
 SUCCESS_COUNT=0
 FAILED_HOSTS=()
 
 for host in "${HOSTS[@]}"; do
-    # 当并发数为0时，不限制并发
+    # When concurrency is 0, do not limit concurrency
     if [ "$CONCURRENCY" -ne 0 ]; then
-        # 控制并发数
+        # Control concurrency
         while [ $(jobs -r | wc -l) -ge "$CONCURRENCY" ]; do
             sleep 0.1
         done
     fi
     
     execute_on_host "$host" &
-    BACKGROUND_PIDS+=($!)  # 记录后台进程ID
+    BACKGROUND_PIDS+=($!)  # Record background process ID
 done
 
-# 等待所有作业完成
+# Wait for all jobs to complete
 wait
 
-# 汇总结果
+# Summarize results
 for host in "${HOSTS[@]}"; do
     status_file="$TMP_DIR/${host}.status"
     if [ -f "$status_file" ]; then
@@ -270,25 +271,25 @@ for host in "${HOSTS[@]}"; do
             FAILED_HOSTS+=("$host")
         fi
     else
-        # 如果状态文件不存在，视为失败
+        # If status file does not exist, consider it failed
         FAILED_HOSTS+=("$host")
     fi
 done
 
-# 汇总结果
+# Summarize results
 echo ""
-echo -e "${GREEN}执行结果汇总:${NC}"
-echo -e "${GREEN}  成功: ${SUCCESS_COUNT}/${#HOSTS[@]}${NC}"
-echo -e "${RED}  失败: ${#FAILED_HOSTS[@]}${NC}"
+echo -e "${GREEN}Execution Results Summary:${NC}"
+echo -e "${GREEN}  Success: ${SUCCESS_COUNT}/${#HOSTS[@]}${NC}"
+echo -e "${RED}  Failed: ${#FAILED_HOSTS[@]}${NC}"
 
 if [ ${#FAILED_HOSTS[@]} -gt 0 ]; then
-    echo -e "${RED}  失败的服务器:${NC}"
+    echo -e "${RED}  Failed servers:${NC}"
     for host in "${FAILED_HOSTS[@]}"; do
         echo -e "${RED}    - $host${NC}"
     done
 fi
 
-# 清理临时文件
+# Clean up temporary files
 rm -rf "$TMP_DIR"
 
 exit ${#FAILED_HOSTS[@]}
