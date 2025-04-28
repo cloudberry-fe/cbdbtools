@@ -177,7 +177,7 @@ echo -e "${GREEN}开始执行命令...${NC}"
 echo ""
 
 # 使用进程池控制并发
-ACTIVE_JOBS=0
+ACTIVE_JOBS=5
 EXIT_CODES=()
 
 for host in "${HOSTS[@]}"; do
