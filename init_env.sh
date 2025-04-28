@@ -103,7 +103,7 @@ cat /usr/share/zoneinfo/Asia/Macau > /usr/share/zoneinfo/Asia/Shanghai
 
 yum install -y epel-release
 
-yum install -y apr apr-util bash bzip2 curl iproute krb5-devel libcgroup-tools libcurl libevent libuuid libuv libxml2 libyaml libzstd openldap openssh openssh-clients openssh-server openssl openssl-libs perl python3 python3-psycopg2 python3-psutil python3-pyyaml python3-setuptools python3-devel python39 readline rsync sed tar which zip zlib git passwd wget net-tools
+yum install -y apr apr-util bash bzip2 curl iproute krb5-devel libcurl libevent libuuid libuv libxml2 libyaml libzstd openldap openssh openssh-clients openssh-server openssl openssl-libs perl python3 python3-psycopg2 python3-psutil python3-pyyaml python3-setuptools python3-devel python39 readline rsync sed tar which zip zlib git passwd wget net-tools
 
 #Step 2: Turn off firewalls
 log_time "Step 2: Turn off firewalls..."
@@ -187,14 +187,14 @@ MaxSessions 3000" >> /etc/ssh/sshd_config
 
 systemctl restart sshd
 
-#Step 4: Create database user
+#Step 4: Create database admin user
 log_time "Step 4: Create database user ${ADMIN_USER}..."
 
 if ! id "$ADMIN_USER" &>/dev/null; then
   groupadd ${ADMIN_USER} 
   useradd ${ADMIN_USER} -r -m -g ${ADMIN_USER}
   usermod -aG wheel ${ADMIN_USER}
-  echo "Hashdata@123"|passwd --stdin ${ADMIN_USER}
+  echo ${ADMIN_USER_PASSWORD}|passwd --stdin ${ADMIN_USER}
   echo "%wheel ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
   chown -R ${ADMIN_USER}:${ADMIN_USER} /home/${ADMIN_USER}
 else 
@@ -208,74 +208,8 @@ else
   fi
 fi
 
-
-
-#Step 5: Installing database software
-log_time "Step 5: Installing database software..."
-
-rpmfile=$(ls ${CLOUDBERRY_RPM} 2>/dev/null)
-  
-if [ -z "$rpmfile" ]; then  
-  wget ${CLOUDBERRY_RPM_URL} -O ${CLOUDBERRY_RPM}
-fi
-
-# 清理之前安装包检查变量中是否包含"greenplum"字样  
-
-# 确保CLOUDBERRY_RPM变量已设置
-if [ -z "${CLOUDBERRY_RPM}" ]; then
-    echo "错误：环境变量CLOUDBERRY_RPM未设置。"
-    exit 1
-fi
-
-# 判断RPM包名称是否包含greenplum或cloudberry
-if [[ "${CLOUDBERRY_RPM}" =~ greenplum ]]; then
-    keyword="greenplum"
-elif [[ "${CLOUDBERRY_RPM}" =~ cloudberry ]]; then
-    keyword="cloudberry"
-else
-    keyword="none"
-fi
-
-# 根据关键字处理安装和权限
-if [ "${keyword}" != "none" ]; then
-    # 检查/usr/local下是否存在包含关键字的目录
-  if find /usr/local -maxdepth 1 -type d -name "*${keyword}*" -print -quit | grep -q .; then
-        echo "检测到${keyword}目录，强制安装RPM并修改权限..."
-        soft_link="/usr/local/${keyword}-db"
-        # 检查软链接是否存在
-        if [ -L "$soft_link" ]; then
-        # 删除软链接
-          rm -f "$soft_link"
-          echo "软链接 $soft_link 已删除"
-        else
-          echo "软链接 $soft_link 不存在"
-        fi
-        echo "操作完成！"
-        rpm -ivh ${CLOUDBERRY_RPM} --force
-    else
-        echo "未找到${keyword}目录，使用YUM安装..."
-        yum install -y "${CLOUDBERRY_RPM}"
-    fi
-  # 修改目录权限  
-  chown -R ${ADMIN_USER}:${ADMIN_USER} /usr/local/${keyword}*
-  echo "已将 $dir 的所有者修改为 ${ADMIN_USER}:${ADMIN_USER}"
-else
-    echo "未检测到相关产品关键字，尝试使用YUM安装，可能需要手工配置权限等..."
-    yum install -y ${CLOUDBERRY_RPM}
-fi
-
-#Step 6: Setup user no-password access
-log_time "Step 6: Setup user no-password access..."
-
-rm -rf /home/${ADMIN_USER}/.ssh/
-su ${ADMIN_USER} -l -c "ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ''"
-su ${ADMIN_USER} -l -c "cat /home/${ADMIN_USER}/.ssh/id_rsa.pub > /home/${ADMIN_USER}/.ssh/authorized_keys"
-su ${ADMIN_USER} -l -c "source ${CLOUDBERRY_BINARY_PATH}/greenplum_path.sh;gpssh-exkeys -h "$(hostname)""
-su ${ADMIN_USER} -l -c "echo \"UserKnownHostsFile /home/${ADMIN_USER}/.ssh/known_hosts\" >> /home/${ADMIN_USER}/.ssh/config"
-
-
-#Step7: Create folders needed for the cluster
-log_time "Step7: Create folders needed..."
+#Step 5: Create folders needed for the cluster
+log_time "Step 5: Create folders needed..."
 rm -rf ${COORDINATOR_DIRECTORY} ${DATA_DIRECTORY}
 mkdir -p ${COORDINATOR_DIRECTORY} ${DATA_DIRECTORY}
 chown -R ${ADMIN_USER}:${ADMIN_USER} ${COORDINATOR_DIRECTORY} ${DATA_DIRECTORY}
@@ -285,6 +219,75 @@ if [ "${WITH_MIRROR}" = "true" ]; then
   mkdir -p ${MIRROR_DATA_DIRECTORY}
   chown -R ${ADMIN_USER}:${ADMIN_USER} ${MIRROR_DATA_DIRECTORY}
 fi
+
+# 检查 INIT_ENV_ONLY 环境变量
+if [ "${INIT_ENV_ONLY}" != "true" ]; then
+
+  #Step 6: Installing database software
+  log_time "Step 5: Installing database software..."
+  
+  rpmfile=$(ls ${CLOUDBERRY_RPM} 2>/dev/null)
+    
+  if [ -z "$rpmfile" ]; then  
+    wget ${CLOUDBERRY_RPM_URL} -O ${CLOUDBERRY_RPM}
+  fi
+  
+  # 清理之前安装包检查变量中是否包含"greenplum"字样  
+  
+  # 确保CLOUDBERRY_RPM变量已设置
+  if [ -z "${CLOUDBERRY_RPM}" ]; then
+      echo "错误：环境变量CLOUDBERRY_RPM未设置。"
+      exit 1
+  fi
+  
+  # 判断RPM包名称是否包含greenplum或cloudberry
+  if [[ "${CLOUDBERRY_RPM}" =~ greenplum ]]; then
+      keyword="greenplum"
+  elif [[ "${CLOUDBERRY_RPM}" =~ cloudberry ]]; then
+      keyword="cloudberry"
+  else
+      keyword="none"
+  fi
+  
+  # 根据关键字处理安装和权限
+  if [ "${keyword}" != "none" ]; then
+      # 检查/usr/local下是否存在包含关键字的目录
+    if find /usr/local -maxdepth 1 -type d -name "*${keyword}*" -print -quit | grep -q .; then
+          echo "检测到${keyword}目录，强制安装RPM并修改权限..."
+          soft_link="/usr/local/${keyword}-db"
+          # 检查软链接是否存在
+          if [ -L "$soft_link" ]; then
+          # 删除软链接
+            rm -f "$soft_link"
+            echo "软链接 $soft_link 已删除"
+          else
+            echo "软链接 $soft_link 不存在"
+          fi
+          echo "操作完成！"
+          rpm -ivh ${CLOUDBERRY_RPM} --force
+      else
+          echo "未找到${keyword}目录，使用YUM安装..."
+          yum install -y "${CLOUDBERRY_RPM}"
+      fi
+    # 修改目录权限  
+    chown -R ${ADMIN_USER}:${ADMIN_USER} /usr/local/${keyword}*
+    echo "已将 $dir 的所有者修改为 ${ADMIN_USER}:${ADMIN_USER}"
+  else
+      echo "未检测到相关产品关键字，尝试使用YUM安装，可能需要手工配置权限等..."
+      yum install -y ${CLOUDBERRY_RPM}
+  fi
+fi
+  
+#Step 7: Setup user no-password access
+log_time "Step 6: Setup user no-password access..."
+
+rm -rf /home/${ADMIN_USER}/.ssh/
+su ${ADMIN_USER} -l -c "ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ''"
+su ${ADMIN_USER} -l -c "cat /home/${ADMIN_USER}/.ssh/id_rsa.pub > /home/${ADMIN_USER}/.ssh/authorized_keys"
+su ${ADMIN_USER} -l -c "ssh-keyscan ${COORDINATOR_HOSTNAME} >> ~/.ssh/known_hosts"
+#su ${ADMIN_USER} -l -c "source ${CLOUDBERRY_BINARY_PATH}/greenplum_path.sh;gpssh-exkeys -h "$(hostname)""
+#su ${ADMIN_USER} -l -c "echo \"UserKnownHostsFile /home/${ADMIN_USER}/.ssh/known_hosts\" >> /home/${ADMIN_USER}/.ssh/config"
+
 
 log_time "Finished env init setting on coordinator..."
 
@@ -313,18 +316,42 @@ if [ "$cluster_type" = "multi" ]; then
 
   #Step 9: Setup no-password access for all nodes...
   log_time "Step 9: Setup no-password access for all nodes..."
+
+  for i in $(cat /tmp/segment_hosts.txt); do
+    #echo "su ${ADMIN_USER} -l -c \"ssh ${i} 'date;exit'"\"
+    su ${ADMIN_USER} -l -c "ssh-keyscan ${i} >> ~/.ssh/known_hosts"
+    #su ${ADMIN_USER} -l -c "ssh ${i} 'date;exit'"
+  done
   
   export COORDINATOR_HOSTNAME=$(sed -n '/##Coordinator hosts/,/##Segment hosts/p' segmenthosts.conf|sed '1d;$d'|awk '{print $2}')
   echo ${COORDINATOR_HOSTNAME} >> /tmp/segment_hosts.txt
   hostname ${COORDINATOR_HOSTNAME}
 
-  for i in $(cat /tmp/segment_hosts.txt); do
-    echo "su ${ADMIN_USER} -l -c \"ssh ${i} 'date;exit'"\"
-    su ${ADMIN_USER} -l -c "ssh-keyscan ${i} >> ~/.ssh/known_hosts"
-    su ${ADMIN_USER} -l -c "ssh ${i} 'date;exit'"
+
+  
+  mkdir -p /tmp/ssh_keys
+
+  # 使用 sshpass 收集所有节点的公钥
+  for node in $(cat /tmp/segment_hosts.txt); do
+    sshpass -p "${ADMIN_USER_PASSWORD}" scp -o StrictHostKeyChecking=no ${ADMIN_USER}@${node}:/home/${ADMIN_USER}/.ssh/id_rsa.pub /tmp/ssh_keys/${node}.pub
   done
   
-  echo "su ${ADMIN_USER} -l -c \"source ${CLOUDBERRY_BINARY_PATH}/greenplum_path.sh;gpssh-exkeys -f /tmp/segment_hosts.txt\""
-  su ${ADMIN_USER} -l -c "source ${CLOUDBERRY_BINARY_PATH}/greenplum_path.sh;gpssh-exkeys -f /tmp/segment_hosts.txt"
+  # 分发公钥到所有节点
+  for target in $(cat /tmp/segment_hosts.txt); do
+    # 清空目标节点的 authorized_keys 文件
+    sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no ${ADMIN_USER}@${target} "echo '' > /home/${ADMIN_USER}/.ssh/authorized_keys"
+    
+    # 将所有节点的公钥添加到目标节点的 authorized_keys 文件中
+    for keyfile in /tmp/ssh_keys/*.pub; do
+      cat ${keyfile} | sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no ${ADMIN_USER}@${target} "cat >> /home/${ADMIN_USER}/.ssh/authorized_keys"
+    done
+    
+    # 复制 mdw 的 known_hosts 文件到目标节点
+    cat /home/${ADMIN_USER}/.ssh/known_hosts | sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no ${ADMIN_USER}@${target} "cat > /home/${ADMIN_USER}/.ssh/known_hosts"
+
+    # 设置正确的权限
+    sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no ${ADMIN_USER}@${target} "chmod 700 /home/${ADMIN_USER}/.ssh && chmod 600 /home/${ADMIN_USER}/.ssh/authorized_keys && chmod 644 /home/${ADMIN_USER}/.ssh/known_hosts"
+  done
 fi
+
 log_time "Finished env init setting on coordinator and segment nodes..."
