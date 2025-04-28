@@ -21,7 +21,7 @@ function show_help() {
     echo "  -t, --timeout         指定 SSH 超时时间 (秒, 默认为 30)"
     echo "  -v, --verbose         启用详细输出"
     echo "  -o, --output          指定输出结果文件"
-    echo "  -c, --concurrency     指定并发执行的最大数量 (默认为 5)"
+    echo "  -c, --concurrency     指定并发执行的最大数量 (默认为 5, 0表示不限制)"
     echo ""
     echo "服务器列表文件格式:"
     echo "  每行一个服务器，可以是 IP 地址或主机名"
@@ -40,6 +40,31 @@ TIMEOUT=30
 VERBOSE=0
 OUTPUT_FILE=""
 CONCURRENCY=5
+
+# 创建锁文件
+LOCK_FILE="/tmp/multissh_lock.$$"
+touch "$LOCK_FILE"
+
+# 清理函数
+function cleanup() {
+    rm -f "$LOCK_FILE"
+    [ -n "$TMP_DIR" ] && rm -rf "$TMP_DIR"
+}
+
+# 注册清理函数
+trap cleanup EXIT
+
+# 输出锁定函数
+function output_lock() {
+    while ! ln "$LOCK_FILE" "$LOCK_FILE.lock" 2>/dev/null; do
+        sleep 0.1
+    done
+}
+
+# 输出解锁函数
+function output_unlock() {
+    rm -f "$LOCK_FILE.lock"
+}
 
 # 解析命令行参数
 while [[ $# -gt 0 ]]; do
@@ -118,7 +143,6 @@ fi
 # 创建临时目录
 TMP_DIR="/tmp/multissh_$(date +%s)"
 mkdir -p "$TMP_DIR"
-mkdir -p "$TMP_DIR/results"
 
 # 读取服务器列表
 HOSTS=()
@@ -140,7 +164,11 @@ fi
 # 输出执行信息
 echo -e "${GREEN}执行信息:${NC}"
 echo -e "${GREEN}  服务器数量: ${#HOSTS[@]}${NC}"
-echo -e "${GREEN}  并发数: ${CONCURRENCY}${NC}"
+if [ "$CONCURRENCY" -eq 0 ]; then
+    echo -e "${GREEN}  并发数: 不限制${NC}"
+else
+    echo -e "${GREEN}  并发数: ${CONCURRENCY}${NC}"
+fi
 echo -e "${GREEN}  命令: ${COMMAND}${NC}"
 if [ -n "$OUTPUT_FILE" ]; then
     echo -e "${GREEN}  输出文件: ${OUTPUT_FILE}${NC}"
@@ -150,11 +178,13 @@ echo ""
 # 定义执行函数
 function execute_on_host() {
     local host=$1
-    local output_file="$TMP_DIR/results/${host}.log"
-    local status_file="$TMP_DIR/results/${host}.status"
+    local output_file="$TMP_DIR/${host}.log"
+    local status_file="$TMP_DIR/${host}.status"
     local exit_code=0
     
+    output_lock
     echo -e "${YELLOW}[$host] 正在执行命令...${NC}"
+    output_unlock
     
     if [ -n "$KEY_FILE" ]; then
         # 使用密钥文件认证
@@ -169,6 +199,8 @@ function execute_on_host() {
     # 保存状态
     echo "$exit_code" > "$status_file"
     
+    # 输出结果，确保完整输出
+    output_lock
     if [ $exit_code -eq 0 ]; then
         echo -e "${GREEN}[$host] 成功 (退出码: $exit_code)${NC}"
     else
@@ -190,28 +222,28 @@ function execute_on_host() {
             echo ""
         } >> "$OUTPUT_FILE"
     fi
+    output_unlock
     
     return $exit_code
 }
 
-# 并发执行命令，控制并发数
+# 并发执行命令
 echo -e "${GREEN}开始执行命令...${NC}"
 echo ""
 
-ACTIVE_JOBS=0
 SUCCESS_COUNT=0
 FAILED_HOSTS=()
 
 for host in "${HOSTS[@]}"; do
-    # 控制并发数
-    while [ $ACTIVE_JOBS -ge $CONCURRENCY ]; do
-        sleep 1
-        # 计算当前活跃的作业数
-        ACTIVE_JOBS=$(jobs -r | wc -l)
-    done
+    # 当并发数为0时，不限制并发
+    if [ "$CONCURRENCY" -ne 0 ]; then
+        # 控制并发数
+        while [ $(jobs -r | wc -l) -ge "$CONCURRENCY" ]; do
+            sleep 0.1
+        done
+    fi
     
     execute_on_host "$host" &
-    ACTIVE_JOBS=$(jobs -r | wc -l)
 done
 
 # 等待所有作业完成
@@ -219,7 +251,7 @@ wait
 
 # 汇总结果
 for host in "${HOSTS[@]}"; do
-    status_file="$TMP_DIR/results/${host}.status"
+    status_file="$TMP_DIR/${host}.status"
     if [ -f "$status_file" ]; then
         exit_code=$(cat "$status_file")
         if [ "$exit_code" -eq 0 ]; then
