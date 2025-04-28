@@ -190,6 +190,7 @@ SUCCESS_COUNT=0
 FAILED_HOSTS=()
 
 for host in "${HOSTS[@]}"; do
+  {
     execute_on_host "$host"
     exit_code=$?
     
@@ -198,7 +199,9 @@ for host in "${HOSTS[@]}"; do
     else
         FAILED_HOSTS+=("$host")
     fi
+  } &
 done
+wait
 
 # 汇总结果
 echo ""
