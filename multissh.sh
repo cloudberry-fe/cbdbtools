@@ -20,6 +20,7 @@ function show_help() {
     echo "  -P, --port            指定 SSH 端口 (默认为 22)"
     echo "  -t, --timeout         指定 SSH 超时时间 (秒, 默认为 30)"
     echo "  -v, --verbose         启用详细输出"
+    echo "  -o, --output          指定输出结果文件"
     echo ""
     echo "服务器列表文件格式:"
     echo "  每行一个服务器，可以是 IP 地址或主机名"
@@ -36,6 +37,7 @@ KEY_FILE=""
 PORT=22
 TIMEOUT=30
 VERBOSE=0
+OUTPUT_FILE=""
 
 # 解析命令行参数
 while [[ $# -gt 0 ]]; do
@@ -71,6 +73,10 @@ while [[ $# -gt 0 ]]; do
         -v|--verbose)
             VERBOSE=1
             shift 1
+            ;;
+        -o|--output)
+            OUTPUT_FILE="$2"
+            shift 2
             ;;
         *)
             # 剩余参数作为要执行的命令
@@ -128,38 +134,49 @@ fi
 echo -e "${GREEN}执行信息:${NC}"
 echo -e "${GREEN}  服务器数量: ${#HOSTS[@]}${NC}"
 echo -e "${GREEN}  命令: ${COMMAND}${NC}"
+if [ -n "$OUTPUT_FILE" ]; then
+    echo -e "${GREEN}  输出文件: ${OUTPUT_FILE}${NC}"
+fi
 echo ""
 
 # 定义执行函数
 function execute_on_host() {
     local host=$1
     local output_file="$TMP_DIR/${host}.log"
+    local exit_code=0
+    
+    echo -e "${YELLOW}[$host] 正在执行命令...${NC}"
     
     if [ -n "$KEY_FILE" ]; then
         # 使用密钥文件认证
-        if [ $VERBOSE -eq 1 ]; then
-            echo -e "${YELLOW}[$host] 正在使用密钥文件连接...${NC}"
-        fi
         ssh -o StrictHostKeyChecking=no -o ConnectTimeout=$TIMEOUT -p $PORT -i "$KEY_FILE" "$USER@$host" "$COMMAND" > "$output_file" 2>&1
+        exit_code=$?
     else
         # 使用密码认证 (需要 sshpass)
-        if [ $VERBOSE -eq 1 ]; then
-            echo -e "${YELLOW}[$host] 正在使用密码连接...${NC}"
-        fi
         sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=$TIMEOUT -p $PORT "$USER@$host" "$COMMAND" > "$output_file" 2>&1
+        exit_code=$?
     fi
     
-    local exit_code=$?
     if [ $exit_code -eq 0 ]; then
         echo -e "${GREEN}[$host] 成功 (退出码: $exit_code)${NC}"
     else
         echo -e "${RED}[$host] 失败 (退出码: $exit_code)${NC}"
     fi
     
-    if [ $VERBOSE -eq 1 ]; then
+    # 输出结果
+    if [ $VERBOSE -eq 1 ] || [ $exit_code -ne 0 ]; then
         echo -e "${YELLOW}[$host] 输出:${NC}"
         cat "$output_file"
         echo ""
+    fi
+    
+    # 追加到总输出文件
+    if [ -n "$OUTPUT_FILE" ]; then
+        {
+            echo ">>>>>>>>>> $host <<<<<<<<<<"
+            cat "$output_file"
+            echo ""
+        } >> "$OUTPUT_FILE"
     fi
     
     return $exit_code
@@ -197,8 +214,6 @@ if [ ${#FAILED_HOSTS[@]} -gt 0 ]; then
 fi
 
 # 清理临时文件
-if [ $VERBOSE -eq 0 ]; then
-    rm -rf "$TMP_DIR"
-fi
+rm -rf "$TMP_DIR"
 
 exit ${#FAILED_HOSTS[@]}
