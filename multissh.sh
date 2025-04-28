@@ -19,7 +19,6 @@ function show_help() {
     echo "  -k, --key-file        指定 SSH 私钥文件 (用于密钥认证)"
     echo "  -P, --port            指定 SSH 端口 (默认为 22)"
     echo "  -t, --timeout         指定 SSH 超时时间 (秒, 默认为 30)"
-    echo "  -c, --concurrency     指定并发执行的服务器数量 (默认为 5)"
     echo "  -v, --verbose         启用详细输出"
     echo ""
     echo "服务器列表文件格式:"
@@ -36,7 +35,6 @@ PASSWORD=""
 KEY_FILE=""
 PORT=22
 TIMEOUT=30
-CONCURRENCY=5
 VERBOSE=0
 
 # 解析命令行参数
@@ -68,10 +66,6 @@ while [[ $# -gt 0 ]]; do
             ;;
         -t|--timeout)
             TIMEOUT="$2"
-            shift 2
-            ;;
-        -c|--concurrency)
-            CONCURRENCY="$2"
             shift 2
             ;;
         -v|--verbose)
@@ -133,7 +127,6 @@ fi
 # 输出执行信息
 echo -e "${GREEN}执行信息:${NC}"
 echo -e "${GREEN}  服务器数量: ${#HOSTS[@]}${NC}"
-echo -e "${GREEN}  并发数: ${CONCURRENCY}${NC}"
 echo -e "${GREEN}  命令: ${COMMAND}${NC}"
 echo ""
 
@@ -172,40 +165,16 @@ function execute_on_host() {
     return $exit_code
 }
 
-# 并发执行命令
+# 顺序执行命令
 echo -e "${GREEN}开始执行命令...${NC}"
 echo ""
-
-# 使用进程池控制并发
-ACTIVE_JOBS=5
-EXIT_CODES=()
-
-for host in "${HOSTS[@]}"; do
-    # 控制并发数
-    while [ $ACTIVE_JOBS -ge $CONCURRENCY ]; do
-        sleep 1
-        ACTIVE_JOBS=$(jobs -r | wc -l)
-    done
-    
-    execute_on_host "$host" &
-    EXIT_CODES[$!]=$host
-    ACTIVE_JOBS=$(jobs -r | wc -l)
-done
-
-# 等待所有作业完成
-wait
-
-# 汇总结果
-echo ""
-echo -e "${GREEN}执行结果汇总:${NC}"
 
 SUCCESS_COUNT=0
 FAILED_HOSTS=()
 
-for pid in "${!EXIT_CODES[@]}"; do
-    wait $pid
+for host in "${HOSTS[@]}"; do
+    execute_on_host "$host"
     exit_code=$?
-    host=${EXIT_CODES[$pid]}
     
     if [ $exit_code -eq 0 ]; then
         SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
@@ -214,6 +183,9 @@ for pid in "${!EXIT_CODES[@]}"; do
     fi
 done
 
+# 汇总结果
+echo ""
+echo -e "${GREEN}执行结果汇总:${NC}"
 echo -e "${GREEN}  成功: ${SUCCESS_COUNT}/${#HOSTS[@]}${NC}"
 echo -e "${RED}  失败: ${#FAILED_HOSTS[@]}${NC}"
 
