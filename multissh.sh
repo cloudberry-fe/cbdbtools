@@ -45,10 +45,19 @@ CONCURRENCY=5
 LOCK_FILE="/tmp/multissh_lock.$$"
 touch "$LOCK_FILE"
 
+# 存储后台进程ID的数组
+BACKGROUND_PIDS=()
+
 # 清理函数
 function cleanup() {
     rm -f "$LOCK_FILE"
     [ -n "$TMP_DIR" ] && rm -rf "$TMP_DIR"
+    # 遍历并杀死所有后台进程
+    for pid in "${BACKGROUND_PIDS[@]}"; do
+        if kill -0 "$pid" 2>/dev/null; then
+            kill "$pid" 2>/dev/null
+        fi
+    done
 }
 
 # 注册清理函数
@@ -244,6 +253,7 @@ for host in "${HOSTS[@]}"; do
     fi
     
     execute_on_host "$host" &
+    BACKGROUND_PIDS+=($!)  # 记录后台进程ID
 done
 
 # 等待所有作业完成
