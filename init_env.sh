@@ -23,8 +23,7 @@ function copyfile_segment()
 { 
   log_time "copy init_env_segment.sh id_rsa.pub Cloudberry rpms to segment hosts"
   HOSTS_FILE="/tmp/segment_hosts.txt"
-  USER="${SEGMENT_ACCESS_USER}"
-  if [ -n "${SEGMENT_ACCESS_KEYFILE}" ]; then
+  if [ "${SEGMENT_ACCESS_METHOD}" = "keyfile" ]; then
     ./multiscp.sh -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} init_env_segment.sh /tmp
     ./multiscp.sh -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} deploycluster_parameter.sh /tmp
     ./multiscp.sh -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /tmp/hostsfile /tmp
@@ -45,9 +44,8 @@ function init_segment()
   log_time "Start init configuration on segment hosts"
   logfilename=$(date +%Y%m%d)_$(date +%H%M%S)
   HOSTS_FILE="/tmp/segment_hosts.txt"
-  USER="root"
   COMMAND="bash -c 'sh /tmp/init_env_segment.sh \$1 &> /tmp/init_env_segment_\$1_$logfilename.log'"
-  if [ -n "${SEGMENT_ACCESS_KEYFILE}" ]; then
+  if [ "${SEGMENT_ACCESS_METHOD}" = "keyfile" ]; then
     echo "ssh -n -q -i ${SEGMENT_ACCESS_KEYFILE} root@${i} \"bash -c 'sh /tmp/init_env_segment.sh ${i} &> /tmp/init_env_segment_${i}_$logfilename.log'\""
     ./multissh.sh -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} "$COMMAND"
   else
