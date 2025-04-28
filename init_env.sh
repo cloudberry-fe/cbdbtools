@@ -46,10 +46,10 @@ function init_segment()
   HOSTS_FILE="/tmp/segment_hosts.txt"
   COMMAND="bash -c 'sh /tmp/init_env_segment.sh \$1 &> /tmp/init_env_segment_\$1_$logfilename.log'"
   if [ "${SEGMENT_ACCESS_METHOD}" = "keyfile" ]; then
-    echo "ssh -n -q -i ${SEGMENT_ACCESS_KEYFILE} root@${i} \"bash -c 'sh /tmp/init_env_segment.sh ${i} &> /tmp/init_env_segment_${i}_$logfilename.log'\""
+    echo "./multissh.sh -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} \"$COMMAND\""
     ./multissh.sh -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} "$COMMAND"
   else
-    echo "sshpass -p ${SEGMENT_ACCESS_PASSWORD} ssh -n -q root@${i} \"bash -c 'sh /tmp/init_env_segment.sh ${i} &> /tmp/init_env_segment_${i}_$logfilename.log'\""
+    echo "./multissh.sh -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} \"$COMMAND\""
     ./multissh.sh -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} "$COMMAND"
   fi
   log_time "Finished init configuration on segment hosts"
