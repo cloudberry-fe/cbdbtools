@@ -288,15 +288,15 @@ if [ "${INIT_ENV_ONLY}" != "true" ]; then
       exit 1
   fi
   
-  # 判断RPM包名称是否包含greenplum或cloudberry或lightning
+  # 判断RPM包名称是否包含greenplum或cloudberry或hashdata
   if [[ "${CLOUDBERRY_RPM}" =~ greenplum ]]; then
       keyword="greenplum"
       soft_link="/usr/local/greenplum-db"
   elif [[ "${CLOUDBERRY_RPM}" =~ cloudberry ]]; then
       keyword="cloudberry"
       soft_link="/usr/local/cloudberry-db"
-  elif [[ "${CLOUDBERRY_RPM}" =~ lightning ]]; then
-      keyword="lightning"
+  elif [[ "${CLOUDBERRY_RPM}" =~ hashdata ]]; then
+      keyword="hashdata"
       soft_link="/usr/local/hashdata-lightning"
   else
       keyword="none"
