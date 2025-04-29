@@ -96,7 +96,7 @@ function copyfile_segment()
     echo "sudo sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} deploycluster_parameter.sh ${working_dir}"
     echo "sudo sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${working_dir}/hostsfile ${working_dir}"
     echo "sudo sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /home/${ADMIN_USER}/.ssh/id_rsa.pub ${working_dir}"
-    echo "sudo sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${CLOUDBERRY_RPM} ${CLOUDBERRY_RPM}"
+    echo "sudo sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${CLOUDBERRY_RPM} ${working_dir}"
     sudo sh multiscp.sh -v ENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} init_env_segment.sh ${working_dir}
     sudo sh multiscp.sh -v ENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} deploycluster_parameter.sh ${working_dir}
     sudo sh multiscp.sh -v ENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${working_dir}/hostsfile ${working_dir}
@@ -124,14 +124,14 @@ function init_segment()
 
   if [ "${SEGMENT_ACCESS_METHOD}" = "keyfile" ]; then
     for i in $(cat ${working_dir}/segment_hosts.txt); do
-      echo "ssh -n -q -i ${SEGMENT_ACCESS_KEYFILE} ${SEGMENT_ACCESS_USER}@${i} \"bash -c 'sudo sh ${working_dir}/init_env_segment.sh ${i} &> ${working_dir}/init_env_segment_${i}_$logfilename.log'\""
-      ssh -n -q -i ${SEGMENT_ACCESS_KEYFILE} ${SEGMENT_ACCESS_USER}@${i} "bash -c 'sudo sh ${working_dir}/init_env_segment.sh ${i} &> ${working_dir}/init_env_segment_${i}_$logfilename.log'" &
+      echo "ssh -n -q -i ${SEGMENT_ACCESS_KEYFILE} ${SEGMENT_ACCESS_USER}@${i} \"bash -c 'sudo sh ${working_dir}/init_env_segment.sh ${i} ${working_dir} &> ${working_dir}/init_env_segment_${i}_$logfilename.log'\""
+      ssh -n -q -i ${SEGMENT_ACCESS_KEYFILE} ${SEGMENT_ACCESS_USER}@${i} "bash -c 'sudo sh ${working_dir}/init_env_segment.sh ${i} ${working_dir} &> ${working_dir}/init_env_segment_${i}_$logfilename.log'" &
     done
     wait
   else
     for i in $(cat ${working_dir}/segment_hosts.txt); do
-      echo "sshpass -p ${SEGMENT_ACCESS_PASSWORD} ssh -n -q ${SEGMENT_ACCESS_USER}@${i} \"bash -c 'sudo sh ${working_dir}/init_env_segment.sh ${i} &> ${working_dir}/init_env_segment_${i}_$logfilename.log'\""
-      sshpass -p ${SEGMENT_ACCESS_PASSWORD} ssh -n -q ${SEGMENT_ACCESS_USER}@${i} "bash -c 'sudo sh ${working_dir}/init_env_segment.sh ${i} &> ${working_dir}/init_env_segment_${i}_$logfilename.log'" &
+      echo "sshpass -p ${SEGMENT_ACCESS_PASSWORD} ssh -n -q ${SEGMENT_ACCESS_USER}@${i} \"bash -c 'sudo sh ${working_dir}/init_env_segment.sh ${i} ${working_dir} &> ${working_dir}/init_env_segment_${i}_$logfilename.log'\""
+      sshpass -p ${SEGMENT_ACCESS_PASSWORD} ssh -n -q ${SEGMENT_ACCESS_USER}@${i} "bash -c 'sudo sh ${working_dir}/init_env_segment.sh ${i} ${working_dir} &> ${working_dir}/init_env_segment_${i}_$logfilename.log'" &
     done
     wait
   fi

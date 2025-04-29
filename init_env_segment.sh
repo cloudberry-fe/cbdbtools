@@ -2,9 +2,10 @@
 
 VARS_FILE="deploycluster_parameter.sh"
 
-source /tmp/${VARS_FILE}
-
 SEGMENT_HOSTNAME="$1"
+working_dir="$2"
+
+source ${working_dir}/${VARS_FILE}
 
 function log_time() {
   printf "[%s] %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
@@ -250,10 +251,7 @@ if [ "${INIT_ENV_ONLY}" != "true" ]; then
   log_time "Step 6: Installing database software..."
   
   # 确保CLOUDBERRY_RPM变量已设置
-  if [ -z "${CLOUDBERRY_RPM}" ]; then
-      echo "错误：环境变量CLOUDBERRY_RPM未设置。"
-      exit 1
-  fi
+  filename=$(basename "$CLOUDBERRY_RPM")
   
   # 判断RPM包名称是否包含greenplum或cloudberry
   if [[ "${CLOUDBERRY_RPM}" =~ greenplum ]]; then
@@ -284,17 +282,17 @@ if [ "${INIT_ENV_ONLY}" != "true" ]; then
             echo "软链接 $soft_link 不存在"
           fi
           echo "操作完成！"
-          rpm -ivh ${CLOUDBERRY_RPM} --force
+          rpm -ivh ${working_dir}/${filename} --force
       else
           echo "未找到${keyword}目录，使用YUM安装..."
-          yum install -y "${CLOUDBERRY_RPM}"
+          yum install -y "${working_dir}/${filename}"
       fi
      # 修改目录权限  
     chown -R ${ADMIN_USER}:${ADMIN_USER} /usr/local/${keyword}*
     echo "已将 $dir 的所有者修改为 ${ADMIN_USER}:${ADMIN_USER}"
   else
       echo "未检测到相关产品关键字，尝试使用YUM安装，可能需要手工配置权限等..."
-      yum install -y ${CLOUDBERRY_RPM}
+      yum install -y ${working_dir}/${filename}
   fi
 fi
 
@@ -304,14 +302,14 @@ log_time "Step 7: Setup user no-password access..."
 rm -rf /home/${ADMIN_USER}/.ssh/
 su ${ADMIN_USER} -l -c "ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ''"
 su ${ADMIN_USER} -l -c "cat /home/${ADMIN_USER}/.ssh/id_rsa.pub > /home/${ADMIN_USER}/.ssh/authorized_keys"
-#su ${ADMIN_USER} -l -c "cat /tmp/id_rsa.pub >> /home/${ADMIN_USER}/.ssh/authorized_keys"
-#su ${ADMIN_USER} -l -c "cat /tmp/known_hosts >> /home/${ADMIN_USER}/.ssh/known_hosts"
+#su ${ADMIN_USER} -l -c "cat ${working_dir}/id_rsa.pub >> /home/${ADMIN_USER}/.ssh/authorized_keys"
+#su ${ADMIN_USER} -l -c "cat ${working_dir}/known_hosts >> /home/${ADMIN_USER}/.ssh/known_hosts"
 #su ${ADMIN_USER} -l -c "echo \"UserKnownHostsFile /home/${ADMIN_USER}/.ssh/known_hosts\" >> /home/${ADMIN_USER}/.ssh/config"
 #su ${ADMIN_USER} -l -c "source ${CLOUDBERRY_BINARY_PATH}/greenplum_path.sh;gpssh-exkeys -h "$(hostname)""
 
 #Step 8: Set /etc/hosts on $(hostname)...
 log_time "Step 8: Set /etc/hosts on $(hostname)..."
 sed -i '/#Hashdata hosts begin/,/#Hashdata hosts end/d' /etc/hosts
-cat /tmp/hostsfile >> /etc/hosts
+cat ${working_dir}/hostsfile >> /etc/hosts
 change_hostname ${SEGMENT_HOSTNAME}
 log_time "Finished env init setting on $(hostname)..."
