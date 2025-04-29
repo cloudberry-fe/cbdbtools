@@ -231,6 +231,8 @@ if [ "${INIT_ENV_ONLY}" != "true" ]; then
       soft_link="none"
   fi
   
+  log_time "Currently deploy ${keyword} database."
+  
   # 根据关键字处理安装和权限
   if [ "${keyword}" != "none" ]; then
       # 检查/usr/local下是否存在包含关键字的目录
