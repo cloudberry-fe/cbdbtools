@@ -158,10 +158,16 @@ if [ "${INIT_ENV_ONLY}" != "true" ]; then
   # 判断RPM包名称是否包含greenplum或cloudberry
   if [[ "${CLOUDBERRY_RPM}" =~ greenplum ]]; then
       keyword="greenplum"
+      soft_link="/usr/local/greenplum-db"
   elif [[ "${CLOUDBERRY_RPM}" =~ cloudberry ]]; then
       keyword="cloudberry"
+      soft_link="/usr/local/cloudberry-db"
+  elif [[ "${CLOUDBERRY_RPM}" =~ lightning ]]; then
+      keyword="lightning"
+      soft_link="/usr/local/hashdata-lightning"
   else
       keyword="none"
+      soft_link="none"
   fi
   
   # 根据关键字处理安装和权限
@@ -169,7 +175,6 @@ if [ "${INIT_ENV_ONLY}" != "true" ]; then
       # 检查/usr/local下是否存在包含关键字的目录
       if find /usr/local -maxdepth 1 -type d -name "*${keyword}*" -print -quit | grep -q .; then
           echo "检测到${keyword}目录，强制安装RPM并修改权限..."
-          soft_link="/usr/local/${keyword}-db"
           # 检查软链接是否存在
           if [ -L "$soft_link" ]; then
           # 删除软链接
