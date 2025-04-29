@@ -260,8 +260,8 @@ if [ "${INIT_ENV_ONLY}" != "true" ]; then
   elif [[ "${CLOUDBERRY_RPM}" =~ cloudberry ]]; then
       keyword="cloudberry"
       soft_link="/usr/local/cloudberry-db"
-  elif [[ "${CLOUDBERRY_RPM}" =~ lightning ]]; then
-      keyword="lightning"
+  elif [[ "${CLOUDBERRY_RPM}" =~ hashdata ]]; then
+      keyword="hashdata"
       soft_link="/usr/local/hashdata-lightning"
   else
       keyword="none"
