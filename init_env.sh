@@ -4,6 +4,8 @@ VARS_FILE="deploycluster_parameter.sh"
 
 source ./${VARS_FILE}
 
+working_dir="/tmp/${SEGMENT_ACCESS_USER}"
+
 if [ "${1}" == "single" ] || [ "${1}" == "multi" ]; then  
   cluster_type="${1}"  
 else  
@@ -79,36 +81,37 @@ change_hostname() {
 function config_hostsfile()
 {
   log_time "set /etc/hosts on coordinator..."
-  awk '/#Hashdata hosts begin/,/#Hashdata hosts end/' segmenthosts.conf > /tmp/hostsfile
+  awk '/#Hashdata hosts begin/,/#Hashdata hosts end/' segmenthosts.conf > ${working_dir}/hostsfile
   sed -i '/#Hashdata hosts begin/,/#Hashdata hosts end/d' /etc/hosts
-  cat /tmp/hostsfile >> /etc/hosts
+  cat ${working_dir}/hostsfile >> /etc/hosts
 }
 
 function copyfile_segment()
 { 
   log_time "copy init_env_segment.sh id_rsa.pub Cloudberry rpms to segment hosts"
-  HOSTS_FILE="/tmp/segment_hosts.txt"
+  HOSTS_FILE="${working_dir}/segment_hosts.txt"
   if [ "${SEGMENT_ACCESS_METHOD}" = "keyfile" ]; then
-    ehco "sudo sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} init_env_segment.sh /tmp"
-    echo "sudo sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} deploycluster_parameter.sh /tmp"
-    echo "sudo sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /tmp/hostsfile /tmp"
-    echo "sudo sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /home/${ADMIN_USER}/.ssh/id_rsa.pub /tmp"
+    sudo sh multissh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} "rm -rf ${working_dir};mkdir -p ${working_dir}"
+    ehco "sudo sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} init_env_segment.sh ${working_dir}"
+    echo "sudo sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} deploycluster_parameter.sh ${working_dir}"
+    echo "sudo sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${working_dir}/hostsfile ${working_dir}"
+    echo "sudo sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /home/${ADMIN_USER}/.ssh/id_rsa.pub ${working_dir}"
     echo "sudo sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${CLOUDBERRY_RPM} ${CLOUDBERRY_RPM}"
-    sudo sh multiscp.sh -v ENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} init_env_segment.sh /tmp
-    sudo sh multiscp.sh -v ENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} deploycluster_parameter.sh /tmp
-    sudo sh multiscp.sh -v ENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /tmp/hostsfile /tmp
-    sudo sh multiscp.sh -v ENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /home/${ADMIN_USER}/.ssh/id_rsa.pub /tmp
+    sudo sh multiscp.sh -v ENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} init_env_segment.sh ${working_dir}
+    sudo sh multiscp.sh -v ENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} deploycluster_parameter.sh ${working_dir}
+    sudo sh multiscp.sh -v ENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${working_dir}/hostsfile ${working_dir}
+    sudo sh multiscp.sh -v ENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /home/${ADMIN_USER}/.ssh/id_rsa.pub ${working_dir}
     sudo sh multiscp.sh -v ENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${CLOUDBERRY_RPM} ${CLOUDBERRY_RPM}
   else
-    echo "sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} init_env_segment.sh /tmp"
-    echo "sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} deploycluster_parameter.sh /tmp"
-    echo "sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /tmp/hostsfile /tmp"
-    echo "sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /home/${ADMIN_USER}/.ssh/id_rsa.pub /tmp"
+    echo "sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} init_env_segment.sh ${working_dir}"
+    echo "sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} deploycluster_parameter.sh ${working_dir}"
+    echo "sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${working_dir}/hostsfile ${working_dir}"
+    echo "sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /home/${ADMIN_USER}/.ssh/id_rsa.pub ${working_dir}"
     echo "sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${CLOUDBERRY_RPM} ${CLOUDBERRY_RPM}"
-    sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} init_env_segment.sh /tmp
-    sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} deploycluster_parameter.sh /tmp
-    sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /tmp/hostsfile /tmp
-    sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /home/${ADMIN_USER}/.ssh/id_rsa.pub /tmp
+    sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} init_env_segment.sh ${working_dir}
+    sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} deploycluster_parameter.sh ${working_dir}
+    sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${working_dir}/hostsfile ${working_dir}
+    sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /home/${ADMIN_USER}/.ssh/id_rsa.pub ${working_dir}
     sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${CLOUDBERRY_RPM} ${CLOUDBERRY_RPM}
   fi
   log_time "Finished copy init_env_segment.sh id_rsa.pub Cloudberry rpms to segment hosts"
@@ -120,15 +123,15 @@ function init_segment()
   logfilename=$(date +%Y%m%d)_$(date +%H%M%S)
 
   if [ "${SEGMENT_ACCESS_METHOD}" = "keyfile" ]; then
-    for i in $(cat /tmp/segment_hosts.txt); do
-      echo "ssh -n -q -i ${SEGMENT_ACCESS_KEYFILE} ${SEGMENT_ACCESS_USER}@${i} \"bash -c 'sudo sh /tmp/init_env_segment.sh ${i} &> /tmp/init_env_segment_${i}_$logfilename.log'\""
-      ssh -n -q -i ${SEGMENT_ACCESS_KEYFILE} ${SEGMENT_ACCESS_USER}@${i} "bash -c 'sudo sh /tmp/init_env_segment.sh ${i} &> /tmp/init_env_segment_${i}_$logfilename.log'" &
+    for i in $(cat ${working_dir}/segment_hosts.txt); do
+      echo "ssh -n -q -i ${SEGMENT_ACCESS_KEYFILE} ${SEGMENT_ACCESS_USER}@${i} \"bash -c 'sudo sh ${working_dir}/init_env_segment.sh ${i} &> ${working_dir}/init_env_segment_${i}_$logfilename.log'\""
+      ssh -n -q -i ${SEGMENT_ACCESS_KEYFILE} ${SEGMENT_ACCESS_USER}@${i} "bash -c 'sudo sh ${working_dir}/init_env_segment.sh ${i} &> ${working_dir}/init_env_segment_${i}_$logfilename.log'" &
     done
     wait
   else
-    for i in $(cat /tmp/segment_hosts.txt); do
-      echo "sshpass -p ${SEGMENT_ACCESS_PASSWORD} ssh -n -q ${SEGMENT_ACCESS_USER}@${i} \"bash -c 'sudo sh /tmp/init_env_segment.sh ${i} &> /tmp/init_env_segment_${i}_$logfilename.log'\""
-      sshpass -p ${SEGMENT_ACCESS_PASSWORD} ssh -n -q ${SEGMENT_ACCESS_USER}@${i} "bash -c 'sudo sh /tmp/init_env_segment.sh ${i} &> /tmp/init_env_segment_${i}_$logfilename.log'" &
+    for i in $(cat ${working_dir}/segment_hosts.txt); do
+      echo "sshpass -p ${SEGMENT_ACCESS_PASSWORD} ssh -n -q ${SEGMENT_ACCESS_USER}@${i} \"bash -c 'sudo sh ${working_dir}/init_env_segment.sh ${i} &> ${working_dir}/init_env_segment_${i}_$logfilename.log'\""
+      sshpass -p ${SEGMENT_ACCESS_PASSWORD} ssh -n -q ${SEGMENT_ACCESS_USER}@${i} "bash -c 'sudo sh ${working_dir}/init_env_segment.sh ${i} &> ${working_dir}/init_env_segment_${i}_$logfilename.log'" &
     done
     wait
   fi
@@ -389,12 +392,12 @@ log_time "Finished env init setting on coordinator..."
 
 if [ "$cluster_type" = "multi" ]; then
   log_time "Step 8: Setup env on segment nodes..."
-  rm -rf /tmp/segment_hosts.txt
-  sed -n '/##Segment hosts/,/#Hashdata hosts end/p' segmenthosts.conf|sed '1d;$d'|awk '{print $2}' >> /tmp/segment_hosts.txt
+  rm -rf ${working_dir}/segment_hosts.txt
+  sed -n '/##Segment hosts/,/#Hashdata hosts end/p' segmenthosts.conf|sed '1d;$d'|awk '{print $2}' >> ${working_dir}/segment_hosts.txt
   
   config_hostsfile
 
-  for i in $(cat /tmp/segment_hosts.txt); do
+  for i in $(cat ${working_dir}/segment_hosts.txt); do
     ssh-keyscan ${i} >> ~/.ssh/known_hosts
   done
 
@@ -412,32 +415,32 @@ if [ "$cluster_type" = "multi" ]; then
   #Step 9: Setup no-password access for all nodes...
   log_time "Step 9: Setup no-password access for all nodes..."
 
-  for i in $(cat /tmp/segment_hosts.txt); do
+  for i in $(cat ${working_dir}/segment_hosts.txt); do
     #echo "su ${ADMIN_USER} -l -c \"ssh ${i} 'date;exit'"\"
     su ${ADMIN_USER} -l -c "ssh-keyscan ${i} >> ~/.ssh/known_hosts"
     #su ${ADMIN_USER} -l -c "ssh ${i} 'date;exit'"
   done
   
   export COORDINATOR_HOSTNAME=$(sed -n '/##Coordinator hosts/,/##Segment hosts/p' segmenthosts.conf|sed '1d;$d'|awk '{print $2}')
-  echo ${COORDINATOR_HOSTNAME} >> /tmp/segment_hosts.txt
+  echo ${COORDINATOR_HOSTNAME} >> ${working_dir}/segment_hosts.txt
   change_hostname ${COORDINATOR_HOSTNAME}
 
 
   
-  mkdir -p /tmp/ssh_keys
+  mkdir -p ${working_dir}/ssh_keys
 
   # 使用 sshpass 收集所有节点的公钥
-  for node in $(cat /tmp/segment_hosts.txt); do
-    sshpass -p "${ADMIN_USER_PASSWORD}" scp -o StrictHostKeyChecking=no ${ADMIN_USER}@${node}:/home/${ADMIN_USER}/.ssh/id_rsa.pub /tmp/ssh_keys/${node}.pub
+  for node in $(cat ${working_dir}/segment_hosts.txt); do
+    sshpass -p "${ADMIN_USER_PASSWORD}" scp -o StrictHostKeyChecking=no ${ADMIN_USER}@${node}:/home/${ADMIN_USER}/.ssh/id_rsa.pub ${working_dir}/ssh_keys/${node}.pub
   done
   
   # 分发公钥到所有节点
-  for target in $(cat /tmp/segment_hosts.txt); do
+  for target in $(cat ${working_dir}/segment_hosts.txt); do
     # 清空目标节点的 authorized_keys 文件
     sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no ${ADMIN_USER}@${target} "echo '' > /home/${ADMIN_USER}/.ssh/authorized_keys"
     
     # 将所有节点的公钥添加到目标节点的 authorized_keys 文件中
-    for keyfile in /tmp/ssh_keys/*.pub; do
+    for keyfile in ${working_dir}/ssh_keys/*.pub; do
       cat ${keyfile} | sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no ${ADMIN_USER}@${target} "cat >> /home/${ADMIN_USER}/.ssh/authorized_keys"
     done
     
