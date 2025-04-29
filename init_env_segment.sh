@@ -10,6 +10,72 @@ function log_time() {
   printf "[%s] %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
 }
 
+change_hostname() {
+    local new_hostname="$1"
+    
+    # Validate root privileges
+    if [[ $EUID -ne 0 ]]; then
+        echo "Error: This operation requires root privileges." >&2
+        return 1
+    fi
+    
+    # Validate hostname format
+    if [[ ! "$new_hostname" =~ ^[a-zA-Z0-9][a-zA-Z0-9-]{0,62}$ ]]; then
+        echo "Error: Invalid hostname. Must start/end with alphanumeric and can contain hyphens." >&2
+        return 1
+    fi
+    
+    local current_hostname=$(hostname)
+    echo "Changing hostname from $current_hostname to $new_hostname..."
+    
+    # Detect OS type
+    if [[ -f /etc/os-release ]]; then
+        source /etc/os-release
+        
+        case "$ID" in
+            ubuntu|debian)
+                echo "$new_hostname" > /etc/hostname
+                sed -i "s/127.0.1.1[[:space:]]*$current_hostname/127.0.1.1\t$new_hostname/g" /etc/hosts
+                hostnamectl set-hostname "$new_hostname"
+                ;;
+                
+            centos|rhel|fedora)
+                echo "$new_hostname" > /etc/hostname
+                sed -i "s/127.0.0.1[[:space:]]*$current_hostname/127.0.0.1\t$new_hostname/g" /etc/hosts
+                hostnamectl set-hostname "$new_hostname"
+                ;;
+                
+            *)
+                if [[ -f /etc/hostname ]]; then
+                    echo "$new_hostname" > /etc/hostname
+                fi
+                if [[ -f /etc/hosts ]]; then
+                    sed -i "s/127.0.1.1[[:space:]]*$current_hostname/127.0.1.1\t$new_hostname/g" /etc/hosts
+                fi
+                if command -v hostnamectl &>/dev/null; then
+                    hostnamectl set-hostname "$new_hostname"
+                else
+                    hostname "$new_hostname"
+                    echo "Warning: Hostname change may not be persistent after reboot." >&2
+                fi
+                ;;
+        esac
+        
+    elif [[ "$(uname)" == "Darwin" ]]; then
+        scutil --set HostName "$new_hostname"
+        scutil --set LocalHostName "$new_hostname"
+        scutil --set ComputerName "$new_hostname"
+        dscacheutil -flushcache
+        
+    else
+        echo "Error: Unsupported operating system." >&2
+        return 1
+    fi
+    
+    echo "Hostname changed to: $(hostname)"
+    return 0
+}    
+
 #Setup the env setting on Linux OS for Hashdata database
 
 #Step 1: Installing Software Dependencies
@@ -158,10 +224,16 @@ if [ "${INIT_ENV_ONLY}" != "true" ]; then
   # 判断RPM包名称是否包含greenplum或cloudberry
   if [[ "${CLOUDBERRY_RPM}" =~ greenplum ]]; then
       keyword="greenplum"
+      soft_link="/usr/local/greenplum-db"
   elif [[ "${CLOUDBERRY_RPM}" =~ cloudberry ]]; then
       keyword="cloudberry"
+      soft_link="/usr/local/cloudberry-db"
+  elif [[ "${CLOUDBERRY_RPM}" =~ lightning ]]; then
+      keyword="lightning"
+      soft_link="/usr/local/hashdata-lightning"
   else
       keyword="none"
+      soft_link="none"
   fi
   
   # 根据关键字处理安装和权限
@@ -169,7 +241,6 @@ if [ "${INIT_ENV_ONLY}" != "true" ]; then
       # 检查/usr/local下是否存在包含关键字的目录
       if find /usr/local -maxdepth 1 -type d -name "*${keyword}*" -print -quit | grep -q .; then
           echo "检测到${keyword}目录，强制安装RPM并修改权限..."
-          soft_link="/usr/local/${keyword}-db"
           # 检查软链接是否存在
           if [ -L "$soft_link" ]; then
           # 删除软链接
@@ -208,5 +279,5 @@ su ${ADMIN_USER} -l -c "cat /home/${ADMIN_USER}/.ssh/id_rsa.pub > /home/${ADMIN_
 log_time "Step 8: Set /etc/hosts on $(hostname)..."
 sed -i '/#Hashdata hosts begin/,/#Hashdata hosts end/d' /etc/hosts
 cat /tmp/hostsfile >> /etc/hosts
-hostname ${SEGMENT_HOSTNAME}
+change_hostname ${SEGMENT_HOSTNAME}
 log_time "Finished env init setting on $(hostname)..."

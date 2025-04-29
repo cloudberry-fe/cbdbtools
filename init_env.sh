@@ -10,6 +10,71 @@ else
   cluster_type="${DEPLOY_TYPE}"
 fi  
 
+change_hostname() {
+    local new_hostname="$1"
+    
+    # Validate root privileges
+    if [[ $EUID -ne 0 ]]; then
+        echo "Error: This operation requires root privileges." >&2
+        return 1
+    fi
+    
+    # Validate hostname format
+    if [[ ! "$new_hostname" =~ ^[a-zA-Z0-9][a-zA-Z0-9-]{0,62}$ ]]; then
+        echo "Error: Invalid hostname. Must start/end with alphanumeric and can contain hyphens." >&2
+        return 1
+    fi
+    
+    local current_hostname=$(hostname)
+    echo "Changing hostname from $current_hostname to $new_hostname..."
+    
+    # Detect OS type
+    if [[ -f /etc/os-release ]]; then
+        source /etc/os-release
+        
+        case "$ID" in
+            ubuntu|debian)
+                echo "$new_hostname" > /etc/hostname
+                sed -i "s/127.0.1.1[[:space:]]*$current_hostname/127.0.1.1\t$new_hostname/g" /etc/hosts
+                hostnamectl set-hostname "$new_hostname"
+                ;;
+                
+            centos|rhel|fedora)
+                echo "$new_hostname" > /etc/hostname
+                sed -i "s/127.0.0.1[[:space:]]*$current_hostname/127.0.0.1\t$new_hostname/g" /etc/hosts
+                hostnamectl set-hostname "$new_hostname"
+                ;;
+                
+            *)
+                if [[ -f /etc/hostname ]]; then
+                    echo "$new_hostname" > /etc/hostname
+                fi
+                if [[ -f /etc/hosts ]]; then
+                    sed -i "s/127.0.1.1[[:space:]]*$current_hostname/127.0.1.1\t$new_hostname/g" /etc/hosts
+                fi
+                if command -v hostnamectl &>/dev/null; then
+                    hostnamectl set-hostname "$new_hostname"
+                else
+                    hostname "$new_hostname"
+                    echo "Warning: Hostname change may not be persistent after reboot." >&2
+                fi
+                ;;
+        esac
+        
+    elif [[ "$(uname)" == "Darwin" ]]; then
+        scutil --set HostName "$new_hostname"
+        scutil --set LocalHostName "$new_hostname"
+        scutil --set ComputerName "$new_hostname"
+        dscacheutil -flushcache
+        
+    else
+        echo "Error: Unsupported operating system." >&2
+        return 1
+    fi
+    
+    echo "Hostname changed to: $(hostname)"
+    return 0
+}    
 
 function config_hostsfile()
 {
@@ -19,74 +84,57 @@ function config_hostsfile()
   cat /tmp/hostsfile >> /etc/hosts
 }
 
-function copyfile_segment_keyfile()
+function copyfile_segment()
 { 
   log_time "copy init_env_segment.sh id_rsa.pub Cloudberry rpms to segment hosts"
-  for i in $(cat /tmp/segment_hosts.txt); do
-    (
-      echo "Copying files to ${i}"
-      echo "scp -i ${SEGMENT_ACCESS_KEYFILE} init_env_segment.sh ${SEGMENT_ACCESS_USER}@${i}:/tmp"
-      echo "scp -i ${SEGMENT_ACCESS_KEYFILE} deploycluster_parameter.sh ${SEGMENT_ACCESS_USER}@${i}:/tmp"
-      echo "scp -i ${SEGMENT_ACCESS_KEYFILE} /tmp/hostsfile ${SEGMENT_ACCESS_USER}@${i}:/tmp"
-      echo "scp -i ${SEGMENT_ACCESS_KEYFILE} /home/${ADMIN_USER}/.ssh/id_rsa.pub ${SEGMENT_ACCESS_USER}@${i}:/tmp"
-      echo "scp -i ${SEGMENT_ACCESS_KEYFILE} ${CLOUDBERRY_RPM} ${SEGMENT_ACCESS_USER}@${i}:${CLOUDBERRY_RPM}"
-      scp -i ${SEGMENT_ACCESS_KEYFILE} init_env_segment.sh ${SEGMENT_ACCESS_USER}@${i}:/tmp
-      scp -i ${SEGMENT_ACCESS_KEYFILE} deploycluster_parameter.sh ${SEGMENT_ACCESS_USER}@${i}:/tmp
-      scp -i ${SEGMENT_ACCESS_KEYFILE} /tmp/hostsfile ${SEGMENT_ACCESS_USER}@${i}:/tmp
-      scp -i ${SEGMENT_ACCESS_KEYFILE} /home/${ADMIN_USER}/.ssh/id_rsa.pub ${SEGMENT_ACCESS_USER}@${i}:/tmp
-      scp -i ${SEGMENT_ACCESS_KEYFILE} ${CLOUDBERRY_RPM} ${SEGMENT_ACCESS_USER}@${i}:${CLOUDBERRY_RPM}
-    ) &
-  done
-  wait
+  HOSTS_FILE="/tmp/segment_hosts.txt"
+  if [ "${SEGMENT_ACCESS_METHOD}" = "keyfile" ]; then
+    ehco "sudo sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} init_env_segment.sh /tmp"
+    echo "sudo sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} deploycluster_parameter.sh /tmp"
+    echo "sudo sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /tmp/hostsfile /tmp"
+    echo "sudo sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /home/${ADMIN_USER}/.ssh/id_rsa.pub /tmp"
+    echo "sudo sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${CLOUDBERRY_RPM} ${CLOUDBERRY_RPM}"
+    sudo sh multiscp.sh -v ENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} init_env_segment.sh /tmp
+    sudo sh multiscp.sh -v ENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} deploycluster_parameter.sh /tmp
+    sudo sh multiscp.sh -v ENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /tmp/hostsfile /tmp
+    sudo sh multiscp.sh -v ENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /home/${ADMIN_USER}/.ssh/id_rsa.pub /tmp
+    sudo sh multiscp.sh -v ENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${CLOUDBERRY_RPM} ${CLOUDBERRY_RPM}
+  else
+    echo "sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} init_env_segment.sh /tmp"
+    echo "sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} deploycluster_parameter.sh /tmp"
+    echo "sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /tmp/hostsfile /tmp"
+    echo "sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /home/${ADMIN_USER}/.ssh/id_rsa.pub /tmp"
+    echo "sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${CLOUDBERRY_RPM} ${CLOUDBERRY_RPM}"
+    sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} init_env_segment.sh /tmp
+    sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} deploycluster_parameter.sh /tmp
+    sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /tmp/hostsfile /tmp
+    sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /home/${ADMIN_USER}/.ssh/id_rsa.pub /tmp
+    sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${CLOUDBERRY_RPM} ${CLOUDBERRY_RPM}
+  fi
   log_time "Finished copy init_env_segment.sh id_rsa.pub Cloudberry rpms to segment hosts"
 }
 
-
-function copyfile_segment_password()
-{ 
-  log_time "copy init_env_segment.sh id_rsa.pub Cloudberry rpms to segment hosts"
-  for i in $(cat /tmp/segment_hosts.txt); do
-    (
-      echo "Copying files to ${i}"
-      echo "sshpass -p ${SEGMENT_ACCESS_PASSWORD} scp -o StrictHostKeyChecking=no init_env_segment.sh ${SEGMENT_ACCESS_USER}@${i}:/tmp"
-      echo "sshpass -p ${SEGMENT_ACCESS_PASSWORD} scp -o StrictHostKeyChecking=no deploycluster_parameter.sh ${SEGMENT_ACCESS_USER}@${i}:/tmp"
-      echo "sshpass -p ${SEGMENT_ACCESS_PASSWORD} scp -o StrictHostKeyChecking=no /tmp/hostsfile ${SEGMENT_ACCESS_USER}@${i}:/tmp"
-      echo "sshpass -p ${SEGMENT_ACCESS_PASSWORD} scp -o StrictHostKeyChecking=no /home/${ADMIN_USER}/.ssh/id_rsa.pub ${SEGMENT_ACCESS_USER}@${i}:/tmp"
-      echo "sshpass -p ${SEGMENT_ACCESS_PASSWORD} scp -o StrictHostKeyChecking=no ${CLOUDBERRY_RPM} ${SEGMENT_ACCESS_USER}@${i}:${CLOUDBERRY_RPM}"
-      sshpass -p ${SEGMENT_ACCESS_PASSWORD} scp -o StrictHostKeyChecking=no init_env_segment.sh ${SEGMENT_ACCESS_USER}@${i}:/tmp
-      sshpass -p ${SEGMENT_ACCESS_PASSWORD} scp -o StrictHostKeyChecking=no deploycluster_parameter.sh ${SEGMENT_ACCESS_USER}@${i}:/tmp
-      sshpass -p ${SEGMENT_ACCESS_PASSWORD} scp -o StrictHostKeyChecking=no /tmp/hostsfile ${SEGMENT_ACCESS_USER}@${i}:/tmp
-      sshpass -p ${SEGMENT_ACCESS_PASSWORD} scp -o StrictHostKeyChecking=no /home/${ADMIN_USER}/.ssh/id_rsa.pub ${SEGMENT_ACCESS_USER}@${i}:/tmp
-      sshpass -p ${SEGMENT_ACCESS_PASSWORD} scp -o StrictHostKeyChecking=no ${CLOUDBERRY_RPM} ${SEGMENT_ACCESS_USER}@${i}:${CLOUDBERRY_RPM}
-    ) &
-  done
-  wait
-  log_time "Finished copy init_env_segment.sh id_rsa.pub Cloudberry rpms to segment hosts"
-}
-
-function init_segment_keyfile()
+function init_segment()
 {
   log_time "Start init configuration on segment hosts"
   logfilename=$(date +%Y%m%d)_$(date +%H%M%S)
-  for i in $(cat /tmp/segment_hosts.txt); do
-    echo "ssh -n -q -i ${SEGMENT_ACCESS_KEYFILE} root@${i} \"bash -c 'sh /tmp/init_env_segment.sh ${i} &> /tmp/init_env_segment_${i}_$logfilename.log'\""
-    ssh -n -q -i ${SEGMENT_ACCESS_KEYFILE} root@${i} "bash -c 'sh /tmp/init_env_segment.sh ${i} &> /tmp/init_env_segment_${i}_$logfilename.log'" &
-  done
-  wait
+
+  if [ "${SEGMENT_ACCESS_METHOD}" = "keyfile" ]; then
+    for i in $(cat /tmp/segment_hosts.txt); do
+      echo "ssh -n -q -i ${SEGMENT_ACCESS_KEYFILE} ${SEGMENT_ACCESS_USER}@${i} \"bash -c 'sudo sh /tmp/init_env_segment.sh ${i} &> /tmp/init_env_segment_${i}_$logfilename.log'\""
+      ssh -n -q -i ${SEGMENT_ACCESS_KEYFILE} ${SEGMENT_ACCESS_USER}@${i} "bash -c 'sudo sh /tmp/init_env_segment.sh ${i} &> /tmp/init_env_segment_${i}_$logfilename.log'" &
+    done
+    wait
+  else
+    for i in $(cat /tmp/segment_hosts.txt); do
+      echo "sshpass -p ${SEGMENT_ACCESS_PASSWORD} ssh -n -q ${SEGMENT_ACCESS_USER}@${i} \"bash -c 'sudo sh /tmp/init_env_segment.sh ${i} &> /tmp/init_env_segment_${i}_$logfilename.log'\""
+      sshpass -p ${SEGMENT_ACCESS_PASSWORD} ssh -n -q ${SEGMENT_ACCESS_USER}@${i} "bash -c 'sudo sh /tmp/init_env_segment.sh ${i} &> /tmp/init_env_segment_${i}_$logfilename.log'" &
+    done
+    wait
+  fi
   log_time "Finished init configuration on segment hosts"
 }
 
-function init_segment_password()
-{
-  log_time "Start init configuration on segment hosts"
-  logfilename=$(date +%Y%m%d)_$(date +%H%M%S)
-  for i in $(cat /tmp/segment_hosts.txt); do
-    echo "sshpass -p ${SEGMENT_ACCESS_PASSWORD} ssh -n -q root@${i} \"bash -c 'sh /tmp/init_env_segment.sh ${i} &> /tmp/init_env_segment_${i}_$logfilename.log'\""
-    sshpass -p ${SEGMENT_ACCESS_PASSWORD} ssh -n -q root@${i} "bash -c 'sh /tmp/init_env_segment.sh ${i} &> /tmp/init_env_segment_${i}_$logfilename.log'" &
-  done
-  wait
-  log_time "Finished init configuration on segment hosts"
-}
 
 
 #Setup the env setting on Linux OS for Hashdata database
@@ -240,21 +288,28 @@ if [ "${INIT_ENV_ONLY}" != "true" ]; then
       exit 1
   fi
   
-  # 判断RPM包名称是否包含greenplum或cloudberry
+  # 判断RPM包名称是否包含greenplum或cloudberry或lightning
   if [[ "${CLOUDBERRY_RPM}" =~ greenplum ]]; then
       keyword="greenplum"
+      soft_link="/usr/local/greenplum-db"
   elif [[ "${CLOUDBERRY_RPM}" =~ cloudberry ]]; then
       keyword="cloudberry"
+      soft_link="/usr/local/cloudberry-db"
+  elif [[ "${CLOUDBERRY_RPM}" =~ lightning ]]; then
+      keyword="lightning"
+      soft_link="/usr/local/hashdata-lightning"
   else
       keyword="none"
+      soft_link="none"
   fi
+
+  log_time "Currently deploy ${keyword} database."
   
   # 根据关键字处理安装和权限
   if [ "${keyword}" != "none" ]; then
       # 检查/usr/local下是否存在包含关键字的目录
     if find /usr/local -maxdepth 1 -type d -name "*${keyword}*" -print -quit | grep -q .; then
           echo "检测到${keyword}目录，强制安装RPM并修改权限..."
-          soft_link="/usr/local/${keyword}-db"
           # 检查软链接是否存在
           if [ -L "$soft_link" ]; then
           # 删除软链接
@@ -277,7 +332,7 @@ if [ "${INIT_ENV_ONLY}" != "true" ]; then
       yum install -y ${CLOUDBERRY_RPM}
   fi
 fi
-  
+
 #Step 7: Setup user no-password access
 log_time "Step 6: Setup user no-password access..."
 
@@ -305,14 +360,17 @@ if [ "$cluster_type" = "multi" ]; then
   for i in $(cat /tmp/segment_hosts.txt); do
     ssh-keyscan ${i} >> ~/.ssh/known_hosts
   done
-  
-  if [ "${SEGMENT_ACCESS_METHOD}" = "keyfile" ]; then
-    copyfile_segment_keyfile
-    init_segment_keyfile
-  else
-    copyfile_segment_password
-    init_segment_password
-  fi
+
+  copyfile_segment
+  init_segment
+
+  #if [ "${SEGMENT_ACCESS_METHOD}" = "keyfile" ]; then
+  #  copyfile_segment_keyfile
+  #  init_segment_keyfile
+  #else
+  #  copyfile_segment_password
+  #  init_segment_password
+  #fi
 
   #Step 9: Setup no-password access for all nodes...
   log_time "Step 9: Setup no-password access for all nodes..."
@@ -325,7 +383,7 @@ if [ "$cluster_type" = "multi" ]; then
   
   export COORDINATOR_HOSTNAME=$(sed -n '/##Coordinator hosts/,/##Segment hosts/p' segmenthosts.conf|sed '1d;$d'|awk '{print $2}')
   echo ${COORDINATOR_HOSTNAME} >> /tmp/segment_hosts.txt
-  hostname ${COORDINATOR_HOSTNAME}
+  change_hostname ${COORDINATOR_HOSTNAME}
 
 
   
