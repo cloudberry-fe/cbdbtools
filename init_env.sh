@@ -121,14 +121,14 @@ function init_segment()
 
   if [ "${SEGMENT_ACCESS_METHOD}" = "keyfile" ]; then
     for i in $(cat /tmp/segment_hosts.txt); do
-      echo "ssh -n -q -i ${SEGMENT_ACCESS_KEYFILE} ${SEGMENT_ACCESS_USER}@${i} \"bash -c 'sh /tmp/init_env_segment.sh ${i} &> /tmp/init_env_segment_${i}_$logfilename.log'\""
-      ssh -n -q -i ${SEGMENT_ACCESS_KEYFILE} ${SEGMENT_ACCESS_USER}@${i} "bash -c 'sh /tmp/init_env_segment.sh ${i} &> /tmp/init_env_segment_${i}_$logfilename.log'" &
+      echo "ssh -n -q -i ${SEGMENT_ACCESS_KEYFILE} ${SEGMENT_ACCESS_USER}@${i} \"bash -c 'sudo sh /tmp/init_env_segment.sh ${i} &> /tmp/init_env_segment_${i}_$logfilename.log'\""
+      ssh -n -q -i ${SEGMENT_ACCESS_KEYFILE} ${SEGMENT_ACCESS_USER}@${i} "bash -c 'sudo sh /tmp/init_env_segment.sh ${i} &> /tmp/init_env_segment_${i}_$logfilename.log'" &
     done
     wait
   else
     for i in $(cat /tmp/segment_hosts.txt); do
-      echo "sshpass -p ${SEGMENT_ACCESS_PASSWORD} ssh -n -q ${SEGMENT_ACCESS_USER}@${i} \"bash -c 'sh /tmp/init_env_segment.sh ${i} &> /tmp/init_env_segment_${i}_$logfilename.log'\""
-      sshpass -p ${SEGMENT_ACCESS_PASSWORD} ssh -n -q ${SEGMENT_ACCESS_USER}@${i} "bash -c 'sh /tmp/init_env_segment.sh ${i} &> /tmp/init_env_segment_${i}_$logfilename.log'" &
+      echo "sshpass -p ${SEGMENT_ACCESS_PASSWORD} ssh -n -q ${SEGMENT_ACCESS_USER}@${i} \"bash -c 'sudo sh /tmp/init_env_segment.sh ${i} &> /tmp/init_env_segment_${i}_$logfilename.log'\""
+      sshpass -p ${SEGMENT_ACCESS_PASSWORD} ssh -n -q ${SEGMENT_ACCESS_USER}@${i} "bash -c 'sudo sh /tmp/init_env_segment.sh ${i} &> /tmp/init_env_segment_${i}_$logfilename.log'" &
     done
     wait
   fi
