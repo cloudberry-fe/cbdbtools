@@ -189,8 +189,28 @@ cat /usr/share/zoneinfo/Asia/Macau > /usr/share/zoneinfo/Asia/Shanghai
 
 yum install -y epel-release
 
-log_time "Install necessary tools: wget and sshpass."
-yum install -y wget sshpass
+log_time "Install necessary tools: sshpass."
+
+# Check if sshpass is already installed
+if ! command -v sshpass &> /dev/null; then
+    echo "sshpass could not be found, installing..."
+    yum install -y sshpass
+    if [ $? -ne 0 ]; then
+        echo "Try to build from source code."
+        yum install -y gcc make autoconf automake libtool
+        tar -zxvf sshpass-1.10.tar.gz
+        cd sshpass-1.10
+        ./configure
+        make
+        make install
+        if [ $? -ne 0 ]; then
+            echo "Failed to install sshpass from source code."
+        exit 1
+    fi
+    echo "sshpass installed successfully."
+else
+    echo "sshpass is already installed."
+fi
 
 log_time "Install necessary dependencies."
 yum install -y apr apr-util bash bzip2 curl iproute krb5-devel libcurl libevent libuuid libuv libxml2 libyaml libzstd openldap openssh openssh-clients openssh-server openssl openssl-libs perl python3 python3-psycopg2 python3-psutil python3-pyyaml python3-setuptools python3-devel python39 readline rsync sed tar which zip zlib git passwd wget net-tools
