@@ -4,12 +4,6 @@ VARS_FILE="deploycluster_parameter.sh"
 
 source ./${VARS_FILE}
 
-log_time "Install necessary tools: wget and sshpass."
-
-yum install -y wget sshpass
-
-log_time "Start downloading HashData binaries..."
-
 if [ "${1}" == "single" ] || [ "${1}" == "multi" ]; then  
   cluster_type="${1}"  
 else  

@@ -189,6 +189,10 @@ cat /usr/share/zoneinfo/Asia/Macau > /usr/share/zoneinfo/Asia/Shanghai
 
 yum install -y epel-release
 
+log_time "Install necessary tools: wget and sshpass."
+yum install -y wget sshpass
+
+log_time "Install necessary dependencies."
 yum install -y apr apr-util bash bzip2 curl iproute krb5-devel libcurl libevent libuuid libuv libxml2 libyaml libzstd openldap openssh openssh-clients openssh-server openssl openssl-libs perl python3 python3-psycopg2 python3-psutil python3-pyyaml python3-setuptools python3-devel python39 readline rsync sed tar which zip zlib git passwd wget net-tools
 
 #Step 2: Turn off firewalls
@@ -376,12 +380,13 @@ log_time "Step 6: Setup user no-password access..."
 change_hostname ${COORDINATOR_HOSTNAME}
 rm -rf /home/${ADMIN_USER}/.ssh/
 su ${ADMIN_USER} -l -c "ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ''"
-su ${ADMIN_USER} -l -c "cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys"
-su ${ADMIN_USER} -l -c "ssh-keyscan ${COORDINATOR_HOSTNAME} >> ~/.ssh/known_hosts"
+su ${ADMIN_USER} -l -c "cat /home/${ADMIN_USER}/.ssh/id_rsa.pub | sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no ${ADMIN_USER}@${COORDINATOR_HOSTNAME} "cat >> /home/${ADMIN_USER}/.ssh/authorized_keys""
+#su ${ADMIN_USER} -l -c "cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys"
+#su ${ADMIN_USER} -l -c "ssh-keyscan ${COORDINATOR_HOSTNAME} >> ~/.ssh/known_hosts"
 su ${ADMIN_USER} -l -c "chmod 600 ~/.ssh/authorized_keys"
 su ${ADMIN_USER} -l -c "chmod 644 /home/${ADMIN_USER}/.ssh/known_hosts"
-echo "su ${ADMIN_USER} -l -c \"ssh ${COORDINATOR_HOSTNAME} 'date;exit'"\"
-su ${ADMIN_USER} -l -c "ssh ${COORDINATOR_HOSTNAME} 'date;exit'"
+#echo "su ${ADMIN_USER} -l -c \"ssh ${COORDINATOR_HOSTNAME} 'date;exit'"\"
+#su ${ADMIN_USER} -l -c "ssh ${COORDINATOR_HOSTNAME} 'date;exit'"
 
 
 log_time "Finished env init setting on coordinator..."
