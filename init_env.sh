@@ -380,7 +380,7 @@ log_time "Step 6: Setup user no-password access..."
 change_hostname ${COORDINATOR_HOSTNAME}
 rm -rf /home/${ADMIN_USER}/.ssh/
 su ${ADMIN_USER} -l -c "ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ''"
-cat ~/.ssh/id_rsa.pub | sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no ${ADMIN_USER}@${COORDINATOR_HOSTNAME} "cat >> /home/${ADMIN_USER}/.ssh/authorized_keys"
+cat /home/${ADMIN_USER}/.ssh/id_rsa.pub | sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no ${ADMIN_USER}@${COORDINATOR_HOSTNAME} "cat >> /home/${ADMIN_USER}/.ssh/authorized_keys"
 #su ${ADMIN_USER} -l -c "cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys"
 #su ${ADMIN_USER} -l -c "ssh-keyscan ${COORDINATOR_HOSTNAME} >> ~/.ssh/known_hosts"
 su ${ADMIN_USER} -l -c "chmod 600 ~/.ssh/authorized_keys"
