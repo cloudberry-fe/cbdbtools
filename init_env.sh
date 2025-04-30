@@ -211,6 +211,7 @@ if ! command -v sshpass &> /dev/null; then
         if [ $? -ne 0 ]; then
             echo "Failed to install sshpass from source code."
         exit 1
+        fi
     fi
     echo "sshpass installed successfully."
 else
