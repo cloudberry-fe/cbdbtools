@@ -96,6 +96,7 @@ if [ -f /etc/os-release ]; then
         7)
             # Operation in 7
             echo "This is a operating system with version ID starting with 7."
+            rm -rf /etc/yum.repos.d/*
             curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.huaweicloud.com/repository/conf/CentOS-7-anon.repo
             yum clean all
             yum makecache
@@ -105,7 +106,11 @@ if [ -f /etc/os-release ]; then
             ;;
         8)
             # Operation B
-            echo "This is a operating system with version ID starting with 8. Executing Operation B."
+            echo "This is a operating system with version ID starting with 8."
+            rm -rf /etc/yum.repos.d/*
+            curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.huaweicloud.com/repository/conf/CentOS-8-anon.repo
+            yum clean all
+            yum makecache
             # You can add specific commands for Operation B here
             ;;
         9)
@@ -126,7 +131,7 @@ cat /usr/share/zoneinfo/Asia/Macau > /usr/share/zoneinfo/Asia/Shanghai
 
 yum install -y epel-release
 
-yum install -y apr apr-util bash bzip2 curl iproute krb5-devel libcurl libevent libuuid libuv libxml2 libyaml libzstd openldap openssh openssh-clients openssh-server openssl openssl-libs perl python3 python3-psycopg2 python3-psutil python3-devel python3-pyyaml python3-setuptools python39 readline rsync sed tar which zip zlib git passwd wget net-tools
+yum install -y apr apr-util bash bzip2 curl iproute krb5-devel libcurl libevent libuuid libuv libxml2 libyaml libzstd openldap openssh openssh-clients openssh-server openssl openssl-libs perl python3 python3-psycopg2 python3-psutil python3-devel python3-pyyaml python3-setuptools python39 readline rsync sed tar which zip zlib git passwd wget net-tools nmon
 
 #Step 2: Turn off firewalls
 log_time "Step 2: Turn off firewalls..."
