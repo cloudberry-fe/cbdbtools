@@ -75,6 +75,8 @@ su ${ADMIN_USER} -l -c "source ${CLOUDBERRY_BINARY_PATH}/greenplum_path.sh;gpini
 su ${ADMIN_USER} -l -c "export COORDINATOR_DATA_DIRECTORY="${COORDINATOR_DATA_DIRECTORY}";source ${CLOUDBERRY_BINARY_PATH}/greenplum_path.sh;psql -d ${DATABASE_NAME} -c \"alter user ${ADMIN_USER} password 'Hashdata@123'\""
 echo "host all all 0.0.0.0/0 trust" >> ${COORDINATOR_DATA_DIRECTORY}/pg_hba.conf
 
+echo "Setting up environment variables for ${ADMIN_USER}..."
+
 sed -i '/greenplum_path.sh/d' /home/${ADMIN_USER}/.bashrc
 echo "source ${CLOUDBERRY_BINARY_PATH}/greenplum_path.sh" >> /home/${ADMIN_USER}/.bashrc
 
@@ -85,6 +87,8 @@ else
   sed -i '/COORDINATOR_DATA_DIRECTORY/d' /home/${ADMIN_USER}/.bashrc
   echo "export COORDINATOR_DATA_DIRECTORY=${COORDINATOR_DATA_DIRECTORY}" >> /home/${ADMIN_USER}/.bashrc 
 fi
+
+echo "Finished setting up environment variables for ${ADMIN_USER}..."
 
 su ${ADMIN_USER} -l -c "source ${CLOUDBERRY_BINARY_PATH}/greenplum_path.sh;gpstop -u"
 log_time "Finished init cluster..."
