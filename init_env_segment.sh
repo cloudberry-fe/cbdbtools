@@ -264,6 +264,8 @@ sed -i '/#Hashdata hosts begin/,/#Hashdata hosts end/d' /etc/hosts
 cat ${working_dir}/hostsfile >> /etc/hosts
 change_hostname ${SEGMENT_HOSTNAME}
 
+log_time "Finished env init setting on segment node ${SEGMENT_HOSTNAME}."
+
 # 检查 INIT_ENV_ONLY 环境变量
 if [ "${INIT_ENV_ONLY}" != "true" ]; then
   #Step 7: Installing database software
@@ -311,6 +313,7 @@ if [ "${INIT_ENV_ONLY}" != "true" ]; then
     echo "Unknown database software version, will try to install with YUM."
     yum install -y ${working_dir}/${filename}
   fi
+  log_time "Finished database software installation on segment node ${SEGMENT_HOSTNAME}."
 else
   log_time "Step 7: INI_ENV_ONLY mode, skip database software installation."
 fi
