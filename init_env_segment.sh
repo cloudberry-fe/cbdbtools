@@ -96,6 +96,7 @@ if [ -f /etc/os-release ]; then
         7)
             # Operation in 7
             echo "This is a operating system with version ID starting with 7."
+            rm -rf /etc/yum.repos.d/*
             curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.huaweicloud.com/repository/conf/CentOS-7-anon.repo
             yum clean all
             yum makecache
@@ -105,7 +106,11 @@ if [ -f /etc/os-release ]; then
             ;;
         8)
             # Operation B
-            echo "This is a operating system with version ID starting with 8. Executing Operation B."
+            echo "This is a operating system with version ID starting with 8."
+            rm -rf /etc/yum.repos.d/*
+            curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.huaweicloud.com/repository/conf/CentOS-8-anon.repo
+            yum clean all
+            yum makecache
             # You can add specific commands for Operation B here
             ;;
         9)
@@ -126,7 +131,7 @@ cat /usr/share/zoneinfo/Asia/Macau > /usr/share/zoneinfo/Asia/Shanghai
 
 yum install -y epel-release
 
-yum install -y apr apr-util bash bzip2 curl iproute krb5-devel libcurl libevent libuuid libuv libxml2 libyaml libzstd openldap openssh openssh-clients openssh-server openssl openssl-libs perl python3 python3-psycopg2 python3-psutil python3-devel python3-pyyaml python3-setuptools python39 readline rsync sed tar which zip zlib git passwd wget net-tools
+yum install -y apr apr-util bash bzip2 curl iproute krb5-devel libcurl libevent libuuid libuv libxml2 libyaml libzstd openldap openssh openssh-clients openssh-server openssl openssl-libs perl python3 python3-psycopg2 python3-psutil python3-devel python3-pyyaml python3-setuptools python39 readline rsync sed tar which zip zlib git passwd wget net-tools nmon
 
 #Step 2: Turn off firewalls
 log_time "Step 2: Turn off firewalls..."
@@ -244,60 +249,8 @@ if [ "${WITH_MIRROR}" = "true" ]; then
   chown -R ${ADMIN_USER}:${ADMIN_USER} ${MIRROR_DATA_DIRECTORY}
 fi
 
-# 检查 INIT_ENV_ONLY 环境变量
-if [ "${INIT_ENV_ONLY}" != "true" ]; then
-
-  #Step 6: Installing database software
-  log_time "Step 6: Installing database software..."
-  
-  # 确保CLOUDBERRY_RPM变量已设置
-  filename=$(basename "$CLOUDBERRY_RPM")
-  
-  # 判断RPM包名称是否包含greenplum或cloudberry
-  if [[ "${CLOUDBERRY_RPM}" =~ greenplum ]]; then
-      keyword="greenplum"
-      soft_link="/usr/local/greenplum-db"
-  elif [[ "${CLOUDBERRY_RPM}" =~ cloudberry ]]; then
-      keyword="cloudberry"
-      soft_link="/usr/local/cloudberry-db"
-  elif [[ "${CLOUDBERRY_RPM}" =~ hashdata ]]; then
-      keyword="hashdata"
-      soft_link="/usr/local/hashdata-lightning"
-  else
-      keyword="none"
-      soft_link="none"
-  fi
-  
-  # 根据关键字处理安装和权限
-  if [ "${keyword}" != "none" ]; then
-      # 检查/usr/local下是否存在包含关键字的目录
-      if find /usr/local -maxdepth 1 -type d -name "*${keyword}*" -print -quit | grep -q .; then
-          echo "检测到${keyword}目录，强制安装RPM并修改权限..."
-          # 检查软链接是否存在
-          if [ -L "$soft_link" ]; then
-          # 删除软链接
-            rm -f "$soft_link"
-            echo "软链接 $soft_link 已删除"
-          else
-            echo "软链接 $soft_link 不存在"
-          fi
-          echo "操作完成！"
-          rpm -ivh ${working_dir}/${filename} --force
-      else
-          echo "未找到${keyword}目录，使用YUM安装..."
-          yum install -y "${working_dir}/${filename}"
-      fi
-     # 修改目录权限  
-    chown -R ${ADMIN_USER}:${ADMIN_USER} /usr/local/${keyword}*
-    echo "已将 $dir 的所有者修改为 ${ADMIN_USER}:${ADMIN_USER}"
-  else
-      echo "未检测到相关产品关键字，尝试使用YUM安装，可能需要手工配置权限等..."
-      yum install -y ${working_dir}/${filename}
-  fi
-fi
-
-#Step 7: Setup user no-password access
-log_time "Step 7: Setup user no-password access..."
+#Step 6: Setup user access keys and configure host names
+log_time "Step 6: Setup user access keys and configure host names."
 
 rm -rf /home/${ADMIN_USER}/.ssh/
 su ${ADMIN_USER} -l -c "ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ''"
@@ -307,9 +260,60 @@ su ${ADMIN_USER} -l -c "cat /home/${ADMIN_USER}/.ssh/id_rsa.pub > /home/${ADMIN_
 #su ${ADMIN_USER} -l -c "echo \"UserKnownHostsFile /home/${ADMIN_USER}/.ssh/known_hosts\" >> /home/${ADMIN_USER}/.ssh/config"
 #su ${ADMIN_USER} -l -c "source ${CLOUDBERRY_BINARY_PATH}/greenplum_path.sh;gpssh-exkeys -h "$(hostname)""
 
-#Step 8: Set /etc/hosts on $(hostname)...
-log_time "Step 8: Set /etc/hosts on $(hostname)..."
 sed -i '/#Hashdata hosts begin/,/#Hashdata hosts end/d' /etc/hosts
 cat ${working_dir}/hostsfile >> /etc/hosts
 change_hostname ${SEGMENT_HOSTNAME}
-log_time "Finished env init setting on $(hostname)..."
+
+log_time "Finished env init setting on segment node ${SEGMENT_HOSTNAME}."
+
+# 检查 INIT_ENV_ONLY 环境变量
+if [ "${INIT_ENV_ONLY}" != "true" ]; then
+  #Step 7: Installing database software
+  log_time "Step 7: Installing database software."
+  # 确保CLOUDBERRY_RPM变量已设置
+  filename=$(basename "$CLOUDBERRY_RPM")
+  # 判断RPM包名称是否包含greenplum或cloudberry
+  if [[ "${CLOUDBERRY_RPM}" =~ greenplum ]]; then
+    keyword="greenplum"
+    soft_link="/usr/local/greenplum-db"
+  elif [[ "${CLOUDBERRY_RPM}" =~ cloudberry ]]; then
+    keyword="cloudberry"
+    soft_link="/usr/local/cloudberry-db"
+  elif [[ "${CLOUDBERRY_RPM}" =~ hashdata ]]; then
+    keyword="hashdata"
+    soft_link="/usr/local/hashdata-lightning"
+  else
+    keyword="none"
+    soft_link="none"
+  fi
+  
+  # 根据关键字处理安装和权限
+  if [ "${keyword}" != "none" ]; then
+    # 检查/usr/local下是否存在包含关键字的目录
+    if find /usr/local -maxdepth 1 -type d -name "*${keyword}*" -print -quit | grep -q .; then
+      echo "Previous installation found, will try to remove and reinstall."
+      # 检查软链接是否存在
+      if [ -L "$soft_link" ]; then
+        # 删除软链接
+        rm -f "$soft_link"
+        echo "软链接 $soft_link 已删除"
+      else
+        echo "软链接 $soft_link 不存在"
+      fi
+      echo "操作完成！"
+      rpm -ivh ${working_dir}/${filename} --force
+    else
+      echo "No previous installation found, will try to install with YUM."
+      yum install -y "${working_dir}/${filename}"
+    fi
+    # 修改目录权限  
+    chown -R ${ADMIN_USER}:${ADMIN_USER} /usr/local/${keyword}*
+    echo "The directory /usr/local/${keyword}* has been changed to ${ADMIN_USER}:${ADMIN_USER}."
+  else
+    echo "Unknown database software version, will try to install with YUM."
+    yum install -y ${working_dir}/${filename}
+  fi
+  log_time "Finished database software installation on segment node ${SEGMENT_HOSTNAME}."
+else
+  log_time "Step 7: INI_ENV_ONLY mode, skip database software installation."
+fi

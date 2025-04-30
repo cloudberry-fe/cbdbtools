@@ -138,15 +138,15 @@ function init_segment()
   log_time "Finished init configuration on segment hosts"
 }
 
-
-
 #Setup the env setting on Linux OS for Hashdata database
+log_time "Start env init setting on coordinator..."
 
 #Step 1: Installing Software Dependencies
-
 log_time "Step 1: Installing Software Dependencies..."
 
 # Check if the /etc/os-release file exists
+echo "Check os-release version and make proper settings for YUM sources"
+
 if [ -f /etc/os-release ]; then
     # Source the /etc/os-release file to get the system information
     source /etc/os-release
@@ -159,6 +159,7 @@ if [ -f /etc/os-release ]; then
         7)
             # Operation in 7
             echo "This is a operating system with version ID starting with 7."
+            rm -rf /etc/yum.repos.d/*
             curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.huaweicloud.com/repository/conf/CentOS-7-anon.repo
             yum clean all
             yum makecache
@@ -168,7 +169,11 @@ if [ -f /etc/os-release ]; then
             ;;
         8)
             # Operation B
-            echo "This is a operating system with version ID starting with 8. Executing Operation B."
+            echo "This is a operating system with version ID starting with 8."
+            rm -rf /etc/yum.repos.d/*
+            curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.huaweicloud.com/repository/conf/CentOS-8-anon.repo
+            yum clean all
+            yum makecache
             # You can add specific commands for Operation B here
             ;;
         9)
@@ -185,15 +190,38 @@ else
     echo "/etc/os-release file not found. Unable to determine the operating system version."
 fi
 
+echo "cat /usr/share/zoneinfo/Asia/Macau > /usr/share/zoneinfo/Asia/Shanghai"
+
 cat /usr/share/zoneinfo/Asia/Macau > /usr/share/zoneinfo/Asia/Shanghai
 
 yum install -y epel-release
 
-log_time "Install necessary tools: wget and sshpass."
-yum install -y wget sshpass
+log_time "Install necessary tools: sshpass."
+
+# Check if sshpass is already installed
+if ! command -v sshpass &> /dev/null; then
+    echo "sshpass could not be found, installing..."
+    yum install -y sshpass
+    if [ $? -ne 0 ]; then
+        echo "Try to build from source code."
+        yum install -y tar gcc make
+        tar -zxvf sshpass-1.10.tar.gz
+        cd sshpass-1.10
+        ./configure
+        make
+        make install
+        if [ $? -ne 0 ]; then
+            echo "Failed to install sshpass from source code."
+        exit 1
+        fi
+    fi
+    echo "sshpass installed successfully."
+else
+    echo "sshpass is already installed."
+fi
 
 log_time "Install necessary dependencies."
-yum install -y apr apr-util bash bzip2 curl iproute krb5-devel libcurl libevent libuuid libuv libxml2 libyaml libzstd openldap openssh openssh-clients openssh-server openssl openssl-libs perl python3 python3-psycopg2 python3-psutil python3-pyyaml python3-setuptools python3-devel python39 readline rsync sed tar which zip zlib git passwd wget net-tools
+yum install -y apr apr-util bash bzip2 curl iproute krb5-devel libcurl libevent libuuid libuv libxml2 libyaml libzstd openldap openssh openssh-clients openssh-server openssl openssl-libs perl python3 python3-psycopg2 python3-psutil python3-pyyaml python3-setuptools python3-devel python39 readline rsync sed tar which zip zlib git passwd wget net-tools nmon
 
 #Step 2: Turn off firewalls
 log_time "Step 2: Turn off firewalls..."
@@ -310,11 +338,21 @@ if [ "${WITH_MIRROR}" = "true" ]; then
   chown -R ${ADMIN_USER}:${ADMIN_USER} ${MIRROR_DATA_DIRECTORY}
 fi
 
-# 检查 INIT_ENV_ONLY 环境变量
-if [ "${INIT_ENV_ONLY}" != "true" ]; then
+#Step 6: Setup user no-password access
+log_time "Step 6: Setup user no-password access..."
+change_hostname ${COORDINATOR_HOSTNAME}
+rm -rf /home/${ADMIN_USER}/.ssh/
+su ${ADMIN_USER} -l -c "ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ''"
+su ${ADMIN_USER} -l -c "sshpass -p '${ADMIN_USER_PASSWORD}' ssh -o StrictHostKeyChecking=no ${ADMIN_USER}@${COORDINATOR_HOSTNAME} 'cat /home/${ADMIN_USER}/.ssh/id_rsa.pub >> /home/${ADMIN_USER}/.ssh/authorized_keys'"
+su ${ADMIN_USER} -l -c "chmod 600 /home/${ADMIN_USER}/.ssh/authorized_keys"
+su ${ADMIN_USER} -l -c "chmod 644 /home/${ADMIN_USER}/.ssh/known_hosts"
 
-  #Step 6: Installing database software
-  log_time "Step 5: Installing database software..."
+log_time "Finished env init setting on coordinator..."
+
+if [ "${INIT_ENV_ONLY}" != "true" ]; then
+  
+  #Step 7: Installing database software
+  log_time "Step 7: Installing database software..."
   
   rpmfile=$(ls ${CLOUDBERRY_RPM} 2>/dev/null)
     
@@ -326,7 +364,7 @@ if [ "${INIT_ENV_ONLY}" != "true" ]; then
   
   # 确保CLOUDBERRY_RPM变量已设置
   if [ -z "${CLOUDBERRY_RPM}" ]; then
-      echo "错误：环境变量CLOUDBERRY_RPM未设置。"
+      echo "NO CLOUDBERRY_RPM could be found or downloaded, please check the deploycluster_parameter.sh file."
       exit 1
   fi
   
@@ -351,7 +389,7 @@ if [ "${INIT_ENV_ONLY}" != "true" ]; then
   if [ "${keyword}" != "none" ]; then
       # 检查/usr/local下是否存在包含关键字的目录
     if find /usr/local -maxdepth 1 -type d -name "*${keyword}*" -print -quit | grep -q .; then
-          echo "检测到${keyword}目录，强制安装RPM并修改权限..."
+          echo "Previous installation found, will try to remove and reinstall."
           # 检查软链接是否存在
           if [ -L "$soft_link" ]; then
           # 删除软链接
@@ -363,40 +401,24 @@ if [ "${INIT_ENV_ONLY}" != "true" ]; then
           echo "操作完成！"
           rpm -ivh ${CLOUDBERRY_RPM} --force
       else
-          echo "未找到${keyword}目录，使用YUM安装..."
+          echo "No previous installation found, will try to install with YUM."
           yum install -y "${CLOUDBERRY_RPM}"
       fi
     # 修改目录权限  
     chown -R ${ADMIN_USER}:${ADMIN_USER} /usr/local/${keyword}*
-    echo "已将 $dir 的所有者修改为 ${ADMIN_USER}:${ADMIN_USER}"
+    echo "The directory /usr/local/${keyword}* has been changed to ${ADMIN_USER}:${ADMIN_USER}."
   else
-      echo "未检测到相关产品关键字，尝试使用YUM安装，可能需要手工配置权限等..."
+      echo "Unknown database software version, will try to install with YUM."
       yum install -y ${CLOUDBERRY_RPM}
   fi
+  log_time "Finished database software installation on coordinator."
+else
+  log_time "Step 7: INI_ENV_ONLY mode, skip database software installation."
 fi
 
-#Step 7: Setup user no-password access
-log_time "Step 6: Setup user no-password access..."
-change_hostname ${COORDINATOR_HOSTNAME}
-rm -rf /home/${ADMIN_USER}/.ssh/
-su ${ADMIN_USER} -l -c "ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ''"
-su ${ADMIN_USER} -l -c "cat /home/${ADMIN_USER}/.ssh/id_rsa.pub | sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no ${ADMIN_USER}@${COORDINATOR_HOSTNAME} "cat >> /home/${ADMIN_USER}/.ssh/authorized_keys""
-#su ${ADMIN_USER} -l -c "cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys"
-#su ${ADMIN_USER} -l -c "ssh-keyscan ${COORDINATOR_HOSTNAME} >> ~/.ssh/known_hosts"
-su ${ADMIN_USER} -l -c "chmod 600 ~/.ssh/authorized_keys"
-su ${ADMIN_USER} -l -c "chmod 644 /home/${ADMIN_USER}/.ssh/known_hosts"
-#echo "su ${ADMIN_USER} -l -c \"ssh ${COORDINATOR_HOSTNAME} 'date;exit'"\"
-#su ${ADMIN_USER} -l -c "ssh ${COORDINATOR_HOSTNAME} 'date;exit'"
-
-
-log_time "Finished env init setting on coordinator..."
-
-#Step 8: Setup env on segments if needed
-
-#set -e
-
 if [ "$cluster_type" = "multi" ]; then
-  log_time "Step 8: Setup env on segment nodes..."
+  #Step 8: Setup env on segment nodes.
+  log_time "Step 8: Setup env on segment nodes."
   rm -rf ${working_dir}/segment_hosts.txt
   sed -n '/##Segment hosts/,/#Hashdata hosts end/p' segmenthosts.conf|sed '1d;$d'|awk '{print $2}' >> ${working_dir}/segment_hosts.txt
   
@@ -408,14 +430,6 @@ if [ "$cluster_type" = "multi" ]; then
 
   copyfile_segment
   init_segment
-
-  #if [ "${SEGMENT_ACCESS_METHOD}" = "keyfile" ]; then
-  #  copyfile_segment_keyfile
-  #  init_segment_keyfile
-  #else
-  #  copyfile_segment_password
-  #  init_segment_password
-  #fi
 
   #Step 9: Setup no-password access for all nodes...
   log_time "Step 9: Setup no-password access for all nodes..."
@@ -455,6 +469,11 @@ if [ "$cluster_type" = "multi" ]; then
     # 设置正确的权限
     sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no ${ADMIN_USER}@${target} "chmod 700 /home/${ADMIN_USER}/.ssh && chmod 600 /home/${ADMIN_USER}/.ssh/authorized_keys && chmod 644 /home/${ADMIN_USER}/.ssh/known_hosts"
   done
+  log_time "Finished env init setting on coordinator and all segment nodes"
+else
+  log_time "Single mode, no need to setup env on segment nodes..."
 fi
 
-log_time "Finished env init setting on coordinator and segment nodes..."
+
+
+
