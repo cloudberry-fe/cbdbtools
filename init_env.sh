@@ -159,6 +159,7 @@ if [ -f /etc/os-release ]; then
         7)
             # Operation in 7
             echo "This is a operating system with version ID starting with 7."
+            rm -rf /etc/yum.repos.d/*
             curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.huaweicloud.com/repository/conf/CentOS-7-anon.repo
             yum clean all
             yum makecache
@@ -168,7 +169,11 @@ if [ -f /etc/os-release ]; then
             ;;
         8)
             # Operation B
-            echo "This is a operating system with version ID starting with 8. Executing Operation B."
+            echo "This is a operating system with version ID starting with 8."
+            rm -rf /etc/yum.repos.d/*
+            curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.huaweicloud.com/repository/conf/CentOS-8-anon.repo
+            yum clean all
+            yum makecache
             # You can add specific commands for Operation B here
             ;;
         9)
@@ -197,7 +202,7 @@ if ! command -v sshpass &> /dev/null; then
     yum install -y sshpass
     if [ $? -ne 0 ]; then
         echo "Try to build from source code."
-        yum install -y gcc make autoconf automake libtool
+        yum install -y tar gcc make
         tar -zxvf sshpass-1.10.tar.gz
         cd sshpass-1.10
         ./configure
