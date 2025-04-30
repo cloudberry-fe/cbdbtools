@@ -30,6 +30,8 @@ if [[ "${CLOUDBERRY_RPM}" =~ greenplum ]]; then
   fi
 fi
 
+echo "LEGACY_VERSION=${LEGACY_VERSION}"
+
 rm -rf ${INIT_CONFIGFILE} ${MACHINE_LIST_FILE}
 
 echo "ARRAY_NAME=${ARRAY_NAME}" > ${INIT_CONFIGFILE}
