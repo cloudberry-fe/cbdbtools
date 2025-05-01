@@ -100,6 +100,7 @@ if [ -f /etc/os-release ]; then
             curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.huaweicloud.com/repository/conf/CentOS-7-anon.repo
             yum clean all
             yum makecache
+            yum install -y libcgroup-tools
             
             # You can add specific commands for Operation A here, for example, setting up the environment on the coordinator node
             # sh init_env.sh single
@@ -111,6 +112,7 @@ if [ -f /etc/os-release ]; then
             curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.huaweicloud.com/repository/conf/CentOS-8-anon.repo
             yum clean all
             yum makecache
+            yum install -y libcgroup-tools
             # You can add specific commands for Operation B here
             ;;
         9)
