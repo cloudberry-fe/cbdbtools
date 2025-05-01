@@ -21,12 +21,13 @@ LEGACY_VERSION="false"
 if [[ "${CLOUDBERRY_RPM}" =~ greenplum ]]; then
   # Extract the version number, compatible with filenames that do not contain open-source-
   version=$(echo ${CLOUDBERRY_RPM} | grep -oP 'greenplum-db-\K[0-9.]+')
+  echo "Greenplum version is $version"
   # Get the major version number
   major_version=$(echo $version | cut -d. -f1)
   # Determine if the major version number is less than 7
   if [ $major_version -lt 7 ]; then
     LEGACY_VERSION="true"
-    echo "Greenplum version is $version, lower than 7"
+    echo "Greenplum version is lower than 7"
   fi
 fi
 
