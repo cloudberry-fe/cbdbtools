@@ -26,7 +26,7 @@ if [[ "${CLOUDBERRY_RPM}" =~ greenplum ]]; then
   # Determine if the major version number is less than 7
   if [ $major_version -lt 7 ]; then
     LEGACY_VERSION="true"
-    echo "Greenplum version is lower than 7"
+    echo "Greenplum version is $version, lower than 7"
   fi
 fi
 
