@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+#set -e
 
 VARS_FILE="deploycluster_parameter.sh"
 
@@ -21,6 +21,7 @@ LEGACY_VERSION="false"
 if [[ "${CLOUDBERRY_RPM}" =~ greenplum ]]; then
   # Extract the version number, compatible with filenames that do not contain open-source-
   version=$(echo ${CLOUDBERRY_RPM} | grep -oP 'greenplum-db-\K[0-9.]+')
+  echo "Greenplum version is $version"
   # Get the major version number
   major_version=$(echo $version | cut -d. -f1)
   # Determine if the major version number is less than 7
@@ -71,9 +72,7 @@ chown -R ${ADMIN_USER}:${ADMIN_USER} ${CLOUDBERRY_BINARY_PATH} ${INIT_CONFIGFILE
 
 COORDINATOR_DATA_DIRECTORY="${COORDINATOR_DIRECTORY}/${SEG_PREFIX}-1"
 
-set +e
 su ${ADMIN_USER} -l -c "source ${CLOUDBERRY_BINARY_PATH}/greenplum_path.sh;gpinitsystem -a -c ${INIT_CONFIGFILE} -h ${MACHINE_LIST_FILE}"
-set -e
 
 su ${ADMIN_USER} -l -c "export COORDINATOR_DATA_DIRECTORY="${COORDINATOR_DATA_DIRECTORY}";source ${CLOUDBERRY_BINARY_PATH}/greenplum_path.sh;psql -d ${DATABASE_NAME} -c \"alter user ${ADMIN_USER} password 'Hashdata@123'\""
 echo "host all all 0.0.0.0/0 trust" >> ${COORDINATOR_DATA_DIRECTORY}/pg_hba.conf

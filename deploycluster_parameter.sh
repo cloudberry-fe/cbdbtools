@@ -1,12 +1,14 @@
-# environment options
+## mandatory options
 export ADMIN_USER="gpadmin"
 export ADMIN_USER_PASSWORD="Hashdata@123"
+export CLOUDBERRY_RPM="/tmp/hashdata-lightning-release.rpm"
+export CLOUDBERRY_BINARY_PATH="/usr/local/cloudberry-db"
+export COORDINATOR_HOSTNAME="mdw"
+export COORDINATOR_IP="192.168.193.21"
 
 ## set to 'true' if you want to setup OS parameters only
 export INIT_ENV_ONLY="false"
-export CLOUDBERRY_RPM="/tmp/hashdata-lightning-release.rpm"
 export CLOUDBERRY_RPM_URL="http://downloadlink.com/cloudberry.rpm"
-export CLOUDBERRY_BINARY_PATH="/usr/local/cloudberry-db"
 export INIT_CONFIGFILE="/tmp/gpinitsystem_config"
 export WITH_MIRROR="false"
 export DEPLOY_TYPE="single"
@@ -21,7 +23,6 @@ export MACHINE_LIST_FILE="/tmp/hostfile_gpinitsystem"
 export SEG_PREFIX="gpseg"
 export PORT_BASE="6000"
 export DATA_DIRECTORY="/data0/database/primary /data0/database/primary"
-export COORDINATOR_HOSTNAME=$(hostname -s)
 export TRUSTED_SHELL="ssh"
 export CHECK_POINT_SEGMENTS="8"
 export ENCODING="UNICODE"

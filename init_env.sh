@@ -163,6 +163,7 @@ if [ -f /etc/os-release ]; then
             curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.huaweicloud.com/repository/conf/CentOS-7-anon.repo
             yum clean all
             yum makecache
+            yum install -y libcgroup-tools
             
             # You can add specific commands for Operation A here, for example, setting up the environment on the coordinator node
             # sh init_env.sh single
@@ -174,6 +175,7 @@ if [ -f /etc/os-release ]; then
             curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.huaweicloud.com/repository/conf/CentOS-8-anon.repo
             yum clean all
             yum makecache
+            yum install -y libcgroup-tools
             # You can add specific commands for Operation B here
             ;;
         9)
@@ -341,7 +343,13 @@ fi
 
 #Step 6: Setup user no-password access
 log_time "Step 6: Setup user no-password access..."
+
+echo "Configure Coordinator hostname."
+
+sed -i '/#Hashdata hosts begin/,/#Hashdata hosts end/d' /etc/hosts
+echo -e '\n#Hashdata hosts begin\n'"$COORDINATOR_IP $COORDINATOR_HOSTNAME"'\n#Hashdata hosts end' >> /etc/hosts
 change_hostname ${COORDINATOR_HOSTNAME}
+
 rm -rf /home/${ADMIN_USER}/.ssh/
 su ${ADMIN_USER} -l -c "ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ''"
 su ${ADMIN_USER} -l -c "sshpass -p '${ADMIN_USER_PASSWORD}' ssh -o StrictHostKeyChecking=no ${ADMIN_USER}@${COORDINATOR_HOSTNAME} 'cat /home/${ADMIN_USER}/.ssh/id_rsa.pub >> /home/${ADMIN_USER}/.ssh/authorized_keys'"
