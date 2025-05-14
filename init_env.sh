@@ -92,28 +92,28 @@ function copyfile_segment()
   log_time "copy init_env_segment.sh id_rsa.pub Cloudberry rpms to segment hosts"
   HOSTS_FILE="${working_dir}/segment_hosts.txt"
   if [ "${SEGMENT_ACCESS_METHOD}" = "keyfile" ]; then
-    sudo sh multissh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} "rm -rf ${working_dir};mkdir -p ${working_dir}"
-    ehco "sudo sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} init_env_segment.sh ${working_dir}"
-    echo "sudo sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} deploycluster_parameter.sh ${working_dir}"
-    echo "sudo sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${working_dir}/hostsfile ${working_dir}"
-    echo "sudo sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /home/${ADMIN_USER}/.ssh/id_rsa.pub ${working_dir}"
-    echo "sudo sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${CLOUDBERRY_RPM} ${working_dir}"
-    sudo sh multiscp.sh -v ENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} init_env_segment.sh ${working_dir}
-    sudo sh multiscp.sh -v ENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} deploycluster_parameter.sh ${working_dir}
-    sudo sh multiscp.sh -v ENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${working_dir}/hostsfile ${working_dir}
-    sudo sh multiscp.sh -v ENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /home/${ADMIN_USER}/.ssh/id_rsa.pub ${working_dir}
-    sudo sh multiscp.sh -v ENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${CLOUDBERRY_RPM} ${working_dir}
+    sh multissh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} "rm -rf ${working_dir};mkdir -p ${working_dir}"
+    ehco "sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} init_env_segment.sh ${working_dir}"
+    echo "sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} deploycluster_parameter.sh ${working_dir}"
+    echo "sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${working_dir}/hostsfile ${working_dir}"
+    echo "sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /home/${ADMIN_USER}/.ssh/id_rsa.pub ${working_dir}"
+    echo "sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${CLOUDBERRY_RPM} ${working_dir}"
+    sh multiscp.sh -v ENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} init_env_segment.sh ${working_dir}
+    sh multiscp.sh -v ENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} deploycluster_parameter.sh ${working_dir}
+    sh multiscp.sh -v ENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${working_dir}/hostsfile ${working_dir}
+    sh multiscp.sh -v ENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /home/${ADMIN_USER}/.ssh/id_rsa.pub ${working_dir}
+    sh multiscp.sh -v ENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${CLOUDBERRY_RPM} ${working_dir}
   else
-    echo "sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} init_env_segment.sh ${working_dir}"
-    echo "sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} deploycluster_parameter.sh ${working_dir}"
-    echo "sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${working_dir}/hostsfile ${working_dir}"
-    echo "sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /home/${ADMIN_USER}/.ssh/id_rsa.pub ${working_dir}"
-    echo "sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${CLOUDBERRY_RPM} ${working_dir}"
-    sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} init_env_segment.sh ${working_dir}
-    sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} deploycluster_parameter.sh ${working_dir}
-    sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${working_dir}/hostsfile ${working_dir}
-    sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /home/${ADMIN_USER}/.ssh/id_rsa.pub ${working_dir}
-    sudo sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${CLOUDBERRY_RPM} ${working_dir}
+    echo "sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} init_env_segment.sh ${working_dir}"
+    echo "sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} deploycluster_parameter.sh ${working_dir}"
+    echo "sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${working_dir}/hostsfile ${working_dir}"
+    echo "sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /home/${ADMIN_USER}/.ssh/id_rsa.pub ${working_dir}"
+    echo "sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${CLOUDBERRY_RPM} ${working_dir}"
+    sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} init_env_segment.sh ${working_dir}
+    sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} deploycluster_parameter.sh ${working_dir}
+    sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${working_dir}/hostsfile ${working_dir}
+    sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /home/${ADMIN_USER}/.ssh/id_rsa.pub ${working_dir}
+    sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${CLOUDBERRY_RPM} ${working_dir}
   fi
   log_time "Finished copy init_env_segment.sh id_rsa.pub Cloudberry rpms to segment hosts"
 }
