@@ -81,6 +81,7 @@ change_hostname() {
 function config_hostsfile()
 {
   log_time "set /etc/hosts on coordinator..."
+  echo "awk '/#Hashdata hosts begin/,/#Hashdata hosts end/' segmenthosts.conf > ${working_dir}/hostsfile"
   awk '/#Hashdata hosts begin/,/#Hashdata hosts end/' segmenthosts.conf > ${working_dir}/hostsfile
   sed -i '/#Hashdata hosts begin/,/#Hashdata hosts end/d' /etc/hosts
   cat ${working_dir}/hostsfile >> /etc/hosts
