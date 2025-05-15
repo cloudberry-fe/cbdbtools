@@ -455,20 +455,19 @@ if [ "$cluster_type" = "multi" ]; then
   done
   
   export COORDINATOR_HOSTNAME=$(sed -n '/##Coordinator hosts/,/##Segment hosts/p' segmenthosts.conf|sed '1d;$d'|awk '{print $2}')
-  echo ${COORDINATOR_HOSTNAME} >> ${working_dir}/segment_hosts.txt
   change_hostname ${COORDINATOR_HOSTNAME}
 
-
+  awk '/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/ {print $2}' segmenthosts.conf > ${working_dir}/all_hosts.txt
   
   mkdir -p ${working_dir}/ssh_keys
 
   # 使用 sshpass 收集所有节点的公钥
-  for node in $(cat ${working_dir}/segment_hosts.txt); do
+  for node in $(cat ${working_dir}/all_hosts.txt); do
     sshpass -p "${ADMIN_USER_PASSWORD}" scp -o StrictHostKeyChecking=no ${ADMIN_USER}@${node}:/home/${ADMIN_USER}/.ssh/id_rsa.pub ${working_dir}/ssh_keys/${node}.pub
   done
   
   # 分发公钥到所有节点
-  for target in $(cat ${working_dir}/segment_hosts.txt); do
+  for target in $(cat ${working_dir}/all_hosts.txt); do
     # 清空目标节点的 authorized_keys 文件
     sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no ${ADMIN_USER}@${target} "echo '' > /home/${ADMIN_USER}/.ssh/authorized_keys"
     
