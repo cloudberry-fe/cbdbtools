@@ -99,11 +99,11 @@ function copyfile_segment()
     echo "sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${working_dir}/hostsfile ${working_dir}"
     echo "sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /home/${ADMIN_USER}/.ssh/id_rsa.pub ${working_dir}"
     echo "sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${CLOUDBERRY_RPM} ${working_dir}"
-    sh multiscp.sh -v ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} init_env_segment.sh ${working_dir}
-    sh multiscp.sh -v ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} deploycluster_parameter.sh ${working_dir}
-    sh multiscp.sh -v ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${working_dir}/hostsfile ${working_dir}
-    sh multiscp.sh -v ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /home/${ADMIN_USER}/.ssh/id_rsa.pub ${working_dir}
-    sh multiscp.sh -v ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${CLOUDBERRY_RPM} ${working_dir}
+    sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} init_env_segment.sh ${working_dir}
+    sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} deploycluster_parameter.sh ${working_dir}
+    sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${working_dir}/hostsfile ${working_dir}
+    sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /home/${ADMIN_USER}/.ssh/id_rsa.pub ${working_dir}
+    sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${CLOUDBERRY_RPM} ${working_dir}
   else
     echo "sh multissh.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} \"rm -rf ${working_dir};mkdir -p ${working_dir}\""
     sh multissh.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} "rm -rf ${working_dir};mkdir -p ${working_dir}"
