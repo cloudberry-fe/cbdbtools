@@ -78,13 +78,37 @@ change_hostname() {
     return 0
 }    
 
+
 function config_hostsfile()
 {
-  log_time "set /etc/hosts on coordinator..."
-  echo "awk '/#Hashdata hosts begin/,/#Hashdata hosts end/' segmenthosts.conf > ${working_dir}/hostsfile"
-  awk '/#Hashdata hosts begin/,/#Hashdata hosts end/' segmenthosts.conf > ${working_dir}/hostsfile
+  log_time "Setting up /etc/hosts on coordinator..."
+  
+  # First clear any existing Hashdata hosts entries
   sed -i '/#Hashdata hosts begin/,/#Hashdata hosts end/d' /etc/hosts
-  cat ${working_dir}/hostsfile >> /etc/hosts
+  
+  # Create a temporary file for the new hosts entries
+  temp_hosts="${working_dir}/hostsfile"
+  
+  # Start the Hashdata hosts section
+  echo "#Hashdata hosts begin" > $temp_hosts
+  echo "##Coordinator hosts" >> $temp_hosts
+  
+  # Extract and add the coordinator entry - using grep to ensure only valid IP lines
+  sed -n '/##Coordinator hosts/,/##Segment hosts/p' segmenthosts.conf | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' >> $temp_hosts
+  
+  # Add segment hosts header
+  echo "##Segment hosts" >> $temp_hosts
+  
+  # Extract and add the segment entries - using grep to ensure only valid IP lines
+  sed -n '/##Segment hosts/,/#Hashdata hosts end/p' segmenthosts.conf | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' >> $temp_hosts
+  
+  # Close the Hashdata hosts section
+  echo "#Hashdata hosts end" >> $temp_hosts
+  
+  # Append the new hosts entries to /etc/hosts
+  cat $temp_hosts >> /etc/hosts
+  
+  log_time "Completed setting up /etc/hosts"
 }
 
 function copyfile_segment()
