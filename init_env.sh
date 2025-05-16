@@ -85,6 +85,8 @@ function config_hostsfile()
   
   # First clear any existing Hashdata hosts entries
   sed -i '/#Hashdata hosts begin/,/#Hashdata hosts end/d' /etc/hosts
+  # Remove empty lines from the bottom of the file
+  sed -i '/^$/d' /etc/hosts
   
   # Create a temporary file for the new hosts entries
   temp_hosts="${working_dir}/hostsfile"
