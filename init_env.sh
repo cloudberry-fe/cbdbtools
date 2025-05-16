@@ -376,8 +376,13 @@ log_time "Step 6: Setup user no-password access..."
 
 echo "Configure Coordinator hostname."
 
+# First clear any existing Hashdata hosts entries
 sed -i '/#Hashdata hosts begin/,/#Hashdata hosts end/d' /etc/hosts
+# Remove empty lines from the bottom of the file
+sed -i -e :a -e '/^\n*$/{$d;N;ba' -e '}' /etc/hosts
+
 echo -e '\n#Hashdata hosts begin\n'"$COORDINATOR_IP $COORDINATOR_HOSTNAME"'\n#Hashdata hosts end' >> /etc/hosts
+
 change_hostname ${COORDINATOR_HOSTNAME}
 
 rm -rf /home/${ADMIN_USER}/.ssh/
