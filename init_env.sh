@@ -448,12 +448,17 @@ if [ "$cluster_type" = "multi" ]; then
   #Step 9: Setup no-password access for all nodes...
   log_time "Step 9: Setup no-password access for all nodes..."
 
+  # Collect all key types (RSA, ECDSA, ED25519) explicitly
   for i in $(cat ${working_dir}/segment_hosts.txt); do
-    #echo "su ${ADMIN_USER} -l -c \"ssh ${i} 'date;exit'"\"
-    su ${ADMIN_USER} -l -c "ssh-keyscan ${i} >> ~/.ssh/known_hosts"
-    #su ${ADMIN_USER} -l -c "ssh ${i} 'date;exit'"
+    su ${ADMIN_USER} -l -c "ssh-keyscan -t rsa,ecdsa,ed25519 ${i} >> ~/.ssh/known_hosts" 
+    # Also collect keys using IP address
+    ip_addr=$(getent hosts ${i} | awk '{print $1}')
+    if [ ! -z "$ip_addr" ]; then
+      su ${ADMIN_USER} -l -c "ssh-keyscan -t rsa,ecdsa,ed25519 ${ip_addr} >> ~/.ssh/known_hosts"
+    fi
   done
-  
+
+  # Collect the coordinator node's public key  
   export COORDINATOR_HOSTNAME=$(sed -n '/##Coordinator hosts/,/##Segment hosts/p' segmenthosts.conf|sed '1d;$d'|awk '{print $2}')
   change_hostname ${COORDINATOR_HOSTNAME}
 
