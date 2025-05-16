@@ -381,7 +381,7 @@ sed -i '/#Hashdata hosts begin/,/#Hashdata hosts end/d' /etc/hosts
 # Remove empty lines from the bottom of the file
 sed -i -e :a -e '/^\n*$/{$d;N;ba' -e '}' /etc/hosts
 
-echo '\n#Hashdata hosts begin\n'"$COORDINATOR_IP $COORDINATOR_HOSTNAME"'\n#Hashdata hosts end' >> /etc/hosts
+echo -e '#Hashdata hosts begin\n'"$COORDINATOR_IP $COORDINATOR_HOSTNAME"'\n#Hashdata hosts end' >> /etc/hosts
 
 change_hostname ${COORDINATOR_HOSTNAME}
 
