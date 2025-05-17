@@ -8,6 +8,13 @@ source ./${VARS_FILE}
 
 working_dir="/tmp/${SEGMENT_ACCESS_USER}"
 
+# Check if the working directory exists, if yes delete it, if no create it
+if [ -d "${working_dir}" ]; then
+  rm -rf ${working_dir}
+fi
+mkdir -p ${working_dir}
+chmod 777 ${working_dir}
+
 if [ "${1}" == "single" ] || [ "${1}" == "multi" ]; then  
   cluster_type="${1}"  
 else  
@@ -465,7 +472,7 @@ fi
 if [ "$cluster_type" = "multi" ]; then
   #Step 8: Setup env on segment nodes.
   log_time "Step 8: Setup env on segment nodes."
-  rm -rf ${working_dir}/segment_hosts.txt
+  
   echo "sed -n '/##Segment hosts/,/#Hashdata hosts end/p' segmenthosts.conf|awk '/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/ {print \$2}' > ${working_dir}/segment_hosts.txt"
   sed -n '/##Segment hosts/,/#Hashdata hosts end/p' segmenthosts.conf|awk '/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/ {print $2}' > ${working_dir}/segment_hosts.txt
   
