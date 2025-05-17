@@ -1,4 +1,5 @@
 #/bin/bash
+set -e
 
 VARS_FILE="deploycluster_parameter.sh"
 
