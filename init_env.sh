@@ -466,8 +466,8 @@ if [ "$cluster_type" = "multi" ]; then
   #Step 8: Setup env on segment nodes.
   log_time "Step 8: Setup env on segment nodes."
   rm -rf ${working_dir}/segment_hosts.txt
-  echo "sed -n '/##Segment hosts/,/#Hashdata hosts end/p' segmenthosts.conf|sed '1d;\$d'|awk '{print \$2}' > ${working_dir}/segment_hosts.txt"
-  sed -n '/##Segment hosts/,/#Hashdata hosts end/p' segmenthosts.conf|sed '1d;$d'|awk '{print $2}' > ${working_dir}/segment_hosts.txt
+  echo "sed -n '/##Segment hosts/,/#Hashdata hosts end/p' segmenthosts.conf|awk '/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/ {print \$2}' > ${working_dir}/segment_hosts.txt"
+  sed -n '/##Segment hosts/,/#Hashdata hosts end/p' segmenthosts.conf|awk '/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/ {print $2}' > ${working_dir}/segment_hosts.txt
   
   config_hostsfile
 
