@@ -31,7 +31,6 @@ CBDBTools is a suite of scripts designed to automate the deployment and initiali
 ├── init_cluster.sh              # Script to initialize the database cluster
 ├── init_env.sh                  # Sets up the environment on the coordinator node
 ├── init_env_segment.sh          # Sets up the environment on segment nodes
-├── mirrorlessfailover.sh        # Failover handling for mirrorless clusters
 ├── multiscp.sh                  # Utility: parallel file copy to multiple hosts
 ├── multissh.sh                  # Utility: parallel command execution on multiple hosts
 ├── run.sh                       # Entry point script to start deployment
@@ -45,7 +44,6 @@ CBDBTools is a suite of scripts designed to automate the deployment and initiali
 - `deploycluster_parameter.sh`: Central place for all deployment parameters.
 - `init_env.sh` / `init_env_segment.sh`: Prepare OS, users, directories, and dependencies.
 - `init_cluster.sh`: Initializes the database cluster after environment setup.
-- `mirrorlessfailover.sh`: Provides failover support for clusters without mirrors.
 - `multissh.sh` / `multiscp.sh`: Utilities for parallel SSH and SCP operations.
 - `segmenthosts.conf`: List of all cluster nodes and their roles.
 - `run.sh`: Main entry point for launching the deployment workflow.
@@ -245,9 +243,6 @@ sh run.sh
 
 - **init_cluster.sh**  
   Initializes the database cluster.
-
-- **mirrorlessfailover.sh**  
-  Provides failover support for clusters without mirrors.
 
 - **run.sh**  
   Entry point script to start the deployment process.
