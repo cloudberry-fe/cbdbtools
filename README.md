@@ -186,6 +186,23 @@ Update the `segmenthosts.conf` file with the IP addresses and hostnames of your 
 - Hostnames will be set automatically by the tool.
 - In multi-node setups, this file overrides `COORDINATOR_HOSTNAME` and `COORDINATOR_IP` in `deploycluster_parameter.sh`.
 
+**Example `segmenthosts.conf` for a multi-node cluster:**
+```
+##Define hosts used for Hashdata
+
+#Hashdata hosts begin
+##Coordinator hosts
+192.168.193.21 mdw
+##Segment hosts
+192.168.198.201 sdw1
+192.168.198.13 sdw2
+#Hashdata hosts end
+```
+
+- Use `##Coordinator hosts` and `##Segment hosts` to separate coordinator and segment nodes.
+- Replace the IP addresses and hostnames with those appropriate for your environment.
+- This format must be followed for the deployment scripts to correctly parse the file.
+
 ---
 
 ### 3. Start Deployment
