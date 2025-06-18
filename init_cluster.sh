@@ -83,7 +83,6 @@ echo "host all all 0.0.0.0/0 trust" >> ${COORDINATOR_DATA_DIRECTORY}/pg_hba.conf
 
 echo "Setting up environment variables for ${ADMIN_USER}..."
 
-sed -i '/greenplum_path.sh\|cluster_env.sh/d' /home/${ADMIN_USER}/.bashrc
 echo "source ${CLOUDBERRY_BINARY_PATH}/${cluster_env}" >> /home/${ADMIN_USER}/.bashrc
 
 if [ "$LEGACY_VERSION" = "true" ]; then
