@@ -240,11 +240,7 @@ else
   if grep -qE 'COORDINATOR_DATA_DIRECTORY|MASTER_DATA_DIRECTORY|greenplum_path.sh|cluster_env.sh' /home/${ADMIN_USER}/.bashrc; then
     echo "Found environment variable settings to clean up, removing them..."
     # Use extended regex to match all target patterns and delete lines (macOS compatible syntax)
-    sed -i '' -E '/COORDINATOR_DATA_DIRECTORY|MASTER_DATA_DIRECTORY|greenplum_path.sh|cluster_env.sh/d' /home/${ADMIN_USER}/.bashrc
-  fi
-  if grep -q "${cluster_env}" /home/${ADMIN_USER}/.bashrc; then
-    echo "存在 ${cluster_env} 设置，将其注释掉..."
-    sed -i "/${cluster_env}/s/^/#/" /home/${ADMIN_USER}/.bashrc
+    sed -i -E '/COORDINATOR_DATA_DIRECTORY|MASTER_DATA_DIRECTORY|greenplum_path.sh|cluster_env.sh/d' /home/${ADMIN_USER}/.bashrc
   fi
 fi
 
