@@ -7,6 +7,13 @@ working_dir="$2"
 
 source ${working_dir}/${VARS_FILE}
 
+if [[ "${CLOUDBERRY_RPM}" =~ synxdb ]]; then
+  cluster_env="cluster_env.sh"
+else
+  cluster_env="greenplum_path.sh"
+fi
+
+
 function log_time() {
   printf "[%s] %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
 }
@@ -233,9 +240,9 @@ else
     echo "存在 COORDINATOR_DATA_DIRECTORY 设置，将其注释掉..."
     sed -i "/COORDINATOR_DATA_DIRECTORY/s/^/#/" /home/${ADMIN_USER}/.bashrc
   fi
-  if grep -q "greenplum_path.sh" /home/${ADMIN_USER}/.bashrc; then
-    echo "存在 greenplum_path.sh 设置，将其注释掉..."
-    sed -i "/greenplum_path.sh/s/^/#/" /home/${ADMIN_USER}/.bashrc
+  if grep -q "${cluster_env}" /home/${ADMIN_USER}/.bashrc; then
+    echo "存在 ${cluster_env} 设置，将其注释掉..."
+    sed -i "/${cluster_env}/s/^/#/" /home/${ADMIN_USER}/.bashrc
   fi
 fi
 
@@ -286,6 +293,9 @@ if [ "${INIT_ENV_ONLY}" != "true" ]; then
   elif [[ "${CLOUDBERRY_RPM}" =~ hashdata ]]; then
     keyword="hashdata"
     soft_link="/usr/local/hashdata-lightning"
+  elif [[ "${CLOUDBERRY_RPM}" =~ synxdb ]]; then
+    keyword="synxdb"
+    soft_link="/usr/local/synxdb4"
   else
     keyword="none"
     soft_link="none"

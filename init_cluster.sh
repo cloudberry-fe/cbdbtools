@@ -29,6 +29,12 @@ if [[ "${CLOUDBERRY_RPM}" =~ greenplum ]]; then
   fi
 fi
 
+if [[ "${CLOUDBERRY_RPM}" =~ synxdb ]]; then
+  cluster_env="cluster_env.sh"
+else
+  cluster_env="greenplum_path"
+fi
+
 echo "LEGACY_VERSION=${LEGACY_VERSION}"
 
 rm -rf ${INIT_CONFIGFILE} ${MACHINE_LIST_FILE}
@@ -70,15 +76,15 @@ chown -R ${ADMIN_USER}:${ADMIN_USER} ${CLOUDBERRY_BINARY_PATH} ${INIT_CONFIGFILE
 
 COORDINATOR_DATA_DIRECTORY="${COORDINATOR_DIRECTORY}/${SEG_PREFIX}-1"
 
-su ${ADMIN_USER} -l -c "source ${CLOUDBERRY_BINARY_PATH}/greenplum_path.sh;gpinitsystem -a -c ${INIT_CONFIGFILE} -h ${MACHINE_LIST_FILE}"
+su ${ADMIN_USER} -l -c "source ${CLOUDBERRY_BINARY_PATH}/${cluster_env};gpinitsystem -a -c ${INIT_CONFIGFILE} -h ${MACHINE_LIST_FILE}"
 
-su ${ADMIN_USER} -l -c "export COORDINATOR_DATA_DIRECTORY="${COORDINATOR_DATA_DIRECTORY}";source ${CLOUDBERRY_BINARY_PATH}/greenplum_path.sh;psql -d ${DATABASE_NAME} -c \"alter user ${ADMIN_USER} password 'Hashdata@123'\""
+su ${ADMIN_USER} -l -c "export COORDINATOR_DATA_DIRECTORY="${COORDINATOR_DATA_DIRECTORY}";source ${CLOUDBERRY_BINARY_PATH}/${cluster_env};psql -d ${DATABASE_NAME} -c \"alter user ${ADMIN_USER} password 'Hashdata@123'\""
 echo "host all all 0.0.0.0/0 trust" >> ${COORDINATOR_DATA_DIRECTORY}/pg_hba.conf
 
 echo "Setting up environment variables for ${ADMIN_USER}..."
 
-sed -i '/greenplum_path.sh/d' /home/${ADMIN_USER}/.bashrc
-echo "source ${CLOUDBERRY_BINARY_PATH}/greenplum_path.sh" >> /home/${ADMIN_USER}/.bashrc
+sed -i '/${cluster_env}/d' /home/${ADMIN_USER}/.bashrc
+echo "source ${CLOUDBERRY_BINARY_PATH}/${cluster_env}" >> /home/${ADMIN_USER}/.bashrc
 
 if [ "$LEGACY_VERSION" = "true" ]; then
   sed -i '/MASTER_DATA_DIRECTORY/d' /home/${ADMIN_USER}/.bashrc
@@ -90,5 +96,5 @@ fi
 
 echo "Finished setting up environment variables for ${ADMIN_USER}..."
 
-su ${ADMIN_USER} -l -c "source ${CLOUDBERRY_BINARY_PATH}/greenplum_path.sh;gpstop -u"
+su ${ADMIN_USER} -l -c "source ${CLOUDBERRY_BINARY_PATH}/${cluster_env};gpstop -u"
 log_time "Finished init cluster..."
