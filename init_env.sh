@@ -25,6 +25,9 @@ else
   cluster_env="greenplum_path.sh"
 fi
 
+echo "CLOUDBERRY_RPM:$CLOUDBERRY_RPM"
+echo "cluster_env:$cluster_env"
+
 change_hostname() {
     local new_hostname="$1"
     
