@@ -266,10 +266,6 @@ log_time "Step 6: Setup user access keys and configure host names."
 rm -rf /home/${ADMIN_USER}/.ssh/
 su ${ADMIN_USER} -l -c "ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ''"
 su ${ADMIN_USER} -l -c "cat /home/${ADMIN_USER}/.ssh/id_rsa.pub > /home/${ADMIN_USER}/.ssh/authorized_keys"
-#su ${ADMIN_USER} -l -c "cat ${working_dir}/id_rsa.pub >> /home/${ADMIN_USER}/.ssh/authorized_keys"
-#su ${ADMIN_USER} -l -c "cat ${working_dir}/known_hosts >> /home/${ADMIN_USER}/.ssh/known_hosts"
-#su ${ADMIN_USER} -l -c "echo \"UserKnownHostsFile /home/${ADMIN_USER}/.ssh/known_hosts\" >> /home/${ADMIN_USER}/.ssh/config"
-#su ${ADMIN_USER} -l -c "source ${CLOUDBERRY_BINARY_PATH}/greenplum_path.sh;gpssh-exkeys -h "$(hostname)""
 
 sed -i '/#Hashdata hosts begin/,/#Hashdata hosts end/d' /etc/hosts
 cat ${working_dir}/hostsfile >> /etc/hosts

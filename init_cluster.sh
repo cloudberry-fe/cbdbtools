@@ -32,7 +32,7 @@ fi
 if [[ "${CLOUDBERRY_RPM}" =~ synxdb ]]; then
   cluster_env="cluster_env.sh"
 else
-  cluster_env="greenplum_path"
+  cluster_env="greenplum_path.sh"
 fi
 
 echo "LEGACY_VERSION=${LEGACY_VERSION}"
@@ -83,7 +83,7 @@ echo "host all all 0.0.0.0/0 trust" >> ${COORDINATOR_DATA_DIRECTORY}/pg_hba.conf
 
 echo "Setting up environment variables for ${ADMIN_USER}..."
 
-sed -i '/${cluster_env}/d' /home/${ADMIN_USER}/.bashrc
+sed -i '/greenplum_path.sh\|cluster_env.sh/d' /home/${ADMIN_USER}/.bashrc
 echo "source ${CLOUDBERRY_BINARY_PATH}/${cluster_env}" >> /home/${ADMIN_USER}/.bashrc
 
 if [ "$LEGACY_VERSION" = "true" ]; then
