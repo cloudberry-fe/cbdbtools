@@ -236,11 +236,11 @@ if ! id "$ADMIN_USER" &>/dev/null; then
   echo "%wheel        ALL=(ALL)       NOPASSWD: ALL" >> /etc/sudoers
   chown -R ${ADMIN_USER}:${ADMIN_USER} /home/${ADMIN_USER}
 else
-  # 合并所有需要清理的模式，使用正则表达式OR条件匹配多个关键词
+  # Combine all patterns to be cleaned, using regex OR condition to match multiple keywords
   if grep -qE 'COORDINATOR_DATA_DIRECTORY|MASTER_DATA_DIRECTORY|greenplum_path.sh|cluster_env.sh' /home/${ADMIN_USER}/.bashrc; then
-    echo "存在需要清理的环境变量设置，将其注释掉..."
-    # 使用扩展正则表达式匹配所有目标模式并添加注释
-    sed -i -E '/COORDINATOR_DATA_DIRECTORY|MASTER_DATA_DIRECTORY|greenplum_path.sh|cluster_env.sh/s/^/#/' /home/${ADMIN_USER}/.bashrc
+    echo "Found environment variable settings to clean up, removing them..."
+    # Use extended regex to match all target patterns and delete lines (macOS compatible syntax)
+    sed -i '' -E '/COORDINATOR_DATA_DIRECTORY|MASTER_DATA_DIRECTORY|greenplum_path.sh|cluster_env.sh/d' /home/${ADMIN_USER}/.bashrc
   fi
   if grep -q "${cluster_env}" /home/${ADMIN_USER}/.bashrc; then
     echo "存在 ${cluster_env} 设置，将其注释掉..."
