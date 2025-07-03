@@ -261,7 +261,11 @@ fi
 #Step 6: Setup user access keys and configure host names
 log_time "Step 6: Setup user access keys and configure host names."
 
-rm -rf /home/${ADMIN_USER}/.ssh/
+rm -f /home/${ADMIN_USER}/.ssh/id_rsa.pub
+rm -f /home/${ADMIN_USER}/.ssh/id_rsa
+rm -f /home/${ADMIN_USER}/.ssh/authorized_keys
+rm -f /home/${ADMIN_USER}/.ssh/known_hosts
+
 su ${ADMIN_USER} -l -c "ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ''"
 su ${ADMIN_USER} -l -c "cat /home/${ADMIN_USER}/.ssh/id_rsa.pub > /home/${ADMIN_USER}/.ssh/authorized_keys"
 

@@ -399,7 +399,11 @@ echo -e '#Hashdata hosts begin\n'"$COORDINATOR_IP $COORDINATOR_HOSTNAME"'\n#Hash
 
 change_hostname ${COORDINATOR_HOSTNAME}
 
-rm -rf /home/${ADMIN_USER}/.ssh/
+rm -f /home/${ADMIN_USER}/.ssh/id_rsa.pub
+rm -f /home/${ADMIN_USER}/.ssh/id_rsa
+rm -f /home/${ADMIN_USER}/.ssh/authorized_keys
+rm -f /home/${ADMIN_USER}/.ssh/known_hosts
+
 su ${ADMIN_USER} -l -c "ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ''"
 su ${ADMIN_USER} -l -c "sshpass -p '${ADMIN_USER_PASSWORD}' ssh -o StrictHostKeyChecking=no ${ADMIN_USER}@${COORDINATOR_HOSTNAME} 'cat /home/${ADMIN_USER}/.ssh/id_rsa.pub >> /home/${ADMIN_USER}/.ssh/authorized_keys'"
 su ${ADMIN_USER} -l -c "chmod 600 /home/${ADMIN_USER}/.ssh/authorized_keys"
