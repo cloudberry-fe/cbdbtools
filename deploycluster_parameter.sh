@@ -41,6 +41,6 @@ export SEGMENT_ACCESS_PASSWORD="XXXXXXXX"
 
 # Utility function for logging with timestamps
 function log_time() {
-  printf "[%s] %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
+  printf "[%s] %b\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
 }
 export -f log_time
