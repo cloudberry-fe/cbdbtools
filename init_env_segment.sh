@@ -162,8 +162,12 @@ timedatectl set-timezone Asia/Macau
 shmall=$(expr $(getconf _PHYS_PAGES) / 2)
 shmmax=$(expr $(getconf _PHYS_PAGES) / 2 \* $(getconf PAGE_SIZE))
 
-echo "######################
-# HASHDATA CONFIG PARAMS #
+# Clean up previous HashData sysctl configuration
+sed -i '/# BEGIN HashData sysctl CONFIG/,/# END HashData sysctl CONFIG/d' /etc/sysctl.conf
+
+echo "# BEGIN HashData sysctl CONFIG
+######################
+# HashData CONFIG PARAMS #
 ######################
 
 kernel.shmall = _SHMALL
@@ -183,8 +187,8 @@ net.ipv4.tcp_syncookies = 1
 net.ipv4.conf.default.accept_source_route = 0
 net.ipv4.tcp_max_syn_backlog = 4096
 net.ipv4.conf.all.arp_filter = 1
-net.ipv4.ipfrag_high_thresh = 41943040
-net.ipv4.ipfrag_low_thresh = 31457280
+net.ipv4.ipfrag_high_thresh = 1024000000
+net.ipv4.ipfrag_low_thresh = 819200000
 net.ipv4.ipfrag_time = 60
 net.core.netdev_max_backlog = 10000
 net.core.rmem_max = 2097152
@@ -197,9 +201,13 @@ vm.dirty_background_ratio = 0
 vm.dirty_ratio = 0
 vm.dirty_background_bytes = 1610612736
 vm.dirty_bytes = 4294967296
-kernel.core_pattern=/var/core/core.%h.%t" |sed s/_SHMALL/${shmall}/ | sed s/_SHMMAX/${shmmax}/ >> /etc/sysctl.conf
+kernel.core_pattern=/var/core/core.%h.%t
+# END HashData sysctl CONFIG" |sed s/_SHMALL/${shmall}/ | sed s/_SHMMAX/${shmmax}/ >> /etc/sysctl.conf
 
-echo "######################
+sed -i '/# BEGIN HashData limits CONFIG/,/# END HashData limits CONFIG/d' /etc/security/limits.conf
+
+echo "# BEGIN HashData limits CONFIG
+######################
 # HashData CONFIG PARAMS #
 ######################
 
@@ -207,21 +215,26 @@ echo "######################
 * hard nofile 524288
 * soft nproc 131072
 * hard nproc 131072
-* soft  core unlimited" >> /etc/security/limits.conf
+* soft  core unlimited
+# END HashData limits CONFIG" >> /etc/security/limits.conf
 
 cat /usr/share/zoneinfo/Asia/Shanghai > /etc/localtime 
 
 sysctl -p
 log_time "More optimization parameters need to be configured manually for production purpose, please refer to documentation..."
 
-echo "######################
+sed -i '/# BEGIN HashData sshd CONFIG/,/# END HashData sshd CONFIG/d' /etc/ssh/sshd_config
+
+echo "# BEGIN HashData sshd CONFIG
+######################
 # HashData SSH PARAMS #
 ######################
 
 ClientAliveInterval 60
 ClientAliveCountMax 3
 MaxStartups 1000:30:3000
-MaxSessions 3000" >> /etc/ssh/sshd_config
+MaxSessions 3000
+# END HashData sshd CONFIG" >> /etc/ssh/sshd_config
 
 systemctl restart sshd
 
