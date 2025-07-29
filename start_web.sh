@@ -15,7 +15,7 @@ then
 fi
 
 # 安装Flask
-pip3 install flask --user
+pip3 install -i https://mirrors.aliyun.com/pypi/simpleflask --user
 
 # 启动Web应用
 python3 cluster_deploy_web.py
