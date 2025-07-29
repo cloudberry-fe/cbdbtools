@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBDB集群部署工具</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1, h2 { color: #333; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select, textarea { width: 100%; padding: 8px; box-sizing: border-box; }
+        .btn { padding: 10px 15px; background: #4CAF50; color: white; border: none; cursor: pointer; }
+        .btn:hover { background: #45a049; }
+        .host-group { border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 5px; }
+        .flash { padding: 10px; margin-bottom: 15px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .tab { overflow: hidden; border: 1px solid #ccc; background-color: #f1f1f1; }
+        .tab button { background-color: inherit; float: left; border: none; outline: none; cursor: pointer; padding: 14px 16px; transition: 0.3s; }
+        .tab button:hover { background-color: #ddd; }
+        .tab button.active { background-color: #ccc; }
+        .tabcontent { display: none; padding: 6px 12px; border: 1px solid #ccc; border-top: none; }
+        .tabcontent.active { display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>CBDB集群部署工具</h1>
+
+        <!-- 消息提示 -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- 选项卡 -->
+        <div class="tab">
+            <button class="tablinks active" onclick="openTab(event, 'params')">参数配置</button>
+            <button class="tablinks" onclick="openTab(event, 'hosts')">主机配置</button>
+            <button class="tablinks" onclick="openTab(event, 'deploy')">一键部署</button>
+        </div>
+
+        <!-- 参数配置 -->
+        <div id="params" class="tabcontent active">
+            <h2>集群参数配置</h2>
+            <form method="post" action="/save">
+                <div class="form-group">
+                    <label for="ADMIN_USER">管理员用户:</label>
+                    <input type="text" id="ADMIN_USER" name="ADMIN_USER" value="{{ params.get('ADMIN_USER', 'gpadmin') }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="ADMIN_USER_PASSWORD">管理员密码:</label>
+                    <input type="password" id="ADMIN_USER_PASSWORD" name="ADMIN_USER_PASSWORD" value="{{ params.get('ADMIN_USER_PASSWORD', 'Hashdata@123') }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="CLOUDBERRY_RPM">安装包路径:</label>
+                    <input type="text" id="CLOUDBERRY_RPM" name="CLOUDBERRY_RPM" value="{{ params.get('CLOUDBERRY_RPM', '/tmp/hashdata-lightning-release.rpm') }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="CLOUDBERRY_BINARY_PATH">安装路径:</label>
+                    <input type="text" id="CLOUDBERRY_BINARY_PATH" name="CLOUDBERRY_BINARY_PATH" value="{{ params.get('CLOUDBERRY_BINARY_PATH', '/usr/local/cloudberry-db') }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="DEPLOY_TYPE">部署类型:</label>
+                    <select id="DEPLOY_TYPE" name="DEPLOY_TYPE" required>
+                        <option value="single" {% if params.get('DEPLOY_TYPE') == 'single' %}selected{% endif %}>单节点</option>
+                        <option value="multi" {% if params.get('DEPLOY_TYPE') == 'multi' %}selected{% endif %}>多节点</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="INIT_ENV_ONLY">仅初始化环境:</label>
+                    <select id="INIT_ENV_ONLY" name="INIT_ENV_ONLY" required>
+                        <option value="false" {% if params.get('INIT_ENV_ONLY') == 'false' %}selected{% endif %}>否</option>
+                        <option value="true" {% if params.get('INIT_ENV_ONLY') == 'true' %}selected{% endif %}>是</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="CLOUDBERRY_RPM_URL">安装包下载地址:</label>
+                    <input type="text" id="CLOUDBERRY_RPM_URL" name="CLOUDBERRY_RPM_URL" value="{{ params.get('CLOUDBERRY_RPM_URL', 'http://downloadlink.com/cloudberry.rpm') }}">
+                </div>
+                <div class="form-group">
+                    <label for="WITH_MIRROR">启用镜像:</label>
+                    <select id="WITH_MIRROR" name="WITH_MIRROR" required>
+                        <option value="false" {% if params.get('WITH_MIRROR') == 'false' %}selected{% endif %}>否</option>
+                        <option value="true" {% if params.get('WITH_MIRROR') == 'true' %}selected{% endif %}>是</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="WITH_STANDBY">启用备用节点:</label>
+                    <select id="WITH_STANDBY" name="WITH_STANDBY" required>
+                        <option value="false" {% if params.get('WITH_STANDBY') == 'false' %}selected{% endif %}>否</option>
+                        <option value="true" {% if params.get('WITH_STANDBY') == 'true' %}selected{% endif %}>是</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="COORDINATOR_PORT">协调器端口:</label>
+                    <input type="number" id="COORDINATOR_PORT" name="COORDINATOR_PORT" value="{{ params.get('COORDINATOR_PORT', '5432') }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="COORDINATOR_DIRECTORY">协调器数据目录:</label>
+                    <input type="text" id="COORDINATOR_DIRECTORY" name="COORDINATOR_DIRECTORY" value="{{ params.get('COORDINATOR_DIRECTORY', '/data0/database/coordinator') }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="ARRAY_NAME">集群名称:</label>
+                    <input type="text" id="ARRAY_NAME" name="ARRAY_NAME" value="{{ params.get('ARRAY_NAME', 'CBDB_SANDBOX') }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="PORT_BASE">端口基数:</label>
+                    <input type="number" id="PORT_BASE" name="PORT_BASE" value="{{ params.get('PORT_BASE', '6000') }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="DATA_DIRECTORY">数据目录:</label>
+                    <input type="text" id="DATA_DIRECTORY" name="DATA_DIRECTORY" value="{{ params.get('DATA_DIRECTORY', '/data0/database/primary /data0/database/primary') }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="ENCODING">编码:</label>
+                    <input type="text" id="ENCODING" name="ENCODING" value="{{ params.get('ENCODING', 'UNICODE') }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="SEGMENT_ACCESS_METHOD">段节点访问方式:</label>
+                    <select id="SEGMENT_ACCESS_METHOD" name="SEGMENT_ACCESS_METHOD" required>
+                        <option value="keyfile" {% if params.get('SEGMENT_ACCESS_METHOD') == 'keyfile' %}selected{% endif %}>密钥文件</option>
+                        <option value="password" {% if params.get('SEGMENT_ACCESS_METHOD') == 'password' %}selected{% endif %}>密码</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="SEGMENT_ACCESS_USER">段节点访问用户:</label>
+                    <input type="text" id="SEGMENT_ACCESS_USER" name="SEGMENT_ACCESS_USER" value="{{ params.get('SEGMENT_ACCESS_USER', 'root') }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="SEGMENT_ACCESS_KEYFILE">密钥文件路径:</label>
+                    <input type="text" id="SEGMENT_ACCESS_KEYFILE" name="SEGMENT_ACCESS_KEYFILE" value="{{ params.get('SEGMENT_ACCESS_KEYFILE', '/tmp/keyfiles') }}">
+                </div>
+                <div class="form-group">
+                    <label for="SEGMENT_ACCESS_PASSWORD">段节点访问密码:</label>
+                    <input type="password" id="SEGMENT_ACCESS_PASSWORD" name="SEGMENT_ACCESS_PASSWORD" value="{{ params.get('SEGMENT_ACCESS_PASSWORD', 'XXXXXXXX') }}">
+                </div>
+
+                <!-- 主机配置部分 -->
+                <input type="hidden" id="coord_ip" name="coord_ip" value="{{ hosts.coordinator[0] if hosts.coordinator else '' }}">
+                <input type="hidden" id="coord_hostname" name="coord_hostname" value="{{ hosts.coordinator[1] if hosts.coordinator else '' }}">
+                <input type="hidden" id="segment_count" name="segment_count" value="{{ len(hosts.segments) }}">
+                {% for i, segment in enumerate(hosts.segments) %}
+                    <input type="hidden" id="segment_ip_{{ i }}" name="segment_ip_{{ i }}" value="{{ segment[0] }}">
+                    <input type="hidden" id="segment_hostname_{{ i }}" name="segment_hostname_{{ i }}" value="{{ segment[1] }}">
+                {% endfor %}
+
+                <button type="submit" class="btn">保存配置</button>
+            </form>
+        </div>
+
+        <!-- 主机配置 -->
+        <div id="hosts" class="tabcontent">
+            <h2>主机配置</h2>
+            <form method="post" action="/save">
+                <div class="host-group">
+                    <h3>协调器主机</h3>
+                    <div class="form-group">
+                        <label for="coord_ip">IP地址:</label>
+                        <input type="text" id="coord_ip" name="coord_ip" value="{{ hosts.coordinator[0] if hosts.coordinator else '' }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="coord_hostname">主机名:</label>
+                        <input type="text" id="coord_hostname" name="coord_hostname" value="{{ hosts.coordinator[1] if hosts.coordinator else '' }}" required>
+                    </div>
+                </div>
+
+                <div class="host-group">
+                    <h3>段主机</h3>
+                    <div id="segments_container">
+                        {% for i, segment in enumerate(hosts.segments) %}
+                            <div class="segment_host" id="segment_{{ i }}">
+                                <div class="form-group">
+                                    <label>IP地址:</label>
+                                    <input type="text" name="segment_ip_{{ i }}" value="{{ segment[0] }}" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>主机名:</label>
+                                    <input type="text" name="segment_hostname_{{ i }}" value="{{ segment[1] }}" required>
+                                </div>
+                                <hr>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <button type="button" class="btn" onclick="addSegmentHost()">添加段主机</button>
+                    <input type="hidden" id="segment_count" name="segment_count" value="{{ len(hosts.segments) }}">
+                </div>
+
+                <!-- 参数配置部分 (隐藏) -->
+                {% for key, value in params.items() %}
+                    <input type="hidden" name="{{ key }}" value="{{ value }}">
+                {% endfor %}
+
+                <button type="submit" class="btn">保存配置</button>
+            </form>
+        </div>
+
+        <!-- 一键部署 -->
+        <div id="deploy" class="tabcontent">
+            <h2>集群部署</h2>
+            <p>点击下方按钮开始部署集群。请注意，这可能需要一些时间。</p>
+            <form method="post" action="/deploy">
+                <button type="submit" class="btn">一键部署</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // 选项卡切换
+        function openTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tabcontent");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].classList.remove("active");
+            }
+            tablinks = document.getElementsByClassName("tablinks");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].classList.remove("active");
+            }
+            document.getElementById(tabName).classList.add("active");
+            evt.currentTarget.classList.add("active");
+        }
+
+        // 添加段主机
+        function addSegmentHost() {
+            var container = document.getElementById("segments_container");
+            var count = document.getElementById("segment_count");
+            var currentCount = parseInt(count.value);
+            var newCount = currentCount + 1;
+
+            var newSegment = document.createElement("div");
+            newSegment.className = "segment_host";
+            newSegment.id = "segment_" + currentCount;
+            newSegment.innerHTML = '
+                <div class="form-group">
+                    <label>IP地址:</label>
+                    <input type="text" name="segment_ip_' + currentCount + '" required>
+                </div>
+                <div class="form-group">
+                    <label>主机名:</label>
+                    <input type="text" name="segment_hostname_' + currentCount + '" required>
+                </div>
+                <hr>
+            ';
+
+            container.appendChild(newSegment);
+            count.value = newCount;
+        }
+    </script>
+</body>
+</html>
