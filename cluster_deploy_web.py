@@ -65,15 +65,21 @@ def read_hosts():
 # 保存主机配置
 def save_hosts(hosts):
     with open(HOSTS_FILE, 'w') as f:
-        f.write('##Define hosts used for Hashdata\n\n')
-        f.write('#Hashdata hosts begin\n')
-        f.write('##Coordinator hosts\n')
+        f.write('##Define hosts used for Hashdata
+
+')
+        f.write('#Hashdata hosts begin
+')
+        f.write('##Coordinator hosts
+')
         if hosts['coordinator']:
-            f.write(f'{hosts['coordinator'][0]} {hosts['coordinator'][1]}\n')
-        f.write('##Segment hosts\n')
+            f.write(f"{hosts['coordinator'][0]} {hosts['coordinator'][1]}\n")
+        f.write('##Segment hosts
+')
         for segment in hosts['segments']:
-            f.write(f'{segment[0]} {segment[1]}\n')
-        f.write('#Hashdata hosts end\n')
+            f.write(f"{segment[0]} {segment[1]}\n")
+        f.write('#Hashdata hosts end
+')
 
 # 部署集群
 def deploy_cluster():
