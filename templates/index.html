@@ -145,9 +145,9 @@
                 <input type="hidden" id="coord_ip" name="coord_ip" value="{{ hosts.coordinator[0] if hosts.coordinator else '' }}">
                 <input type="hidden" id="coord_hostname" name="coord_hostname" value="{{ hosts.coordinator[1] if hosts.coordinator else '' }}">
                 <input type="hidden" id="segment_count" name="segment_count" value="{{ hosts.segments|length }}">
-                {% for i, segment in enumerate(hosts.segments) %}
-                    <input type="hidden" id="segment_ip_{{ i }}" name="segment_ip_{{ i }}" value="{{ segment[0] }}">
-                    <input type="hidden" id="segment_hostname_{{ i }}" name="segment_hostname_{{ i }}" value="{{ segment[1] }}">
+                {% for segment in hosts.segments %}
+                    <input type="hidden" id="segment_ip_{{ loop.index0 }}" name="segment_ip_{{ loop.index0 }}" value="{{ segment[0] }}">
+                    <input type="hidden" id="segment_hostname_{{ loop.index0 }}" name="segment_hostname_{{ loop.index0 }}" value="{{ segment[1] }}">
                 {% endfor %}
 
                 <button type="submit" class="btn">保存配置</button>
