@@ -173,15 +173,15 @@
                 <div class="host-group">
                     <h3>段主机</h3>
                     <div id="segments_container">
-                        {% for i, segment in enumerate(hosts.segments) %}
-                            <div class="segment_host" id="segment_{{ i }}">
+                        {% for segment in hosts.segments %}
+                            <div class="segment_host" id="segment_{{ loop.index0 }}">
                                 <div class="form-group">
                                     <label>IP地址:</label>
-                                    <input type="text" name="segment_ip_{{ i }}" value="{{ segment[0] }}" required>
+                                    <input type="text" name="segment_ip_{{ loop.index0 }}" value="{{ segment[0] }}" required>
                                 </div>
                                 <div class="form-group">
                                     <label>主机名:</label>
-                                    <input type="text" name="segment_hostname_{{ i }}" value="{{ segment[1] }}" required>
+                                    <input type="text" name="segment_hostname_{{ loop.index0 }}" value="{{ segment[1] }}" required>
                                 </div>
                                 <hr>
                             </div>
