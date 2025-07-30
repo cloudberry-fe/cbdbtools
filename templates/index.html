@@ -144,7 +144,7 @@
                 <!-- 主机配置部分 -->
                 <input type="hidden" id="coord_ip" name="coord_ip" value="{{ hosts.coordinator[0] if hosts.coordinator else '' }}">
                 <input type="hidden" id="coord_hostname" name="coord_hostname" value="{{ hosts.coordinator[1] if hosts.coordinator else '' }}">
-                <input type="hidden" id="segment_count" name="segment_count" value="{{ len(hosts.segments) }}">
+                <input type="hidden" id="segment_count" name="segment_count" value="{{ hosts.segments|length }}">
                 {% for i, segment in enumerate(hosts.segments) %}
                     <input type="hidden" id="segment_ip_{{ i }}" name="segment_ip_{{ i }}" value="{{ segment[0] }}">
                     <input type="hidden" id="segment_hostname_{{ i }}" name="segment_hostname_{{ i }}" value="{{ segment[1] }}">
@@ -188,7 +188,7 @@
                         {% endfor %}
                     </div>
                     <button type="button" class="btn" onclick="addSegmentHost()">添加段主机</button>
-                    <input type="hidden" id="segment_count" name="segment_count" value="{{ len(hosts.segments) }}">
+                    <input type="hidden" id="segment_count" name="segment_count" value="{{ hosts.segments|length }}">
                 </div>
 
                 <!-- 参数配置部分 (隐藏) -->
