@@ -232,22 +232,20 @@
             var count = document.getElementById("segment_count");
             var currentCount = parseInt(count.value);
             var newCount = currentCount + 1;
-
+        
             var newSegment = document.createElement("div");
             newSegment.className = "segment_host";
             newSegment.id = "segment_" + currentCount;
-            newSegment.innerHTML = '
-                <div class="form-group">
-                    <label>IP地址:</label>
-                    <input type="text" name="segment_ip_' + currentCount + '" required>
-                </div>
-                <div class="form-group">
-                    <label>主机名:</label>
-                    <input type="text" name="segment_hostname_' + currentCount + '" required>
-                </div>
-                <hr>
-            ';
-
+            newSegment.innerHTML = '<div class="form-group">' +
+                '<label>IP地址:</label>' +
+                '<input type="text" name="segment_ip_' + currentCount + '" required>' +
+                '</div>' +
+                '<div class="form-group">' +
+                '<label>主机名:</label>' +
+                '<input type="text" name="segment_hostname_' + currentCount + '" required>' +
+                '</div>' +
+                '<hr>';
+        
             container.appendChild(newSegment);
             count.value = newCount;
         }

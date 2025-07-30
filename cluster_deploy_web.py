@@ -128,7 +128,7 @@ def deploy():
     if result['success']:
         flash('集群部署成功！')
     else:
-        flash(f'集群部署失败: {result.get('error', result.get('stderr', '未知错误'))}')
+        flash(f"集群部署失败: {result.get('error', result.get('stderr', '未知错误'))}")
     return redirect(url_for('index'))
 
 if __name__ == '__main__':
