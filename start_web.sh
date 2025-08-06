@@ -1,21 +1,28 @@
 #!/bin/bash
 
-# 检查是否安装了Python和Flask
-if ! command -v python3 &> /dev/null
-then
-    echo "未找到Python3，请先安装Python3。"
-    exit 1
+# Check if virtual environment exists, if not create it
+if [ ! -d "venv" ]; then
+    echo "Creating virtual environment..."
+    python3 -m venv venv
 fi
 
-# 检查是否安装了pip
-if ! command -v pip3 &> /dev/null
+# Activate virtual environment
+source venv/bin/activate
+
+# Check if gunicorn is installed, if not install it
+if ! command -v gunicorn &> /dev/null
 then
-    echo "未找到pip3，请先安装pip3。"
-    exit 1
+    echo "Installing Gunicorn..."
+    pip install gunicorn
 fi
 
-# 安装Flask
-pip3 install -i https://mirrors.aliyun.com/pypi/simple flask --user
+# Install Flask if not already installed
+if ! command -v flask &> /dev/null
+then
+    echo "Installing Flask..."
+    pip install flask
+fi
 
-# 启动Web应用
-python3 cluster_deploy_web.py
+# Start the web application using Gunicorn
+echo "Starting web application with Gunicorn..."
+exec gunicorn --bind 0.0.0.0:5000 --workers 4 wsgi:app
