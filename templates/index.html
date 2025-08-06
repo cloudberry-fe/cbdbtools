@@ -545,6 +545,22 @@
                                    value="{{ params.get('DATA_DIRECTORY', '/data0/database/primary /data0/database/primary') }}" required>
                             <small class="form-text">Enter multiple directory paths separated by spaces</small>
                         </div>
+                        
+                        <div class="form-group">
+                            <label for="WITH_MIRROR">Enable Mirrors:</label>
+                            <select id="WITH_MIRROR" name="WITH_MIRROR">
+                                <option value="false" {% if params.get('WITH_MIRROR') == 'false' %}selected{% endif %}>No</option>
+                                <option value="true" {% if params.get('WITH_MIRROR') == 'true' %}selected{% endif %}>Yes</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="WITH_STANDBY">Enable Standby:</label>
+                            <select id="WITH_STANDBY" name="WITH_STANDBY">
+                                <option value="false" {% if params.get('WITH_STANDBY') == 'false' %}selected{% endif %}>No</option>
+                                <option value="true" {% if params.get('WITH_STANDBY') == 'true' %}selected{% endif %}>Yes</option>
+                            </select>
+                        </div>
                     </div>
                     
                     <div class="form-col">
@@ -603,22 +619,6 @@
                             <input type="text" id="CLOUDBERRY_RPM_URL" name="CLOUDBERRY_RPM_URL" 
                                    value="{{ params.get('CLOUDBERRY_RPM_URL', 'http://downloadlink.com/cloudberry.rpm') }}">
                             <small class="form-text">URL to download the RPM package if not locally available</small>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="WITH_MIRROR">Enable Mirrors:</label>
-                            <select id="WITH_MIRROR" name="WITH_MIRROR">
-                                <option value="false" {% if params.get('WITH_MIRROR') == 'false' %}selected{% endif %}>No</option>
-                                <option value="true" {% if params.get('WITH_MIRROR') == 'true' %}selected{% endif %}>Yes</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="WITH_STANDBY">Enable Standby:</label>
-                            <select id="WITH_STANDBY" name="WITH_STANDBY">
-                                <option value="false" {% if params.get('WITH_STANDBY') == 'false' %}selected{% endif %}>No</option>
-                                <option value="true" {% if params.get('WITH_STANDBY') == 'true' %}selected{% endif %}>Yes</option>
-                            </select>
                         </div>
                     </div>
                 </div>
