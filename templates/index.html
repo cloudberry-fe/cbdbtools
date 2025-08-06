@@ -778,6 +778,9 @@
             } else {
                 multiNodeParams.classList.add('hidden');
             }
+            
+            // 检查是否需要显示Mirror Data Directories
+            toggleMirrorDataDir();
         }
 
         // Segment access method toggle
@@ -785,6 +788,30 @@
             const method = this.value;
             document.getElementById('keyfilePathGroup').style.display = method === 'keyfile' ? 'block' : 'none';
             document.getElementById('passwordGroup').style.display = method === 'keyfile' ? 'none' : 'block';
+        });
+
+        // 控制Mirror Data Directories显示/隐藏
+        function toggleMirrorDataDir() {
+            const withMirror = document.getElementById('WITH_MIRROR');
+            const mirrorDataDirGroup = document.getElementById('mirrorDataDirGroup');
+            
+            if (withMirror && mirrorDataDirGroup) {
+                if (withMirror.value === 'true') {
+                    mirrorDataDirGroup.style.display = 'block';
+                } else {
+                    mirrorDataDirGroup.style.display = 'none';
+                }
+            }
+        }
+
+        // 监听Enable Mirrors选择变化
+        document.addEventListener('DOMContentLoaded', function() {
+            const withMirror = document.getElementById('WITH_MIRROR');
+            if (withMirror) {
+                withMirror.addEventListener('change', toggleMirrorDataDir);
+                // 初始化时也调用一次
+                toggleMirrorDataDir();
+            }
         });
 
         // Add segment host

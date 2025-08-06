@@ -1,5 +1,18 @@
 #!/bin/bash
 
+# Turn off firewalls
+log_time "Step 1: Turn off firewalls..."
+
+systemctl stop firewalld.service
+systemctl disable firewalld.service
+
+sed s/^SELINUX=.*$/SELINUX=disabled/ -i /etc/selinux/config
+setenforce 0
+
+# Install required packages
+log_time "Step 2: Install required packages..."
+yum install -y python3 python3-pip
+
 # Check if virtual environment exists, if not create it
 if [ ! -d "venv" ]; then
     echo "Creating virtual environment..."
