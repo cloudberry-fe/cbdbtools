@@ -45,4 +45,4 @@ fi
 
 # Start the web application using Gunicorn
 echo "Starting web application with Gunicorn..."
-exec gunicorn --bind 0.0.0.0:5000 --workers 4 wsgi:app
+exec gunicorn --bind 0.0.0.0:5000 --workers 4 --timeout 600 wsgi:app
