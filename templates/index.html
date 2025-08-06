@@ -254,20 +254,6 @@
             background: #c82333;
         }
         
-        .browse-btn {
-            background: var(--info);
-            border: none;
-            color: white;
-            padding: 12px 15px;
-            border-radius: 0 var(--border-radius) var(--border-radius) 0;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-        
-        .browse-btn:hover {
-            background: #3a86e0;
-        }
-        
         /* Host Group */
         .host-group {
             border: 1px solid var(--light-gray);
@@ -479,129 +465,54 @@
                                    value="{{ params.get('COORDINATOR_PORT', '5432') }}" required>
                         </div>
                         
-                        <!-- 恢复Coordinator Data Directory的浏览按钮 -->
                         <div class="form-group">
                             <label for="COORDINATOR_DIRECTORY">Coordinator Data Directory:</label>
-                            <div class="input-group">
-                                <input type="text" id="COORDINATOR_DIRECTORY" name="COORDINATOR_DIRECTORY" 
-                                       value="{{ params.get('COORDINATOR_DIRECTORY', '/data0/database/coordinator') }}" required>
-                                <button type="button" class="browse-btn" onclick="browseDirectory('COORDINATOR_DIRECTORY')">
-                                    <i class="fas fa-folder"></i>
-                                </button>
-                            </div>
+                            <input type="text" id="COORDINATOR_DIRECTORY" name="COORDINATOR_DIRECTORY" 
+                                   value="{{ params.get('COORDINATOR_DIRECTORY', '/data0/database/coordinator') }}" required>
                         </div>
                         
-                        <!-- 恢复Segment Data Directories的浏览按钮 -->
                         <div class="form-group">
                             <label for="DATA_DIRECTORY">Segment Data Directories:</label>
-                            <div class="input-group">
-                                <input type="text" id="DATA_DIRECTORY" name="DATA_DIRECTORY" 
-                                       value="{{ params.get('DATA_DIRECTORY', '/data0/database/primary /data0/database/primary') }}" required>
-                                <button type="button" class="browse-btn" onclick="browseDirectory('DATA_DIRECTORY')">
-                                    <i class="fas fa-folder"></i>
-                                </button>
-                            </div>
+                            <input type="text" id="DATA_DIRECTORY" name="DATA_DIRECTORY" 
+                                   value="{{ params.get('DATA_DIRECTORY', '/data0/database/primary /data0/database/primary') }}" required>
                         </div>
                         
-                        <!-- 恢复Mirror Data Directories的浏览按钮 -->
                         <div class="form-group" id="mirrorDataDirGroup" style="display: none;">
                             <label for="MIRROR_DATA_DIRECTORY">Mirror Data Directories:</label>
-                            <div class="input-group">
-                                <input type="text" id="MIRROR_DATA_DIRECTORY" name="MIRROR_DATA_DIRECTORY" 
-                                       value="{{ params.get('MIRROR_DATA_DIRECTORY', '/data0/database/mirror /data0/database/mirror') }}" required>
-                                <button type="button" class="browse-btn" onclick="browseDirectory('MIRROR_DATA_DIRECTORY')">
-                                    <i class="fas fa-folder"></i>
-                                </button>
-                            </div>
-                            <small class="form-text">请输入用空格分隔的多个目录路径</small>
+                            <input type="text" id="MIRROR_DATA_DIRECTORY" name="MIRROR_DATA_DIRECTORY" 
+                                   value="{{ params.get('MIRROR_DATA_DIRECTORY', '/data0/database/mirror /data0/database/mirror') }}" required>
+                            <small class="form-text">Please enter multiple directory paths separated by spaces</small>
                         </div>
                         
-                        <!-- 移除JavaScript中的browseDirectory函数 -->
-                        <script>
-                    // File browser functions (real implementation)
-                    function browseFile(fieldId) {
-                        // Create a hidden file input element
-                        const fileInput = document.createElement('input');
-                        fileInput.type = 'file';
-                        fileInput.style.display = 'none';
+                        <div class="form-group">
+                            <label for="CLOUDBERRY_RPM">RPM Package Path:</label>
+                            <input type="text" id="CLOUDBERRY_RPM" name="CLOUDBERRY_RPM" 
+                                   value="{{ params.get('CLOUDBERRY_RPM', '/tmp/hashdata-lightning-release.rpm') }}" required>
+                        </div>
                         
-                        // When a file is selected
-                        fileInput.onchange = function(event) {
-                            const file = event.target.files[0];
-                            if (file) {
-                                // For demonstration, we'll upload the file to the server
-                                const formData = new FormData();
-                                formData.append('file', file);
-                                
-                                fetch('/upload_file', {
-                                    method: 'POST',
-                                    body: formData
-                                })
-                                .then(response => response.json())
-                                .then(data => {
-                                    if (data.success) {
-                                        // Set the file path in the input field
-                                        document.getElementById(fieldId).value = data.path;
-                                    } else {
-                                        alert('Error uploading file: ' + data.error);
-                                    }
-                                })
-                                .catch(error => {
-                                    alert('Error uploading file: ' + error);
-                                });
-                            }
-                        };
-                        
-                        // Trigger the file selection dialog
-                        document.body.appendChild(fileInput);
-                        fileInput.click();
-                        document.body.removeChild(fileInput);
-                    }
-                
-                    function browseDirectory(fieldId) {
-                        // For directory selection, we'll prompt the user to enter the path
-                        // In a real implementation, you might use a more advanced approach
-                        const directoryPath = prompt("Please enter the directory path:");
-                        if (directoryPath) {
-                            // Validate and set the directory path
-                            fetch('/select_directory', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/x-www-form-urlencoded',
-                                },
-                                body: 'directory_path=' + encodeURIComponent(directoryPath)
-                            })
-                            .then(response => response.json())
-                            .then(data => {
-                                if (data.success) {
-                                    // Set the directory path in the input field
-                                    document.getElementById(fieldId).value = data.path;
-                                } else {
-                                    alert('Error selecting directory: ' + data.error);
-                                }
-                            })
-                            .catch(error => {
-                                alert('Error selecting directory: ' + error);
-                            });
-                        }
-                    }
-                </script>
-                
-                <div class="form-group">
-                    <label for="WITH_MIRROR">Enable Mirrors:</label>
-                    <select id="WITH_MIRROR" name="WITH_MIRROR">
-                        <option value="false" {% if params.get('WITH_MIRROR') == 'false' %}selected{% endif %}>No</option>
-                        <option value="true" {% if params.get('WITH_MIRROR') == 'true' %}selected{% endif %}>Yes</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="WITH_STANDBY">Enable Standby:</label>
-                    <select id="WITH_STANDBY" name="WITH_STANDBY">
-                        <option value="false" {% if params.get('WITH_STANDBY') == 'false' %}selected{% endif %}>No</option>
-                        <option value="true" {% if params.get('WITH_STANDBY') == 'true' %}selected{% endif %}>Yes</option>
-                    </select>
-                </div>
+                        <div class="form-group" id="keyfilePathGroup" 
+                              {% if params.get('SEGMENT_ACCESS_METHOD') != 'keyfile' %}style="display:none;"{% endif %}>
+                            <label for="SEGMENT_ACCESS_KEYFILE">Key File Path:</label>
+                            <input type="text" id="SEGMENT_ACCESS_KEYFILE" name="SEGMENT_ACCESS_KEYFILE" 
+                                   value="{{ params.get('SEGMENT_ACCESS_KEYFILE', '/tmp/keyfiles') }}">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="WITH_MIRROR">Enable Mirrors:</label>
+                        <select id="WITH_MIRROR" name="WITH_MIRROR">
+                            <option value="false" {% if params.get('WITH_MIRROR') == 'false' %}selected{% endif %}>No</option>
+                            <option value="true" {% if params.get('WITH_MIRROR') == 'true' %}selected{% endif %}>Yes</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="WITH_STANDBY">Enable Standby:</label>
+                        <select id="WITH_STANDBY" name="WITH_STANDBY">
+                            <option value="false" {% if params.get('WITH_STANDBY') == 'false' %}selected{% endif %}>No</option>
+                            <option value="true" {% if params.get('WITH_STANDBY') == 'true' %}selected{% endif %}>Yes</option>
+                        </select>
+                    </div>
             </div>
             
             <div class="form-col">
@@ -632,17 +543,6 @@
                     <label for="PORT_BASE">Port Base:</label>
                     <input type="number" id="PORT_BASE" name="PORT_BASE" 
                            value="{{ params.get('PORT_BASE', '6000') }}" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="DATA_DIRECTORY">Segment Data Directories:</label>
-                    <div class="input-group">
-                        <input type="text" id="DATA_DIRECTORY" name="DATA_DIRECTORY" 
-                               value="{{ params.get('DATA_DIRECTORY', '/data0/database/primary /data0/database/primary') }}" required>
-                        <button type="button" class="browse-btn" onclick="browseDirectory('DATA_DIRECTORY')">
-                            <i class="fas fa-folder"></i>
-                        </button>
-                    </div>
                 </div>
                 
                 <div class="form-group">
@@ -710,7 +610,7 @@
                                 <i class="fas fa-folder"></i>
                             </button>
                         </div>
-                        <small class="form-text">请输入用空格分隔的多个目录路径</small>
+                        <small class="form-text">Please enter multiple directory paths separated by spaces</small>
                     </div>
                     <!-- End Mirror Data Directories Field -->
                 </div>
@@ -970,14 +870,20 @@
         }
     }
 
+    <!-- 移除以下JavaScript函数 -->
+    <script>
+    // 移除 browseFile 和 browseDirectory 函数
     // File browser functions (simulated)
+    /*
     function browseFile(fieldId) {
-        alert("In a real implementation, this would open a file browser dialog. For now, please enter the file path manually.");
+    alert("In a real implementation, this would open a file browser dialog. For now, please enter the file path manually.");
     }
-
+    
     function browseDirectory(fieldId) {
-        alert("In a real implementation, this would open a directory browser dialog. For now, please enter the directory path manually.");
+    alert("In a real implementation, this would open a directory browser dialog. For now, please enter the directory path manually.");
     }
+    */
+    </script>
 
     // Initialize form based on deployment mode
     document.addEventListener('DOMContentLoaded', function() {

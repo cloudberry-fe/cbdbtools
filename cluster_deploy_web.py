@@ -9,25 +9,17 @@ import json
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
 
-# 添加文件上传配置
-UPLOAD_FOLDER = 'uploads'
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
-# 确保上传目录存在
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
-
-# 配置文件路径
+# Configuration file paths
 PARAM_FILE = 'deploycluster_parameter.sh'
 HOSTS_FILE = 'segmenthosts.conf'
 
-# 读取配置参数
+# Read configuration parameters
 def read_parameters():
     params = {}
     if os.path.exists(PARAM_FILE):
         with open(PARAM_FILE, 'r') as f:
             content = f.read()
-            # 提取export变量
+            # Extract export variables
             for line in content.split('\n'):
                 if line.startswith('export '):
                     parts = line[7:].split('=', 1)
@@ -37,50 +29,50 @@ def read_parameters():
                         params[key] = value
     return params
 
-# 保存配置参数
+# Save configuration parameters
 def save_parameters(params):
-    # 如果参数文件存在，先备份它
+    # If parameter file exists, backup it first
     if os.path.exists(PARAM_FILE):
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         backup_file = f'{PARAM_FILE}.backup_{timestamp}'
         shutil.copy2(PARAM_FILE, backup_file)
-        print(f'参数文件已备份为: {backup_file}')
+        print(f'Parameter file backed up as: {backup_file}')
     
     with open(PARAM_FILE, 'w') as f:
         f.write('## Mandatory options\n')
         for key, value in params.items():
             f.write(f'export {key}="{value}"\n')
-        # 添加日志函数
+        # Add logging function
         f.write('\n# Utility function for logging with timestamps\n')
         f.write('function log_time() {\n')
         f.write('  printf "[%s] %b\n" "$(date \'%Y-%m-%d %H:%M:%S\')" "$1"\n')
         f.write('}\n')
         f.write('export -f log_time\n')
 
-# 读取主机配置
+# Read host configuration
 def read_hosts():
     hosts = {'coordinator': [], 'segments': []}
     if os.path.exists(HOSTS_FILE):
         with open(HOSTS_FILE, 'r') as f:
             content = f.read()
-            # 提取协调器主机
+            # Extract coordinator host
             coord_match = re.search(r'##Coordinator hosts\n([\d.]+)\s+([\w-]+)', content)
             if coord_match:
                 hosts['coordinator'] = [coord_match.group(1), coord_match.group(2)]
-            # 提取段主机
+            # Extract segment hosts
             segment_matches = re.findall(r'##Segment hosts\n([\d.]+)\s+([\w-]+)\n([\d.]+)\s+([\w-]+)', content)
             if segment_matches:
                 for match in segment_matches:
                     hosts['segments'].append([match[0], match[1]])
                     hosts['segments'].append([match[2], match[3]])
             else:
-                # 尝试匹配单个段主机
+                # Try to match single segment host
                 single_segment = re.search(r'##Segment hosts\n([\d.]+)\s+([\w-]+)', content)
                 if single_segment:
                     hosts['segments'].append([single_segment.group(1), single_segment.group(2)])
     return hosts
 
-# 保存主机配置
+# Save host configuration
 def save_hosts(hosts):
     with open(HOSTS_FILE, 'w') as f:
         f.write('##Define hosts used for Hashdata\n')
@@ -93,10 +85,10 @@ def save_hosts(hosts):
             f.write(f"{segment[0]} {segment[1]}\n")
         f.write('#Hashdata hosts end\n')
 
-# 部署集群
+# Deploy cluster
 def deploy_cluster():
     try:
-        # 运行部署脚本
+        # Run deployment script
         process = subprocess.Popen(['sh', 'deploycluster.sh'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
         return {'success': process.returncode == 0, 'stdout': stdout.decode(), 'stderr': stderr.decode()}
@@ -112,15 +104,15 @@ def index():
 @app.route('/save', methods=['POST'])
 def save():
     try:
-        # 保存参数
+        # Save parameters
         params = request.form.to_dict()
         save_parameters(params)
-        # 保存主机
+        # Save hosts
         hosts = {
             'coordinator': [request.form.get('coord_ip'), request.form.get('coord_hostname')],
             'segments': []
         }
-        # 提取段主机
+        # Extract segment hosts
         segment_count = int(request.form.get('segment_count', 0))
         for i in range(segment_count):
             ip = request.form.get(f'segment_ip_{i}')
@@ -128,63 +120,24 @@ def save():
             if ip and hostname:
                 hosts['segments'].append([ip, hostname])
         save_hosts(hosts)
-        flash('配置已保存成功！')
+        flash('Configuration saved successfully!')
         return redirect(url_for('index'))
     except Exception as e:
-        flash(f'保存配置时出错: {str(e)}')
+        flash(f'Error saving configuration: {str(e)}')
         return redirect(url_for('index'))
 
 @app.route('/deploy', methods=['POST'])
 def deploy():
     result = deploy_cluster()
     if result['success']:
-        flash('集群部署成功！')
+        flash('Cluster deployed successfully!')
     else:
-        flash(f"集群部署失败: {result.get('error', result.get('stderr', '未知错误'))}")
+        flash(f"Cluster deployment failed: {result.get('error', result.get('stderr', 'Unknown error'))}")
     return redirect(url_for('index'))
 
-# 添加文件上传路由
-@app.route('/upload_file', methods=['POST'])
-def upload_file():
-    try:
-        if 'file' not in request.files:
-            return jsonify({'success': False, 'error': '没有文件被上传'})
-        
-        file = request.files['file']
-        if file.filename == '':
-            return jsonify({'success': False, 'error': '没有选择文件'})
-        
-        if file:
-            # 保存文件到上传目录
-            filename = file.filename
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(file_path)
-            return jsonify({'success': True, 'path': file_path})
-    
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
-
-# 添加目录选择路由
-@app.route('/select_directory', methods=['POST'])
-def select_directory():
-    try:
-        # 获取目录路径
-        directory_path = request.form.get('directory_path', '')
-        if not directory_path:
-            return jsonify({'success': False, 'error': '目录路径不能为空'})
-        
-        # 验证目录路径是否存在
-        if not os.path.exists(directory_path):
-            return jsonify({'success': False, 'error': '目录不存在'})
-        
-        return jsonify({'success': True, 'path': directory_path})
-    
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
-
 if __name__ == '__main__':
-    # 确保templates目录存在
+    # Ensure templates directory exists
     if not os.path.exists('templates'):
         os.makedirs('templates')
-    # 启动应用
+    # Start application
     app.run(host='0.0.0.0', port=5000, debug=True)
