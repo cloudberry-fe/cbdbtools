@@ -495,13 +495,7 @@
                                    value="{{ params.get('COORDINATOR_IP', '192.168.193.21') }}" required>
                         </div>
                         
-                        <div class="form-group required">
-                            <label for="DEPLOY_TYPE">Deployment Type:</label>
-                            <select id="DEPLOY_TYPE_SELECT" name="DEPLOY_TYPE" required onchange="setDeploymentMode(this.value)">
-                                <option value="single" {% if params.get('DEPLOY_TYPE') == 'single' %}selected{% endif %}>Single Node</option>
-                                <option value="multi" {% if params.get('DEPLOY_TYPE') == 'multi' %}selected{% endif %}>Multi Node</option>
-                            </select>
-                        </div>
+                        <!-- 这里删除了重复的Deployment Type设置 -->
                     </div>
                 </div>
                 
