@@ -867,13 +867,13 @@
         // Control Mirror Data Directories visibility
         function toggleMirrorDataDir() {
             const withMirror = document.getElementById('WITH_MIRROR');
-            const mirrorDataDirGroup = document.getElementById('mirrorDataDirGroup');
+            const mirrorDataDirGroup = document.getElementById('mirrorParams'); // 修改这里
             
             if (withMirror && mirrorDataDirGroup) {
                 if (withMirror.value === 'true') {
-                    mirrorDataDirGroup.style.display = 'block';
+                    mirrorDataDirGroup.classList.remove('hidden'); // 修改这里
                 } else {
-                    mirrorDataDirGroup.style.display = 'none';
+                    mirrorDataDirGroup.classList.add('hidden'); // 修改这里
                 }
             }
         }
