@@ -572,9 +572,7 @@
                                 <input type="password" id="SEGMENT_ACCESS_PASSWORD" name="SEGMENT_ACCESS_PASSWORD" 
                                        value="{{ params.get('SEGMENT_ACCESS_PASSWORD', 'XXXXXXXX') }}">
                             </div>
-                        </div>
-                        
-                        <div class="form-col">
+                            
                             <div class="form-group">
                                 <label for="WITH_MIRROR">Enable Mirrors:</label>
                                 <select id="WITH_MIRROR" name="WITH_MIRROR">
@@ -583,6 +581,19 @@
                                 </select>
                             </div>
                             
+                            <!-- Mirror Data Directories Field -->
+                            <div class="form-group" id="mirrorDataDirGroup" style="display: none;">
+                                <label for="MIRROR_DATA_DIRECTORY">Mirror Data Directories:</label>
+                                <div class="input-group">
+                                    <input type="text" id="MIRROR_DATA_DIRECTORY" name="MIRROR_DATA_DIRECTORY" 
+                                           value="{{ params.get('MIRROR_DATA_DIRECTORY', '/data0/database/mirror /data0/database/mirror') }}" required>
+                                    <button type="button" class="browse-btn" onclick="browseDirectory('MIRROR_DATA_DIRECTORY')">
+                                        <i class="fas fa-folder"></i>
+                                    </button>
+                                </div>
+                                <small class="form-text">请输入用空格分隔的多个目录路径</small>
+                            </div>
+                            <!-- End Mirror Data Directories Field -->
                             <div class="form-group">
                                 <label for="WITH_STANDBY">Enable Standby:</label>
                                 <select id="WITH_STANDBY" name="WITH_STANDBY">
