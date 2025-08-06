@@ -479,6 +479,7 @@
                                    value="{{ params.get('COORDINATOR_PORT', '5432') }}" required>
                         </div>
                         
+                        <!-- 恢复Coordinator Data Directory的浏览按钮 -->
                         <div class="form-group">
                             <label for="COORDINATOR_DIRECTORY">Coordinator Data Directory:</label>
                             <div class="input-group">
@@ -489,6 +490,46 @@
                                 </button>
                             </div>
                         </div>
+                        
+                        <!-- 恢复Segment Data Directories的浏览按钮 -->
+                        <div class="form-group">
+                            <label for="DATA_DIRECTORY">Segment Data Directories:</label>
+                            <div class="input-group">
+                                <input type="text" id="DATA_DIRECTORY" name="DATA_DIRECTORY" 
+                                       value="{{ params.get('DATA_DIRECTORY', '/data0/database/primary /data0/database/primary') }}" required>
+                                <button type="button" class="browse-btn" onclick="browseDirectory('DATA_DIRECTORY')">
+                                    <i class="fas fa-folder"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 恢复Mirror Data Directories的浏览按钮 -->
+                        <div class="form-group" id="mirrorDataDirGroup" style="display: none;">
+                            <label for="MIRROR_DATA_DIRECTORY">Mirror Data Directories:</label>
+                            <div class="input-group">
+                                <input type="text" id="MIRROR_DATA_DIRECTORY" name="MIRROR_DATA_DIRECTORY" 
+                                       value="{{ params.get('MIRROR_DATA_DIRECTORY', '/data0/database/mirror /data0/database/mirror') }}" required>
+                                <button type="button" class="browse-btn" onclick="browseDirectory('MIRROR_DATA_DIRECTORY')">
+                                    <i class="fas fa-folder"></i>
+                                </button>
+                            </div>
+                            <small class="form-text">请输入用空格分隔的多个目录路径</small>
+                        </div>
+                        
+                        <!-- 移除JavaScript中的browseDirectory函数 -->
+                        <script>
+                        // 移除以下函数
+                        /*
+                        function browseDirectory(fieldId) {
+                            alert("In a real implementation, this would open a directory browser dialog. For now, please enter the directory path manually.");
+                        }
+                        */
+                        
+                        // 修改文件浏览函数的注释说明
+                        function browseFile(fieldId) {
+                            alert("In a real implementation, this would open a file browser dialog. For now, please enter the file path manually.");
+                        }
+                        </script>
                         
                         <div class="form-group">
                             <label for="WITH_MIRROR">Enable Mirrors:</label>

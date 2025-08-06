@@ -4,9 +4,18 @@ import re
 import subprocess
 import shutil
 from datetime import datetime
+import json
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
+
+# 添加文件上传配置
+UPLOAD_FOLDER = 'uploads'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# 确保上传目录存在
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
 
 # 配置文件路径
 PARAM_FILE = 'deploycluster_parameter.sh'
@@ -133,6 +142,45 @@ def deploy():
     else:
         flash(f"集群部署失败: {result.get('error', result.get('stderr', '未知错误'))}")
     return redirect(url_for('index'))
+
+# 添加文件上传路由
+@app.route('/upload_file', methods=['POST'])
+def upload_file():
+    try:
+        if 'file' not in request.files:
+            return jsonify({'success': False, 'error': '没有文件被上传'})
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'success': False, 'error': '没有选择文件'})
+        
+        if file:
+            # 保存文件到上传目录
+            filename = file.filename
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(file_path)
+            return jsonify({'success': True, 'path': file_path})
+    
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+# 添加目录选择路由
+@app.route('/select_directory', methods=['POST'])
+def select_directory():
+    try:
+        # 获取目录路径
+        directory_path = request.form.get('directory_path', '')
+        if not directory_path:
+            return jsonify({'success': False, 'error': '目录路径不能为空'})
+        
+        # 验证目录路径是否存在
+        if not os.path.exists(directory_path):
+            return jsonify({'success': False, 'error': '目录不存在'})
+        
+        return jsonify({'success': True, 'path': directory_path})
+    
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 if __name__ == '__main__':
     # 确保templates目录存在
