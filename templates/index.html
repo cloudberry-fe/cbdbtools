@@ -518,418 +518,474 @@
                         
                         <!-- 移除JavaScript中的browseDirectory函数 -->
                         <script>
-                        // 移除以下函数
-                        /*
-                        function browseDirectory(fieldId) {
-                            alert("In a real implementation, this would open a directory browser dialog. For now, please enter the directory path manually.");
+                    // File browser functions (real implementation)
+                    function browseFile(fieldId) {
+                        // Create a hidden file input element
+                        const fileInput = document.createElement('input');
+                        fileInput.type = 'file';
+                        fileInput.style.display = 'none';
+                        
+                        // When a file is selected
+                        fileInput.onchange = function(event) {
+                            const file = event.target.files[0];
+                            if (file) {
+                                // For demonstration, we'll upload the file to the server
+                                const formData = new FormData();
+                                formData.append('file', file);
+                                
+                                fetch('/upload_file', {
+                                    method: 'POST',
+                                    body: formData
+                                })
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data.success) {
+                                        // Set the file path in the input field
+                                        document.getElementById(fieldId).value = data.path;
+                                    } else {
+                                        alert('Error uploading file: ' + data.error);
+                                    }
+                                })
+                                .catch(error => {
+                                    alert('Error uploading file: ' + error);
+                                });
+                            }
+                        };
+                        
+                        // Trigger the file selection dialog
+                        document.body.appendChild(fileInput);
+                        fileInput.click();
+                        document.body.removeChild(fileInput);
+                    }
+                
+                    function browseDirectory(fieldId) {
+                        // For directory selection, we'll prompt the user to enter the path
+                        // In a real implementation, you might use a more advanced approach
+                        const directoryPath = prompt("Please enter the directory path:");
+                        if (directoryPath) {
+                            // Validate and set the directory path
+                            fetch('/select_directory', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/x-www-form-urlencoded',
+                                },
+                                body: 'directory_path=' + encodeURIComponent(directoryPath)
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    // Set the directory path in the input field
+                                    document.getElementById(fieldId).value = data.path;
+                                } else {
+                                    alert('Error selecting directory: ' + data.error);
+                                }
+                            })
+                            .catch(error => {
+                                alert('Error selecting directory: ' + error);
+                            });
                         }
-                        */
-                        
-                        // 修改文件浏览函数的注释说明
-                        function browseFile(fieldId) {
-                            alert("In a real implementation, this would open a file browser dialog. For now, please enter the file path manually.");
-                        }
-                        </script>
-                        
-                        <div class="form-group">
-                            <label for="WITH_MIRROR">Enable Mirrors:</label>
-                            <select id="WITH_MIRROR" name="WITH_MIRROR">
-                                <option value="false" {% if params.get('WITH_MIRROR') == 'false' %}selected{% endif %}>No</option>
-                                <option value="true" {% if params.get('WITH_MIRROR') == 'true' %}selected{% endif %}>Yes</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="WITH_STANDBY">Enable Standby:</label>
-                            <select id="WITH_STANDBY" name="WITH_STANDBY">
-                                <option value="false" {% if params.get('WITH_STANDBY') == 'false' %}selected{% endif %}>No</option>
-                                <option value="true" {% if params.get('WITH_STANDBY') == 'true' %}selected{% endif %}>Yes</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="form-col">
-                        <div class="form-group">
-                            <label for="CLOUDBERRY_RPM">RPM Package Path:</label>
-                            <div class="input-group">
-                                <input type="text" id="CLOUDBERRY_RPM" name="CLOUDBERRY_RPM" 
-                                       value="{{ params.get('CLOUDBERRY_RPM', '/tmp/hashdata-lightning-release.rpm') }}" required>
-                                <button type="button" class="browse-btn" onclick="browseFile('CLOUDBERRY_RPM')">
-                                    <i class="fas fa-folder"></i>
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="CLOUDBERRY_RPM_URL">RPM Download URL:</label>
-                            <input type="text" id="CLOUDBERRY_RPM_URL" name="CLOUDBERRY_RPM_URL" 
-                                   value="{{ params.get('CLOUDBERRY_RPM_URL', 'http://downloadlink.com/cloudberry.rpm') }}">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="ARRAY_NAME">Cluster Name:</label>
-                            <input type="text" id="ARRAY_NAME" name="ARRAY_NAME" 
-                                   value="{{ params.get('ARRAY_NAME', 'CBDB_SANDBOX') }}" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="PORT_BASE">Port Base:</label>
-                            <input type="number" id="PORT_BASE" name="PORT_BASE" 
-                                   value="{{ params.get('PORT_BASE', '6000') }}" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="DATA_DIRECTORY">Segment Data Directories:</label>
-                            <div class="input-group">
-                                <input type="text" id="DATA_DIRECTORY" name="DATA_DIRECTORY" 
-                                       value="{{ params.get('DATA_DIRECTORY', '/data0/database/primary /data0/database/primary') }}" required>
-                                <button type="button" class="browse-btn" onclick="browseDirectory('DATA_DIRECTORY')">
-                                    <i class="fas fa-folder"></i>
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="INIT_ENV_ONLY">Initialize Environment Only:</label>
-                            <select id="INIT_ENV_ONLY" name="INIT_ENV_ONLY">
-                                <option value="false" {% if params.get('INIT_ENV_ONLY') == 'false' %}selected{% endif %}>No</option>
-                                <option value="true" {% if params.get('INIT_ENV_ONLY') == 'true' %}selected{% endif %}>Yes</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="ENCODING">Encoding:</label>
-                            <input type="text" id="ENCODING" name="ENCODING" 
-                                   value="{{ params.get('ENCODING', 'UNICODE') }}" required>
-                        </div>
+                    }
+                </script>
+                
+                <div class="form-group">
+                    <label for="WITH_MIRROR">Enable Mirrors:</label>
+                    <select id="WITH_MIRROR" name="WITH_MIRROR">
+                        <option value="false" {% if params.get('WITH_MIRROR') == 'false' %}selected{% endif %}>No</option>
+                        <option value="true" {% if params.get('WITH_MIRROR') == 'true' %}selected{% endif %}>Yes</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="WITH_STANDBY">Enable Standby:</label>
+                    <select id="WITH_STANDBY" name="WITH_STANDBY">
+                        <option value="false" {% if params.get('WITH_STANDBY') == 'false' %}selected{% endif %}>No</option>
+                        <option value="true" {% if params.get('WITH_STANDBY') == 'true' %}selected{% endif %}>Yes</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-col">
+                <div class="form-group">
+                    <label for="CLOUDBERRY_RPM">RPM Package Path:</label>
+                    <div class="input-group">
+                        <input type="text" id="CLOUDBERRY_RPM" name="CLOUDBERRY_RPM" 
+                               value="{{ params.get('CLOUDBERRY_RPM', '/tmp/hashdata-lightning-release.rpm') }}" required>
+                        <button type="button" class="browse-btn" onclick="browseFile('CLOUDBERRY_RPM')">
+                            <i class="fas fa-folder"></i>
+                        </button>
                     </div>
                 </div>
                 
-                <!-- Multi-node specific parameters -->
-                <div id="multiNodeParams" class="{% if params.get('DEPLOY_TYPE', 'single') != 'multi' %}hidden{% endif %}">
-                    <h3><i class="fas fa-network-wired"></i> Multi-Node Specific Parameters</h3>
-                    
-                    <div class="form-row">
-                        <div class="form-col">
-                            <div class="form-group">
-                                <label for="SEGMENT_ACCESS_METHOD">Segment Access Method:</label>
-                                <select id="SEGMENT_ACCESS_METHOD" name="SEGMENT_ACCESS_METHOD">
-                                    <option value="keyfile" {% if params.get('SEGMENT_ACCESS_METHOD') == 'keyfile' %}selected{% endif %}>Key File</option>
-                                    <option value="password" {% if params.get('SEGMENT_ACCESS_METHOD') == 'password' %}selected{% endif %}>Password</option>
-                                </select>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="SEGMENT_ACCESS_USER">Segment Access User:</label>
-                                <input type="text" id="SEGMENT_ACCESS_USER" name="SEGMENT_ACCESS_USER" 
-                                       value="{{ params.get('SEGMENT_ACCESS_USER', 'root') }}">
-                            </div>
-                            
-                            <div class="form-group" id="keyfilePathGroup" 
-                                 {% if params.get('SEGMENT_ACCESS_METHOD') != 'keyfile' %}style="display:none;"{% endif %}>
-                                <label for="SEGMENT_ACCESS_KEYFILE">Key File Path:</label>
-                                <div class="input-group">
-                                    <input type="text" id="SEGMENT_ACCESS_KEYFILE" name="SEGMENT_ACCESS_KEYFILE" 
-                                           value="{{ params.get('SEGMENT_ACCESS_KEYFILE', '/tmp/keyfiles') }}">
-                                    <button type="button" class="browse-btn" onclick="browseFile('SEGMENT_ACCESS_KEYFILE')">
-                                        <i class="fas fa-folder"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <div class="form-group" id="passwordGroup" 
-                                 {% if params.get('SEGMENT_ACCESS_METHOD') == 'keyfile' %}style="display:none;"{% endif %}>
-                                <label for="SEGMENT_ACCESS_PASSWORD">Segment Access Password:</label>
-                                <input type="password" id="SEGMENT_ACCESS_PASSWORD" name="SEGMENT_ACCESS_PASSWORD" 
-                                       value="{{ params.get('SEGMENT_ACCESS_PASSWORD', 'XXXXXXXX') }}">
-                            </div>
-                            
-                            <!-- Mirror Data Directories Field -->
-                            <div class="form-group" id="mirrorDataDirGroup" style="display: none;">
-                                <label for="MIRROR_DATA_DIRECTORY">Mirror Data Directories:</label>
-                                <div class="input-group">
-                                    <input type="text" id="MIRROR_DATA_DIRECTORY" name="MIRROR_DATA_DIRECTORY" 
-                                           value="{{ params.get('MIRROR_DATA_DIRECTORY', '/data0/database/mirror /data0/database/mirror') }}" required>
-                                    <button type="button" class="browse-btn" onclick="browseDirectory('MIRROR_DATA_DIRECTORY')">
-                                        <i class="fas fa-folder"></i>
-                                    </button>
-                                </div>
-                                <small class="form-text">请输入用空格分隔的多个目录路径</small>
-                            </div>
-                            <!-- End Mirror Data Directories Field -->
-                        </div>
+                <div class="form-group">
+                    <label for="CLOUDBERRY_RPM_URL">RPM Download URL:</label>
+                    <input type="text" id="CLOUDBERRY_RPM_URL" name="CLOUDBERRY_RPM_URL" 
+                           value="{{ params.get('CLOUDBERRY_RPM_URL', 'http://downloadlink.com/cloudberry.rpm') }}">
+                </div>
+                
+                <div class="form-group">
+                    <label for="ARRAY_NAME">Cluster Name:</label>
+                    <input type="text" id="ARRAY_NAME" name="ARRAY_NAME" 
+                           value="{{ params.get('ARRAY_NAME', 'CBDB_SANDBOX') }}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="PORT_BASE">Port Base:</label>
+                    <input type="number" id="PORT_BASE" name="PORT_BASE" 
+                           value="{{ params.get('PORT_BASE', '6000') }}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="DATA_DIRECTORY">Segment Data Directories:</label>
+                    <div class="input-group">
+                        <input type="text" id="DATA_DIRECTORY" name="DATA_DIRECTORY" 
+                               value="{{ params.get('DATA_DIRECTORY', '/data0/database/primary /data0/database/primary') }}" required>
+                        <button type="button" class="browse-btn" onclick="browseDirectory('DATA_DIRECTORY')">
+                            <i class="fas fa-folder"></i>
+                        </button>
                     </div>
                 </div>
                 
-                <!-- Hidden fields for hosts -->
-                <input type="hidden" id="coord_ip" name="coord_ip" value="{{ hosts.coordinator[0] if hosts.coordinator else '' }}">
-                <input type="hidden" id="coord_hostname" name="coord_hostname" value="{{ hosts.coordinator[1] if hosts.coordinator else '' }}">
-                <input type="hidden" id="segment_count" name="segment_count" value="{{ hosts.segments|length }}">
+                <div class="form-group">
+                    <label for="INIT_ENV_ONLY">Initialize Environment Only:</label>
+                    <select id="INIT_ENV_ONLY" name="INIT_ENV_ONLY">
+                        <option value="false" {% if params.get('INIT_ENV_ONLY') == 'false' %}selected{% endif %}>No</option>
+                        <option value="true" {% if params.get('INIT_ENV_ONLY') == 'true' %}selected{% endif %}>Yes</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="ENCODING">Encoding:</label>
+                    <input type="text" id="ENCODING" name="ENCODING" 
+                           value="{{ params.get('ENCODING', 'UNICODE') }}" required>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Multi-node specific parameters -->
+        <div id="multiNodeParams" class="{% if params.get('DEPLOY_TYPE', 'single') != 'multi' %}hidden{% endif %}">
+            <h3><i class="fas fa-network-wired"></i> Multi-Node Specific Parameters</h3>
+            
+            <div class="form-row">
+                <div class="form-col">
+                    <div class="form-group">
+                        <label for="SEGMENT_ACCESS_METHOD">Segment Access Method:</label>
+                        <select id="SEGMENT_ACCESS_METHOD" name="SEGMENT_ACCESS_METHOD">
+                            <option value="keyfile" {% if params.get('SEGMENT_ACCESS_METHOD') == 'keyfile' %}selected{% endif %}>Key File</option>
+                            <option value="password" {% if params.get('SEGMENT_ACCESS_METHOD') == 'password' %}selected{% endif %}>Password</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="SEGMENT_ACCESS_USER">Segment Access User:</label>
+                        <input type="text" id="SEGMENT_ACCESS_USER" name="SEGMENT_ACCESS_USER" 
+                               value="{{ params.get('SEGMENT_ACCESS_USER', 'root') }}">
+                    </div>
+                    
+                    <div class="form-group" id="keyfilePathGroup" 
+                          {% if params.get('SEGMENT_ACCESS_METHOD') != 'keyfile' %}style="display:none;"{% endif %}>
+                        <label for="SEGMENT_ACCESS_KEYFILE">Key File Path:</label>
+                        <div class="input-group">
+                            <input type="text" id="SEGMENT_ACCESS_KEYFILE" name="SEGMENT_ACCESS_KEYFILE" 
+                                   value="{{ params.get('SEGMENT_ACCESS_KEYFILE', '/tmp/keyfiles') }}">
+                            <button type="button" class="browse-btn" onclick="browseFile('SEGMENT_ACCESS_KEYFILE')">
+                                <i class="fas fa-folder"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" id="passwordGroup" 
+                          {% if params.get('SEGMENT_ACCESS_METHOD') == 'keyfile' %}style="display:none;"{% endif %}>
+                        <label for="SEGMENT_ACCESS_PASSWORD">Segment Access Password:</label>
+                        <input type="password" id="SEGMENT_ACCESS_PASSWORD" name="SEGMENT_ACCESS_PASSWORD" 
+                               value="{{ params.get('SEGMENT_ACCESS_PASSWORD', 'XXXXXXXX') }}">
+                    </div>
+                    
+                    <!-- Mirror Data Directories Field -->
+                    <div class="form-group" id="mirrorDataDirGroup" style="display: none;">
+                        <label for="MIRROR_DATA_DIRECTORY">Mirror Data Directories:</label>
+                        <div class="input-group">
+                            <input type="text" id="MIRROR_DATA_DIRECTORY" name="MIRROR_DATA_DIRECTORY" 
+                                   value="{{ params.get('MIRROR_DATA_DIRECTORY', '/data0/database/mirror /data0/database/mirror') }}" required>
+                            <button type="button" class="browse-btn" onclick="browseDirectory('MIRROR_DATA_DIRECTORY')">
+                                <i class="fas fa-folder"></i>
+                            </button>
+                        </div>
+                        <small class="form-text">请输入用空格分隔的多个目录路径</small>
+                    </div>
+                    <!-- End Mirror Data Directories Field -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Hidden fields for hosts -->
+        <input type="hidden" id="coord_ip" name="coord_ip" value="{{ hosts.coordinator[0] if hosts.coordinator else '' }}">
+        <input type="hidden" id="coord_hostname" name="coord_hostname" value="{{ hosts.coordinator[1] if hosts.coordinator else '' }}">
+        <input type="hidden" id="segment_count" name="segment_count" value="{{ hosts.segments|length }}">
+        {% for segment in hosts.segments %}
+            <input type="hidden" id="segment_ip_{{ loop.index0 }}" name="segment_ip_{{ loop.index0 }}" value="{{ segment[0] }}">
+            <input type="hidden" id="segment_hostname_{{ loop.index0 }}" name="segment_hostname_{{ loop.index0 }}" value="{{ segment[1] }}">
+        {% endfor %}
+        
+        <button type="submit" class="btn">
+            <i class="fas fa-save"></i> Save Configuration
+        </button>
+    </form>
+</div>
+
+<!-- Hosts Tab -->
+<div id="hosts" class="tabcontent">
+    <h2><i class="fas fa-network-wired"></i> Host Configuration</h2>
+    
+    <form method="post" action="/save">
+        <div class="host-group">
+            <h3><i class="fas fa-server"></i> Coordinator Host</h3>
+            <div class="form-row">
+                <div class="form-col">
+                    <div class="form-group">
+                        <label for="coord_ip_input">IP Address:</label>
+                        <input type="text" id="coord_ip_input" name="coord_ip" 
+                               value="{{ hosts.coordinator[0] if hosts.coordinator else '' }}" required>
+                    </div>
+                </div>
+                <div class="form-col">
+                    <div class="form-group">
+                        <label for="coord_hostname_input">Hostname:</label>
+                        <input type="text" id="coord_hostname_input" name="coord_hostname" 
+                               value="{{ hosts.coordinator[1] if hosts.coordinator else '' }}" required>
+                    </div>
+                </div>
+            </div>
+        </div>
+    
+        <div class="host-group">
+            <h3><i class="fas fa-server"></i> Segment Hosts</h3>
+            <div id="segments_container">
                 {% for segment in hosts.segments %}
-                    <input type="hidden" id="segment_ip_{{ loop.index0 }}" name="segment_ip_{{ loop.index0 }}" value="{{ segment[0] }}">
-                    <input type="hidden" id="segment_hostname_{{ loop.index0 }}" name="segment_hostname_{{ loop.index0 }}" value="{{ segment[1] }}">
-                {% endfor %}
-                
-                <button type="submit" class="btn">
-                    <i class="fas fa-save"></i> Save Configuration
-                </button>
-            </form>
-        </div>
-
-        <!-- Hosts Tab -->
-        <div id="hosts" class="tabcontent">
-            <h2><i class="fas fa-network-wired"></i> Host Configuration</h2>
-            
-            <form method="post" action="/save">
-                <div class="host-group">
-                    <h3><i class="fas fa-server"></i> Coordinator Host</h3>
-                    <div class="form-row">
-                        <div class="form-col">
-                            <div class="form-group">
-                                <label for="coord_ip_input">IP Address:</label>
-                                <input type="text" id="coord_ip_input" name="coord_ip" 
-                                       value="{{ hosts.coordinator[0] if hosts.coordinator else '' }}" required>
-                            </div>
+                    <div class="segment-host" id="segment_{{ loop.index0 }}">
+                        <div class="segment-host-header">
+                            <h4>Segment Host {{ loop.index }}</h4>
+                            <button type="button" class="remove-host" onclick="removeSegmentHost({{ loop.index0 }})">✕</button>
                         </div>
-                        <div class="form-col">
-                            <div class="form-group">
-                                <label for="coord_hostname_input">Hostname:</label>
-                                <input type="text" id="coord_hostname_input" name="coord_hostname" 
-                                       value="{{ hosts.coordinator[1] if hosts.coordinator else '' }}" required>
+                        <div class="form-row">
+                            <div class="form-col">
+                                <div class="form-group">
+                                    <label>IP Address:</label>
+                                    <input type="text" name="segment_ip_{{ loop.index0 }}" 
+                                           value="{{ segment[0] }}" required>
+                                </div>
+                            </div>
+                            <div class="form-col">
+                                <div class="form-group">
+                                    <label>Hostname:</label>
+                                    <input type="text" name="segment_hostname_{{ loop.index0 }}" 
+                                           value="{{ segment[1] }}" required>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-
-                <div class="host-group">
-                    <h3><i class="fas fa-server"></i> Segment Hosts</h3>
-                    <div id="segments_container">
-                        {% for segment in hosts.segments %}
-                            <div class="segment-host" id="segment_{{ loop.index0 }}">
-                                <div class="segment-host-header">
-                                    <h4>Segment Host {{ loop.index }}</h4>
-                                    <button type="button" class="remove-host" onclick="removeSegmentHost({{ loop.index0 }})">✕</button>
-                                </div>
-                                <div class="form-row">
-                                    <div class="form-col">
-                                        <div class="form-group">
-                                            <label>IP Address:</label>
-                                            <input type="text" name="segment_ip_{{ loop.index0 }}" 
-                                                   value="{{ segment[0] }}" required>
-                                        </div>
-                                    </div>
-                                    <div class="form-col">
-                                        <div class="form-group">
-                                            <label>Hostname:</label>
-                                            <input type="text" name="segment_hostname_{{ loop.index0 }}" 
-                                                   value="{{ segment[1] }}" required>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-                    
-                    <button type="button" class="btn btn-secondary" onclick="addSegmentHost()">
-                        <i class="fas fa-plus"></i> Add Segment Host
-                    </button>
-                    
-                    <input type="hidden" id="segment_count_input" name="segment_count" 
-                           value="{{ hosts.segments|length }}">
-                </div>
-
-                <!-- Hidden fields for parameters -->
-                {% for key, value in params.items() %}
-                    <input type="hidden" name="{{ key }}" value="{{ value }}">
                 {% endfor %}
-
-                <button type="submit" class="btn">
-                    <i class="fas fa-save"></i> Save Hosts
-                </button>
-            </form>
-        </div>
-
-        <!-- Deploy Tab -->
-        <div id="deploy" class="tabcontent">
-            <h2><i class="fas fa-rocket"></i> Cluster Deployment</h2>
-            
-            <div class="mode-selector">
-                <h3><i class="fas fa-info-circle"></i> Deployment Information</h3>
-                <p>Current deployment mode: 
-                    <strong>
-                        {% if params.get('DEPLOY_TYPE', 'single') == 'single' %}
-                            Single Node
-                        {% else %}
-                            Multi Node
-                        {% endif %}
-                    </strong>
-                </p>
-                
-                <p>Coordinator host: 
-                    <strong>
-                        {% if hosts.coordinator %}
-                            {{ hosts.coordinator[1] }} ({{ hosts.coordinator[0] }})
-                        {% else %}
-                            Not configured
-                        {% endif %}
-                    </strong>
-                </p>
-                
-                <p>Segment hosts: 
-                    <strong>
-                        {% if hosts.segments %}
-                            {{ hosts.segments|length }} configured
-                        {% else %}
-                            None configured
-                        {% endif %}
-                    </strong>
-                </p>
             </div>
             
-            <div class="form-group">
-                <p>Click the button below to start the cluster deployment. This process may take several minutes.</p>
-                
-                <form method="post" action="/deploy" id="deployForm">
-                    <button type="submit" class="btn btn-success" onclick="return confirm('Are you sure you want to deploy the cluster? This may take several minutes.')">
-                        <i class="fas fa-rocket"></i> Deploy Cluster
-                    </button>
-                </form>
-            </div>
+            <button type="button" class="btn btn-secondary" onclick="addSegmentHost()">
+                <i class="fas fa-plus"></i> Add Segment Host
+            </button>
+            
+            <input type="hidden" id="segment_count_input" name="segment_count" 
+                   value="{{ hosts.segments|length }}">
         </div>
+    
+        <!-- Hidden fields for parameters -->
+        {% for key, value in params.items() %}
+            <input type="hidden" name="{{ key }}" value="{{ value }}">
+        {% endfor %}
+    
+        <button type="submit" class="btn">
+            <i class="fas fa-save"></i> Save Hosts
+        </button>
+    </form>
+</div>
+
+<!-- Deploy Tab -->
+<div id="deploy" class="tabcontent">
+    <h2><i class="fas fa-rocket"></i> Cluster Deployment</h2>
+    
+    <div class="mode-selector">
+        <h3><i class="fas fa-info-circle"></i> Deployment Information</h3>
+        <p>Current deployment mode: 
+            <strong>
+                {% if params.get('DEPLOY_TYPE', 'single') == 'single' %}
+                    Single Node
+                {% else %}
+                    Multi Node
+                {% endif %}
+            </strong>
+        </p>
+        
+        <p>Coordinator host: 
+            <strong>
+                {% if hosts.coordinator %}
+                    {{ hosts.coordinator[1] }} ({{ hosts.coordinator[0] }})
+                {% else %}
+                    Not configured
+                {% endif %}
+            </strong>
+        </p>
+        
+        <p>Segment hosts: 
+            <strong>
+                {% if hosts.segments %}
+                    {{ hosts.segments|length }} configured
+                {% else %}
+                    None configured
+                {% endif %}
+            </strong>
+        </p>
     </div>
+    
+    <div class="form-group">
+        <p>Click the button below to start the cluster deployment. This process may take several minutes.</p>
+        
+        <form method="post" action="/deploy" id="deployForm">
+            <button type="submit" class="btn btn-success" onclick="return confirm('Are you sure you want to deploy the cluster? This may take several minutes.')">
+                <i class="fas fa-rocket"></i> Deploy Cluster
+            </button>
+        </form>
+    </div>
+</div>
+</div>
 
-    <script>
-        // Tab switching
-        function openTab(evt, tabName) {
-            var i, tabcontent, tablinks;
-            tabcontent = document.getElementsByClassName("tabcontent");
-            for (i = 0; i < tabcontent.length; i++) {
-                tabcontent[i].classList.remove("active");
-            }
-            tablinks = document.getElementsByClassName("tablinks");
-            for (i = 0; i < tablinks.length; i++) {
-                tablinks[i].classList.remove("active");
-            }
-            document.getElementById(tabName).classList.add("active");
-            evt.currentTarget.classList.add("active");
+<script>
+    // Tab switching
+    function openTab(evt, tabName) {
+        var i, tabcontent, tablinks;
+        tabcontent = document.getElementsByClassName("tabcontent");
+        for (i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].classList.remove("active");
         }
+        tablinks = document.getElementsByClassName("tablinks");
+        for (i = 0; i < tablinks.length; i++) {
+            tablinks[i].classList.remove("active");
+        }
+        document.getElementById(tabName).classList.add("active");
+        evt.currentTarget.classList.add("active");
+    }
 
-        // Set deployment mode
-        function setDeploymentMode(mode) {
-            document.getElementById('DEPLOY_TYPE').value = mode;
-            
-            // Update UI
-            document.querySelectorAll('.mode-option').forEach(option => {
-                option.classList.remove('selected');
-            });
-            event.currentTarget.classList.add('selected');
-            
-            // Show/hide multi-node parameters
-            const multiNodeParams = document.getElementById('multiNodeParams');
-            if (mode === 'multi') {
-                multiNodeParams.classList.remove('hidden');
+    // Set deployment mode
+    function setDeploymentMode(mode) {
+        document.getElementById('DEPLOY_TYPE').value = mode;
+        
+        // Update UI
+        document.querySelectorAll('.mode-option').forEach(option => {
+            option.classList.remove('selected');
+        });
+        event.currentTarget.classList.add('selected');
+        
+        // Show/hide multi-node parameters
+        const multiNodeParams = document.getElementById('multiNodeParams');
+        if (mode === 'multi') {
+            multiNodeParams.classList.remove('hidden');
+        } else {
+            multiNodeParams.classList.add('hidden');
+        }
+        
+        // 检查是否需要显示Mirror Data Directories
+        toggleMirrorDataDir();
+    }
+
+    // Segment access method toggle
+    document.getElementById('SEGMENT_ACCESS_METHOD').addEventListener('change', function() {
+        const method = this.value;
+        document.getElementById('keyfilePathGroup').style.display = method === 'keyfile' ? 'block' : 'none';
+        document.getElementById('passwordGroup').style.display = method === 'keyfile' ? 'none' : 'block';
+    });
+
+    // 控制Mirror Data Directories显示/隐藏
+    function toggleMirrorDataDir() {
+        const withMirror = document.getElementById('WITH_MIRROR');
+        const mirrorDataDirGroup = document.getElementById('mirrorDataDirGroup');
+        
+        if (withMirror && mirrorDataDirGroup) {
+            if (withMirror.value === 'true') {
+                mirrorDataDirGroup.style.display = 'block';
             } else {
-                multiNodeParams.classList.add('hidden');
+                mirrorDataDirGroup.style.display = 'none';
             }
-            
-            // 检查是否需要显示Mirror Data Directories
+        }
+    }
+
+    // 监听Enable Mirrors选择变化
+    document.addEventListener('DOMContentLoaded', function() {
+        const withMirror = document.getElementById('WITH_MIRROR');
+        if (withMirror) {
+            withMirror.addEventListener('change', toggleMirrorDataDir);
+            // 初始化时也调用一次
             toggleMirrorDataDir();
         }
+    });
 
-        // Segment access method toggle
-        document.getElementById('SEGMENT_ACCESS_METHOD').addEventListener('change', function() {
-            const method = this.value;
-            document.getElementById('keyfilePathGroup').style.display = method === 'keyfile' ? 'block' : 'none';
-            document.getElementById('passwordGroup').style.display = method === 'keyfile' ? 'none' : 'block';
-        });
+    // Add segment host
+    function addSegmentHost() {
+        var container = document.getElementById("segments_container");
+        var countInput = document.getElementById("segment_count_input");
+        var currentCount = parseInt(countInput.value);
+        var newCount = currentCount + 1;
+    
+        var newSegment = document.createElement("div");
+        newSegment.className = "segment-host";
+        newSegment.id = "segment_" + currentCount;
+        newSegment.innerHTML = 
+            '<div class="segment-host-header">' +
+            '    <h4>Segment Host ' + newCount + '</h4>' +
+            '    <button type="button" class="remove-host" onclick="removeSegmentHost(' + currentCount + ')">✕</button>' +
+            '</div>' +
+            '<div class="form-row">' +
+            '    <div class="form-col">' +
+            '        <div class="form-group">' +
+            '            <label>IP Address:</label>' +
+            '            <input type="text" name="segment_ip_' + currentCount + '" required>' +
+            '        </div>' +
+            '    </div>' +
+            '    <div class="form-col">' +
+            '        <div class="form-group">' +
+            '            <label>Hostname:</label>' +
+            '            <input type="text" name="segment_hostname_' + currentCount + '" required>' +
+            '        </div>' +
+            '    </div>' +
+            '</div>';
+    
+        container.appendChild(newSegment);
+        countInput.value = newCount;
+    }
 
-        // 控制Mirror Data Directories显示/隐藏
-        function toggleMirrorDataDir() {
-            const withMirror = document.getElementById('WITH_MIRROR');
-            const mirrorDataDirGroup = document.getElementById('mirrorDataDirGroup');
+    // Remove segment host
+    function removeSegmentHost(index) {
+        var segment = document.getElementById("segment_" + index);
+        if (segment) {
+            segment.remove();
             
-            if (withMirror && mirrorDataDirGroup) {
-                if (withMirror.value === 'true') {
-                    mirrorDataDirGroup.style.display = 'block';
-                } else {
-                    mirrorDataDirGroup.style.display = 'none';
-                }
-            }
-        }
-
-        // 监听Enable Mirrors选择变化
-        document.addEventListener('DOMContentLoaded', function() {
-            const withMirror = document.getElementById('WITH_MIRROR');
-            if (withMirror) {
-                withMirror.addEventListener('change', toggleMirrorDataDir);
-                // 初始化时也调用一次
-                toggleMirrorDataDir();
-            }
-        });
-
-        // Add segment host
-        function addSegmentHost() {
-            var container = document.getElementById("segments_container");
+            // Update segment count
             var countInput = document.getElementById("segment_count_input");
             var currentCount = parseInt(countInput.value);
-            var newCount = currentCount + 1;
-        
-            var newSegment = document.createElement("div");
-            newSegment.className = "segment-host";
-            newSegment.id = "segment_" + currentCount;
-            newSegment.innerHTML = 
-                '<div class="segment-host-header">' +
-                '    <h4>Segment Host ' + newCount + '</h4>' +
-                '    <button type="button" class="remove-host" onclick="removeSegmentHost(' + currentCount + ')">✕</button>' +
-                '</div>' +
-                '<div class="form-row">' +
-                '    <div class="form-col">' +
-                '        <div class="form-group">' +
-                '            <label>IP Address:</label>' +
-                '            <input type="text" name="segment_ip_' + currentCount + '" required>' +
-                '        </div>' +
-                '    </div>' +
-                '    <div class="form-col">' +
-                '        <div class="form-group">' +
-                '            <label>Hostname:</label>' +
-                '            <input type="text" name="segment_hostname_' + currentCount + '" required>' +
-                '        </div>' +
-                '    </div>' +
-                '</div>';
-        
-            container.appendChild(newSegment);
-            countInput.value = newCount;
+            countInput.value = currentCount - 1;
         }
+    }
 
-        // Remove segment host
-        function removeSegmentHost(index) {
-            var segment = document.getElementById("segment_" + index);
-            if (segment) {
-                segment.remove();
-                
-                // Update segment count
-                var countInput = document.getElementById("segment_count_input");
-                var currentCount = parseInt(countInput.value);
-                countInput.value = currentCount - 1;
-            }
+    // File browser functions (simulated)
+    function browseFile(fieldId) {
+        alert("In a real implementation, this would open a file browser dialog. For now, please enter the file path manually.");
+    }
+
+    function browseDirectory(fieldId) {
+        alert("In a real implementation, this would open a directory browser dialog. For now, please enter the directory path manually.");
+    }
+
+    // Initialize form based on deployment mode
+    document.addEventListener('DOMContentLoaded', function() {
+        const deployType = document.getElementById('DEPLOY_TYPE').value;
+        if (deployType === 'multi') {
+            document.getElementById('multiNodeParams').classList.remove('hidden');
         }
-
-        // File browser functions (simulated)
-        function browseFile(fieldId) {
-            alert("In a real implementation, this would open a file browser dialog. For now, please enter the file path manually.");
-        }
-
-        function browseDirectory(fieldId) {
-            alert("In a real implementation, this would open a directory browser dialog. For now, please enter the directory path manually.");
-        }
-
-        // Initialize form based on deployment mode
-        document.addEventListener('DOMContentLoaded', function() {
-            const deployType = document.getElementById('DEPLOY_TYPE').value;
-            if (deployType === 'multi') {
-                document.getElementById('multiNodeParams').classList.remove('hidden');
-            }
-        });
-    </script>
+    });
+</script>
 </body>
 </html>
