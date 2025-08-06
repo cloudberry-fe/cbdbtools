@@ -32,7 +32,7 @@ export DATABASE_NAME="gpadmin"
 export MIRROR_PORT_BASE="7000"
 export MIRROR_DATA_DIRECTORY="/data0/database/mirror /data0/database/mirror"
 
-# Segment host access info
+# Segment host access （used if DEPLOY_TYPE="multi"）
 # Both "keyfile" and "password" access methods are supported for remote setup
 export SEGMENT_ACCESS_METHOD="keyfile"
 export SEGMENT_ACCESS_USER="root"
