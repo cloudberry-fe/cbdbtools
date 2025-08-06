@@ -153,6 +153,7 @@
         }
         
         /* Form Styles */
+        <style>
         .form-row {
             display: flex;
             flex-wrap: wrap;
@@ -163,7 +164,15 @@
             flex: 1;
             min-width: 300px;
             padding: 0 10px;
+            box-sizing: border-box;
         }
+        
+        @media (max-width: 768px) {
+            .form-col {
+                min-width: 100%;
+            }
+        }
+        </style>
         
         .form-group {
             margin-bottom: 20px;
@@ -547,6 +556,23 @@
                                 <option value="true" {% if params.get('WITH_MIRROR') == 'true' %}selected{% endif %}>Yes</option>
                             </select>
                         </div>
+                        
+                        <!-- 将Mirror Parameters移动到这里 -->
+                        <div id="mirrorParams" class="{% if params.get('WITH_MIRROR') != 'true' %}hidden{% endif %}">
+                            <div class="form-group required">
+                                <label for="MIRROR_PORT_BASE">Mirror Port Base:</label>
+                                <input type="number" id="MIRROR_PORT_BASE" name="MIRROR_PORT_BASE" 
+                                       value="{{ params.get('MIRROR_PORT_BASE', '7000') }}" required>
+                            </div>
+                            
+                            <div class="form-group required">
+                                <label for="MIRROR_DATA_DIRECTORY">Mirror Data Directories:</label>
+                                <input type="text" id="MIRROR_DATA_DIRECTORY" name="MIRROR_DATA_DIRECTORY" 
+                                       value="{{ params.get('MIRROR_DATA_DIRECTORY', '/data0/database/mirror /data0/database/mirror') }}" required>
+                                <small class="form-text">Enter multiple directory paths separated by spaces</small>
+                            </div>
+                        </div>
+                        <!-- Mirror Parameters结束 -->
                         
                         <div class="form-group">
                             <label for="WITH_STANDBY">Enable Standby:</label>
