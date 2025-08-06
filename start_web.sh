@@ -9,18 +9,17 @@ fi
 # Activate virtual environment
 source venv/bin/activate
 
-# Check if gunicorn is installed, if not install it
-if ! command -v gunicorn &> /dev/null
-then
-    echo "Installing Gunicorn..."
-    pip install gunicorn
-fi
+# Upgrade pip to latest version
+pip install --upgrade pip
 
-# Install Flask if not already installed
-if ! command -v flask &> /dev/null
-then
-    echo "Installing Flask..."
-    pip install flask
+# Install required packages in the virtual environment
+echo "Installing required packages..."
+pip install flask gunicorn
+
+# Verify Flask installation
+if ! python -c "import flask" &> /dev/null; then
+    echo "Error: Flask installation failed"
+    exit 1
 fi
 
 # Start the web application using Gunicorn
