@@ -45,7 +45,7 @@ def save_parameters(params):
     # Replace parameters in the content
     for key, value in params.items():
         # Use regex to replace export statements
-        pattern = r'(export\s+' + key + r'\s*=\s*["']).*?("'])'
+        pattern = r'(export\s+' + key + r'\s*=\s*["\'])(.*?)(["\'])'
         replacement = f'export {key}="{value}"'
         content = re.sub(pattern, replacement, content)
     
