@@ -38,16 +38,20 @@ def save_parameters(params):
         shutil.copy2(PARAM_FILE, backup_file)
         print(f'Parameter file backed up as: {backup_file}')
     
+    # Read the default parameter file as template
+    with open('deploycluster_parameter.sh', 'r') as f:
+        content = f.read()
+    
+    # Replace parameters in the content
+    for key, value in params.items():
+        # Use regex to replace export statements
+        pattern = r'(export\s+' + key + r'\s*=\s*["\\']).*?(["\\'])'
+        replacement = f'export {key}="{value}"'
+        content = re.sub(pattern, replacement, content)
+    
+    # Write the updated content to file
     with open(PARAM_FILE, 'w') as f:
-        f.write('## Mandatory options\n')
-        for key, value in params.items():
-            f.write(f'export {key}="{value}"\n')
-        # Add logging function
-        f.write('\n# Utility function for logging with timestamps\n')
-        f.write('function log_time() {\n')
-        f.write('  printf "[%s] %b\n" "$(date \'%Y-%m-%d %H:%M:%S\')" "$1"\n')
-        f.write('}\n')
-        f.write('export -f log_time\n')
+        f.write(content)
 
 # Read host configuration
 def read_hosts():
