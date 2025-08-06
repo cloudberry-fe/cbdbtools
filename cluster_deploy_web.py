@@ -2,6 +2,8 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 import os
 import re
 import subprocess
+import shutil
+from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
@@ -28,6 +30,13 @@ def read_parameters():
 
 # 保存配置参数
 def save_parameters(params):
+    # 如果参数文件存在，先备份它
+    if os.path.exists(PARAM_FILE):
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        backup_file = f'{PARAM_FILE}.backup_{timestamp}'
+        shutil.copy2(PARAM_FILE, backup_file)
+        print(f'参数文件已备份为: {backup_file}')
+    
     with open(PARAM_FILE, 'w') as f:
         f.write('## Mandatory options\n')
         for key, value in params.items():
@@ -35,7 +44,7 @@ def save_parameters(params):
         # 添加日志函数
         f.write('\n# Utility function for logging with timestamps\n')
         f.write('function log_time() {\n')
-        f.write('  printf "[%s] %b\n" "$(date \'+%Y-%m-%d %H:%M:%S\')" "$1"\n')
+        f.write('  printf "[%s] %b\n" "$(date \'%Y-%m-%d %H:%M:%S\')" "$1"\n')
         f.write('}\n')
         f.write('export -f log_time\n')
 

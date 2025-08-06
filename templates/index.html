@@ -489,6 +489,22 @@
                                 </button>
                             </div>
                         </div>
+                        
+                        <div class="form-group">
+                            <label for="WITH_MIRROR">Enable Mirrors:</label>
+                            <select id="WITH_MIRROR" name="WITH_MIRROR">
+                                <option value="false" {% if params.get('WITH_MIRROR') == 'false' %}selected{% endif %}>No</option>
+                                <option value="true" {% if params.get('WITH_MIRROR') == 'true' %}selected{% endif %}>Yes</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="WITH_STANDBY">Enable Standby:</label>
+                            <select id="WITH_STANDBY" name="WITH_STANDBY">
+                                <option value="false" {% if params.get('WITH_STANDBY') == 'false' %}selected{% endif %}>No</option>
+                                <option value="true" {% if params.get('WITH_STANDBY') == 'true' %}selected{% endif %}>Yes</option>
+                            </select>
+                        </div>
                     </div>
                     
                     <div class="form-col">
@@ -530,6 +546,20 @@
                                     <i class="fas fa-folder"></i>
                                 </button>
                             </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="INIT_ENV_ONLY">Initialize Environment Only:</label>
+                            <select id="INIT_ENV_ONLY" name="INIT_ENV_ONLY">
+                                <option value="false" {% if params.get('INIT_ENV_ONLY') == 'false' %}selected{% endif %}>No</option>
+                                <option value="true" {% if params.get('INIT_ENV_ONLY') == 'true' %}selected{% endif %}>Yes</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="ENCODING">Encoding:</label>
+                            <input type="text" id="ENCODING" name="ENCODING" 
+                                   value="{{ params.get('ENCODING', 'UNICODE') }}" required>
                         </div>
                     </div>
                 </div>
@@ -573,14 +603,6 @@
                                        value="{{ params.get('SEGMENT_ACCESS_PASSWORD', 'XXXXXXXX') }}">
                             </div>
                             
-                            <div class="form-group">
-                                <label for="WITH_MIRROR">Enable Mirrors:</label>
-                                <select id="WITH_MIRROR" name="WITH_MIRROR">
-                                    <option value="false" {% if params.get('WITH_MIRROR') == 'false' %}selected{% endif %}>No</option>
-                                    <option value="true" {% if params.get('WITH_MIRROR') == 'true' %}selected{% endif %}>Yes</option>
-                                </select>
-                            </div>
-                            
                             <!-- Mirror Data Directories Field -->
                             <div class="form-group" id="mirrorDataDirGroup" style="display: none;">
                                 <label for="MIRROR_DATA_DIRECTORY">Mirror Data Directories:</label>
@@ -594,27 +616,6 @@
                                 <small class="form-text">请输入用空格分隔的多个目录路径</small>
                             </div>
                             <!-- End Mirror Data Directories Field -->
-                            <div class="form-group">
-                                <label for="WITH_STANDBY">Enable Standby:</label>
-                                <select id="WITH_STANDBY" name="WITH_STANDBY">
-                                    <option value="false" {% if params.get('WITH_STANDBY') == 'false' %}selected{% endif %}>No</option>
-                                    <option value="true" {% if params.get('WITH_STANDBY') == 'true' %}selected{% endif %}>Yes</option>
-                                </select>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="INIT_ENV_ONLY">Initialize Environment Only:</label>
-                                <select id="INIT_ENV_ONLY" name="INIT_ENV_ONLY">
-                                    <option value="false" {% if params.get('INIT_ENV_ONLY') == 'false' %}selected{% endif %}>No</option>
-                                    <option value="true" {% if params.get('INIT_ENV_ONLY') == 'true' %}selected{% endif %}>Yes</option>
-                                </select>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="ENCODING">Encoding:</label>
-                                <input type="text" id="ENCODING" name="ENCODING" 
-                                       value="{{ params.get('ENCODING', 'UNICODE') }}" required>
-                            </div>
                         </div>
                     </div>
                 </div>

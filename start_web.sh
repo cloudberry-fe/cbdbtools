@@ -1,5 +1,9 @@
 #!/bin/bash
 
+function log_time() {
+  printf "[%s] %b\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
+}
+
 # Turn off firewalls
 log_time "Step 1: Turn off firewalls..."
 
@@ -8,6 +12,10 @@ systemctl disable firewalld.service
 
 sed s/^SELINUX=.*$/SELINUX=disabled/ -i /etc/selinux/config
 setenforce 0
+
+# Kill any existing gunicorn processes
+echo "Killing any existing gunicorn processes..."
+pkill -f gunicorn || true
 
 # Install required packages
 log_time "Step 2: Install required packages..."
