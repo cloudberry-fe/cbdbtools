@@ -112,7 +112,16 @@ def deploy_cluster():
 def index():
     params = read_parameters()
     hosts = read_hosts()
-    return render_template('index.html', params=params, hosts=hosts)
+    # Add deployment_info to be passed to the template
+    deployment_info = {
+        'mode': params.get('DEPLOY_TYPE', 'single'),
+        'coordinator': hosts.get('coordinator', []),
+        'segment_hosts': hosts.get('segments', []),
+        'running': False,
+        'log_file': None,
+        'start_time': None
+    }
+    return render_template('index.html', params=params, hosts=hosts, deployment_info=deployment_info)
 
 @app.route('/save', methods=['POST'])
 def save():
