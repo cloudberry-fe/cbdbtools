@@ -3,10 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Greenplum Cluster Deployment{% endblock %}</title>
+    <title>{% block title %}CloudBerry Cluster Deployment{% endblock %}</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        /* Global Styles */
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2c3e50;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --light-bg: #f8f9fa;
+            --dark-bg: #343a40;
+            --border-color: #dee2e6;
+            --text-color: #212529;
+            --text-light: #6c757d;
+            --shadow: 0 2px 4px rgba(0,0,0,0.1);
+            --transition: all 0.3s ease;
+        }
+        
         * {
             margin: 0;
             padding: 0;
@@ -16,7 +30,7 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background-color: #f5f5f5;
-            color: #333;
+            color: var(--text-color);
             line-height: 1.6;
         }
         
@@ -30,13 +44,22 @@
             background: white;
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow);
             margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
         }
         
         .header h1 {
-            color: #2c3e50;
+            color: var(--secondary-color);
             margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: var(--text-light);
+            margin-bottom: 0;
         }
         
         /* Flash Messages */
@@ -75,51 +98,69 @@
             border-color: #bee5eb;
         }
         
+        /* Warning Box */
+        .warning-box {
+            background-color: #fff3cd;
+            border-left: 4px solid var(--warning-color);
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        
+        .warning-box h3 {
+            margin-top: 0;
+            color: #856404;
+        }
+        
+        .warning-box ul {
+            margin-bottom: 0;
+        }
+        
         /* Tab Navigation */
-        .tab-nav {
+        .tab {
             display: flex;
             background: white;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow);
             margin-bottom: 20px;
             overflow: hidden;
         }
         
-        .tab-button {
+        .tablinks {
             flex: 1;
             padding: 15px 20px;
             background: none;
             border: none;
             cursor: pointer;
             font-size: 16px;
-            transition: all 0.3s ease;
-            color: #666;
+            transition: var(--transition);
+            color: var(--text-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
         
-        .tab-button:hover {
-            background-color: #f8f9fa;
-            color: #333;
+        .tablinks:hover {
+            background-color: var(--light-bg);
+            color: var(--text-color);
         }
         
-        .tab-button.active {
-            background-color: #007bff;
+        .tablinks.active {
+            background-color: var(--primary-color);
             color: white;
         }
         
         /* Tab Content */
-        .tab-content {
+        .tabcontent {
             background: white;
             padding: 30px;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            min-height: 500px;
-        }
-        
-        .tab-pane {
+            box-shadow: var(--shadow);
             display: none;
         }
         
-        .tab-pane.active {
+        .tabcontent.active {
             display: block;
             animation: fadeIn 0.3s ease;
         }
@@ -150,12 +191,12 @@
             display: block;
             margin-bottom: 5px;
             font-weight: 600;
-            color: #333;
+            color: var(--text-color);
         }
         
         .required::after {
             content: " *";
-            color: #dc3545;
+            color: var(--danger-color);
         }
         
         input[type="text"],
@@ -165,18 +206,18 @@
         textarea {
             width: 100%;
             padding: 10px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--border-color);
             border-radius: 4px;
             font-size: 14px;
-            transition: border-color 0.3s ease;
+            transition: var(--transition);
         }
         
         input:focus,
         select:focus,
         textarea:focus {
             outline: none;
-            border-color: #007bff;
-            box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.25);
         }
         
         /* Buttons */
@@ -186,33 +227,54 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
-            transition: all 0.3s ease;
+            transition: var(--transition);
             text-decoration: none;
             display: inline-block;
         }
         
         .btn-primary {
-            background-color: #007bff;
+            background-color: var(--primary-color);
             color: white;
         }
         
         .btn-primary:hover {
-            background-color: #0056b3;
+            background-color: #2980b9;
         }
         
         .btn-secondary {
-            background-color: #6c757d;
+            background-color: var(--secondary-color);
             color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #1a2530;
         }
         
         .btn-success {
-            background-color: #28a745;
+            background-color: var(--success-color);
             color: white;
         }
         
+        .btn-success:hover {
+            background-color: #27ae60;
+        }
+        
         .btn-danger {
-            background-color: #dc3545;
+            background-color: var(--danger-color);
             color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        .btn-warning {
+            background-color: var(--warning-color);
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background-color: #e67e22;
         }
         
         /* Deployment Status */
@@ -220,8 +282,16 @@
             background: white;
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow);
             margin-bottom: 20px;
+        }
+        
+        .deployment-status h3 {
+            margin-top: 0;
+            color: var(--secondary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         
         .status-info {
@@ -233,13 +303,13 @@
         
         .status-item {
             padding: 10px;
-            background: #f8f9fa;
+            background: var(--light-bg);
             border-radius: 4px;
         }
         
         .status-item strong {
             display: block;
-            color: #666;
+            color: var(--text-light);
             font-size: 12px;
             text-transform: uppercase;
         }
@@ -257,6 +327,23 @@
             word-wrap: break-word;
         }
         
+        .logs-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .logs-container::-webkit-scrollbar-track {
+            background: #2d2d2d;
+        }
+        
+        .logs-container::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 4px;
+        }
+        
+        .logs-container::-webkit-scrollbar-thumb:hover {
+            background: #777;
+        }
+        
         /* Progress Bar */
         .progress {
             height: 20px;
@@ -268,7 +355,7 @@
         
         .progress-bar {
             height: 100%;
-            background: linear-gradient(90deg, #007bff, #0056b3);
+            background: linear-gradient(90deg, var(--primary-color), #2980b9);
             transition: width 0.3s ease;
             display: flex;
             align-items: center;
@@ -280,16 +367,19 @@
         
         /* Host Groups */
         .host-group {
-            border: 1px solid #ddd;
+            border: 1px solid var(--border-color);
             border-radius: 4px;
             margin-bottom: 15px;
         }
         
         .host-group-header {
-            background: #f8f9fa;
+            background: var(--light-bg);
             padding: 10px 15px;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid var(--border-color);
             font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         
         .host-group-content {
@@ -302,7 +392,7 @@
             align-items: center;
             margin-bottom: 10px;
             padding: 10px;
-            background: #f8f9fa;
+            background: var(--light-bg);
             border-radius: 4px;
         }
         
@@ -311,13 +401,63 @@
         }
         
         .remove-host {
-            background: #dc3545;
+            background: var(--danger-color);
             color: white;
             border: none;
             padding: 5px 10px;
             border-radius: 4px;
             cursor: pointer;
             font-size: 12px;
+        }
+        
+        .remove-host:hover {
+            background: #c0392b;
+        }
+        
+        /* Segment Host */
+        .segment-host {
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            margin-bottom: 15px;
+            background: white;
+        }
+        
+        .segment-host-header {
+            background: var(--light-bg);
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .segment-host-header h4 {
+            margin: 0;
+            color: var(--secondary-color);
+        }
+        
+        .segment-host-content {
+            padding: 15px;
+        }
+        
+        /* Deployment Running/Completed */
+        .deployment-running {
+            border-left: 4px solid var(--warning-color);
+        }
+        
+        .deployment-completed {
+            border-left: 4px solid var(--success-color);
+        }
+        
+        .completion-message {
+            color: var(--success-color);
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        /* Hidden */
+        .hidden {
+            display: none;
         }
         
         /* Responsive */
@@ -330,25 +470,28 @@
                 min-width: 100%;
             }
             
-            .tab-nav {
+            .tab {
                 flex-direction: column;
             }
             
             .container {
                 padding: 10px;
             }
-        }
-        
-        .hidden {
-            display: none;
+            
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1><i class="fas fa-server"></i> Greenplum Cluster Deployment</h1>
-            <p>Configure and deploy your Greenplum cluster with ease</p>
+            <div>
+                <h1><i class="fas fa-server"></i> CloudBerry Cluster Deployment</h1>
+                <p>Configure and deploy your CloudBerry cluster with ease</p>
+            </div>
         </div>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -365,32 +508,51 @@
 
         {% block deployment_status %}{% endblock %}
 
-        <div class="tab-nav">
-            <button class="tab-button {% if active_tab == 'configuration' %}active{% endif %}" 
-                    onclick="switchTab('configuration')">
+        <div class="tab">
+            <button class="tablinks {% if active_tab == 'configuration' %}active{% endif %}" 
+                    onclick="openTab(event, 'configuration')">
                 <i class="fas fa-cog"></i> Configuration
             </button>
-            <button class="tab-button {% if active_tab == 'hosts' %}active{% endif %}" 
-                    onclick="switchTab('hosts')">
-                <i class="fas fa-network-wired"></i> Hosts
+            <button class="tablinks {% if active_tab == 'hosts' %}active{% endif %}" 
+                    onclick="openTab(event, 'hosts')">
+                <i class="fas fa-network-wired"></i> Host Configuration
             </button>
-            <button class="tab-button {% if active_tab == 'deploy' %}active{% endif %}" 
-                    onclick="switchTab('deploy')">
-                <i class="fas fa-rocket"></i> Deploy
+            <button class="tablinks {% if active_tab == 'deploy' %}active{% endif %}" 
+                    onclick="openTab(event, 'deploy')">
+                <i class="fas fa-rocket"></i> Deploy Cluster
             </button>
         </div>
 
-        <div class="tab-content">
+        <div class="tabcontent">
             {% block content %}{% endblock %}
         </div>
     </div>
 
     <script>
-        function switchTab(tabName) {
-            window.location.href = '/' + tabName;
+        function openTab(evt, tabName) {
+            // Hide all tab content
+            var tabcontent = document.getElementsByClassName("tabcontent");
+            for (var i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].classList.remove("active");
+            }
+            
+            // Remove active class from all tab buttons
+            var tablinks = document.getElementsByClassName("tablinks");
+            for (var i = 0; i < tablinks.length; i++) {
+                tablinks[i].classList.remove("active");
+            }
+            
+            // Show the current tab and add active class to the button
+            document.getElementById(tabName).classList.add("active");
+            if (evt) {
+                evt.currentTarget.classList.add("active");
+            }
+            
+            // Update URL without page reload
+            history.pushState(null, '', '/' + tabName);
         }
-
-        // Auto-sync coordinator fields
+        
+        // Auto-sync coordinator fields between tabs
         function syncCoordinatorFields() {
             const configHostname = document.getElementById('coordinator_hostname');
             const configIp = document.getElementById('coordinator_ip');
@@ -404,7 +566,7 @@
                 hostIp.value = configIp.value;
             }
         }
-
+        
         // Initialize sync on page load
         document.addEventListener('DOMContentLoaded', function() {
             syncCoordinatorFields();
