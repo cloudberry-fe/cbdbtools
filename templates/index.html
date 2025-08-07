@@ -351,7 +351,7 @@
         
         /* Hidden class */
         .hidden {
-            display: none;
+            display: none !important;
         }
         
         /* Required field indicator */
@@ -421,7 +421,9 @@
             <button class="tablinks active" onclick="openTab(event, 'configuration')">
                 <i class="fas fa-cog"></i> Configuration
             </button>
-            <button class="tablinks" onclick="openTab(event, 'hosts')">
+            <button class="tablinks {% if params.get('DEPLOY_TYPE', 'single') != 'multi' %}hidden{% endif %}" 
+                    onclick="openTab(event, 'hosts')" 
+                    id="hostsTabButton">
                 <i class="fas fa-network-wired"></i> Hosts
             </button>
             <button class="tablinks" onclick="openTab(event, 'deploy')">
@@ -869,6 +871,21 @@
                 multiNodeParams.classList.remove('hidden');
             } else {
                 multiNodeParams.classList.add('hidden');
+            }
+            
+            // Show/hide hosts tab based on deployment mode
+            const hostsTabButton = document.getElementById('hostsTabButton');
+            if (mode === 'multi') {
+                hostsTabButton.classList.remove('hidden');
+            } else {
+                hostsTabButton.classList.add('hidden');
+                // If hosts tab is active and we switch to single mode, switch to configuration tab
+                if (document.getElementById('hosts').classList.contains('active')) {
+                    document.getElementById('configuration').classList.add('active');
+                    document.querySelector('.tablinks').classList.add('active');
+                    document.getElementById('hosts').classList.remove('active');
+                    hostsTabButton.classList.remove('active');
+                }
             }
             
             // Check if Mirror Data Directories should be shown
