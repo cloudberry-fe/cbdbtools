@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Deploy - Greenplum Cluster Deployment{% endblock %}
+
+{% block deployment_status %}
+<div class="deployment-status">
+    <h3><i class="fas fa-info-circle"></i> Deployment Status</h3>
+    <div class="status-info">
+        <div class="status-item">
+            <strong>Deployment Mode</strong>
+            <span>{{ deployment_info.mode|default('Not configured') }}</span>
+        </div>
+        <div class="status-item">
+            <strong>Coordinator Host</strong>
+            <span>{{ deployment_info.coordinator|default('Not set') }}</span>
+        </div>
+        <div class="status-item">
+            <strong>Segment Hosts</strong>
+            <span>{{ deployment_info.segment_count|default(0) }} hosts</span>
+        </div>
+        <div class="status-item">
+            <strong>Status</strong>
+            <span id="deploymentStatus">{{ deployment_info.status|default('Ready') }}</span>
+        </div>
+    </div>
+
+    {% if deployment_info.status == 'running' %}
+    <div class="progress">
+        <div class="progress-bar" id="progressBar" style="width: {{ deployment_info.progress|default(0) }}%">
+            {{ deployment_info.progress|default(0) }}%
+        </div>
+    </div>
+    {% endif %}
+
+    <div style="margin-top: 15px;">
+        <button type="button" class="btn btn-secondary" onclick="refreshLogs()">
+            <i class="fas fa-sync"></i> Refresh Logs
+        </button>
+        <button type="button" class="btn btn-info" onclick="downloadLogs()" 
+                {% if not deployment_info.log_file %}disabled{% endif %}>
+            <i class="fas fa-download"></i> Download Logs
+        </button>
+    </div>
+
+    <div class="logs-container" id="deploymentLogs">
+        {{ deployment_info.logs|default('No logs available. Start deployment to see logs.') }}
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="tab-pane active">
+    <h2><i class="fas fa-rocket"></i> Deploy Cluster</h2>
+    <p>Review your configuration and start the deployment</p>
+    
+    <form id="deployForm" method="POST" action="/deploy">
+        <div class="form-group">
+            <label>
+                <input type="checkbox" id="skipConsistencyCheck" name="skip_consistency_check" value="1">
+                Skip consistency check (Not recommended)
+            </label>
+        </div>
+        
+        <div class="form-group">
+            <label>
+                <input type="checkbox" id="forceDeploy" name="force_deploy" value="1">
+                Force deploy (Overwrite existing installation)
+            </label>
+        </div>
+
+        <div class="form-group">
+            <button type="submit" class="btn btn-success" id="deployButton" 
+                    {% if not deployment_info.ready %}disabled{% endif %}>
+                <i class="fas fa-rocket"></i> Start Deployment
+            </button>
+            <button type="button" class="btn btn-danger" id="cancelButton" 
+                    onclick="cancelDeployment()" style="display: none;">
+                <i class="fas fa-stop"></i> Cancel Deployment
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+let deploymentInterval;
+let isDeploying = {{ 'true' if deployment_info.status == 'running' else 'false' }};
+
+function startDeploymentMonitoring() {
+    if (isDeploying) {
+        deploymentInterval = setInterval(updateDeploymentStatus, 2000);
+        document.getElementById('deployButton').style.display = 'none';
+        document.getElementById('cancelButton').style.display = 'inline-block';
+    }
+}
+
+function updateDeploymentStatus() {
+    fetch('/deployment_status')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('deploymentStatus').textContent = data.status;
+            
+            if (data.status === 'running' && data.progress) {
+                const progressBar = document.getElementById('progressBar');
+                progressBar.style.width = data.progress + '%';
+                progressBar.textContent = data.progress + '%';
+            }
+            
+            if (data.status === 'completed' || data.status === 'failed') {
+                clearInterval(deploymentInterval);
+                isDeploying = false;
+                document.getElementById('deployButton').style.display = 'inline-block';
+                document.getElementById('cancelButton').style.display = 'none';
+                refreshLogs();
+            }
+        })
+        .catch(error => console.error('Error updating status:', error));
+}
+
+function refreshLogs() {
+    fetch('/deployment_logs')
+        .then(response => response.text())
+        .then(logs => {
+            document.getElementById('deploymentLogs').textContent = logs;
+            const logsContainer = document.getElementById('deploymentLogs');
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+        })
+        .catch(error => console.error('Error refreshing logs:', error));
+}
+
+function cancelDeployment() {
+    if (confirm('Are you sure you want to cancel the deployment?')) {
+        fetch('/cancel_deployment', { method: 'POST' })
+            .then(() => {
+                clearInterval(deploymentInterval);
+                isDeploying = false;
+                location.reload();
+            });
+    }
+}
+
+function downloadLogs() {
+    window.location.href = '/download_logs';
+}
+
+// Start monitoring if deployment is running
+document.addEventListener('DOMContentLoaded', startDeploymentMonitoring);
+
+// Handle form submission
+document.getElementById('deployForm').addEventListener('submit', function(e) {
+    if (!confirm('Are you ready to start the deployment? This will take several minutes.')) {
+        e.preventDefault();
+        return;
+    }
+    
+    isDeploying = true;
+    startDeploymentMonitoring();
+});
+</script>
+{% endblock %}
