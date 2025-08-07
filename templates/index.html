@@ -1,9 +1,15 @@
-{% if active_tab == 'configuration' %}
-    {% include 'configuration.html' %}
-{% elif active_tab == 'hosts' %}
-    {% include 'hosts.html' %}
-{% elif active_tab == 'deploy' %}
-    {% include 'deploy.html' %}
-{% else %}
-    {% include 'configuration.html' %}
-{% endif %}
+{% extends "base.html" %}
+
+{% block content %}
+<div class="tab-content">
+    {% if active_tab == 'configuration' %}
+        {% include 'configuration.html' %}
+    {% elif active_tab == 'hosts' %}
+        {% include 'hosts.html' %}
+    {% elif active_tab == 'deploy' %}
+        {% include 'deploy.html' %}
+    {% else %}
+        {% include 'configuration.html' %}
+    {% endif %}
+</div>
+{% endblock %}
