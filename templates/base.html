@@ -7,30 +7,27 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #3498db;
-            --secondary-color: #2c3e50;
-            --success-color: #2ecc71;
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
             --warning-color: #f39c12;
             --danger-color: #e74c3c;
-            --light-bg: #f8f9fa;
-            --dark-bg: #343a40;
-            --border-color: #dee2e6;
-            --text-color: #212529;
-            --text-light: #6c757d;
-            --shadow: 0 2px 4px rgba(0,0,0,0.1);
-            --transition: all 0.3s ease;
+            --light-color: #ecf0f1;
+            --dark-color: #34495e;
+            --border-color: #bdc3c7;
+            --shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         
         * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background-color: #f5f5f5;
-            color: var(--text-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
             line-height: 1.6;
         }
         
@@ -40,430 +37,426 @@
             padding: 20px;
         }
         
-        .header {
-            background: white;
-            padding: 20px;
+        header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 1rem;
             border-radius: 8px;
+            margin-bottom: 2rem;
             box-shadow: var(--shadow);
-            margin-bottom: 20px;
+        }
+        
+        h1, h2, h3, h4 {
+            margin-bottom: 1rem;
+        }
+        
+        h1 {
+            font-size: 2rem;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap;
+            gap: 10px;
         }
         
-        .header h1 {
-            color: var(--secondary-color);
-            margin-bottom: 10px;
+        h2 {
+            font-size: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 1.5rem;
         }
         
-        .header p {
-            color: var(--text-light);
-            margin-bottom: 0;
+        h3 {
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 1rem;
         }
         
         /* Flash Messages */
         .flash-messages {
-            margin-bottom: 20px;
+            margin-bottom: 1rem;
         }
         
-        .alert {
-            padding: 15px;
+        .flash-message {
+            padding: 12px 20px;
+            border-radius: 4px;
             margin-bottom: 10px;
-            border-radius: 4px;
-            border: 1px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         
-        .alert-success {
-            color: #155724;
+        .flash-message.success {
             background-color: #d4edda;
-            border-color: #c3e6cb;
+            color: #155724;
+            border: 1px solid #c3e6cb;
         }
         
-        .alert-error {
-            color: #721c24;
+        .flash-message.error {
             background-color: #f8d7da;
-            border-color: #f5c6cb;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
         }
         
-        .alert-warning {
-            color: #856404;
+        /* Warning message styles */
+        .warning {
             background-color: #fff3cd;
-            border-color: #ffeaa7;
-        }
-        
-        .alert-info {
-            color: #0c5460;
-            background-color: #d1ecf1;
-            border-color: #bee5eb;
-        }
-        
-        /* Warning Box */
-        .warning-box {
-            background-color: #fff3cd;
-            border-left: 4px solid var(--warning-color);
+            border: 1px solid #ffeaa7;
+            border-radius: 4px;
             padding: 15px;
-            margin-bottom: 20px;
+            margin: 15px 0;
+            color: #856404;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .warning strong {
+            color: #664d03;
+        }
+        
+        .warning p {
+            margin: 5px 0;
+        }
+        
+        .warning p:first-child {
+            font-weight: bold;
+            margin-top: 0;
+        }
+        
+        .warning p:last-child {
+            margin-bottom: 0;
+        }
+        
+        /* Deployment Status and Logs */
+        .deployment-status {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            animation: fadeIn 0.5s;
+        }
+        
+        .deployment-status h4 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .log-container {
+            background-color: #1e1e1e;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 4px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.4;
+            margin: 10px 0;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        
+        .log-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .log-container::-webkit-scrollbar-track {
+            background: #333;
+        }
+        
+        .log-container::-webkit-scrollbar-thumb {
+            background: #666;
             border-radius: 4px;
         }
         
-        .warning-box h3 {
-            margin-top: 0;
-            color: #856404;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
-        .warning-box ul {
-            margin-bottom: 0;
+        .deployment-completed {
+            border-color: var(--success-color);
+            background-color: rgba(46, 204, 113, 0.1);
+        }
+        
+        .deployment-running {
+            border-color: var(--secondary-color);
+            background-color: rgba(52, 152, 219, 0.1);
         }
         
         /* Tab Navigation */
         .tab {
             display: flex;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 2rem;
             background: white;
-            border-radius: 8px;
+            border-radius: 8px 8px 0 0;
             box-shadow: var(--shadow);
-            margin-bottom: 20px;
             overflow: hidden;
         }
         
-        .tablinks {
-            flex: 1;
-            padding: 15px 20px;
-            background: none;
+        .tab button {
+            background-color: inherit;
             border: none;
+            outline: none;
             cursor: pointer;
+            padding: 16px 24px;
+            transition: 0.3s;
             font-size: 16px;
-            transition: var(--transition);
-            color: var(--text-light);
+            font-weight: 600;
             display: flex;
             align-items: center;
-            justify-content: center;
             gap: 8px;
         }
         
-        .tablinks:hover {
-            background-color: var(--light-bg);
-            color: var(--text-color);
+        .tab button:hover {
+            background-color: #f1f1f1;
         }
         
-        .tablinks.active {
-            background-color: var(--primary-color);
+        .tab button.active {
+            background-color: var(--secondary-color);
             color: white;
         }
         
         /* Tab Content */
         .tabcontent {
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: var(--shadow);
             display: none;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 0 0 8px 8px;
+            background-color: white;
+            box-shadow: var(--shadow);
+            animation: fadeEffect 0.5s;
         }
         
         .tabcontent.active {
             display: block;
-            animation: fadeIn 0.3s ease;
         }
         
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+        @keyframes fadeEffect {
+            from {opacity: 0;}
+            to {opacity: 1;}
         }
         
         /* Form Styles */
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
         .form-row {
             display: flex;
-            gap: 20px;
-            margin-bottom: 15px;
             flex-wrap: wrap;
+            margin: 0 -10px 15px -10px;
         }
         
         .form-col {
             flex: 1;
-            min-width: 250px;
+            min-width: 300px;
+            padding: 0 10px;
+            box-sizing: border-box;
         }
         
-        label {
+        @media (max-width: 768px) {
+            .form-col {
+                min-width: 100%;
+            }
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
             display: block;
             margin-bottom: 5px;
             font-weight: 600;
-            color: var(--text-color);
+            color: var(--dark-color);
         }
         
-        .required::after {
+        .form-group.required label::after {
             content: " *";
             color: var(--danger-color);
         }
         
-        input[type="text"],
-        input[type="password"],
-        input[type="number"],
-        select,
-        textarea {
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             border: 1px solid var(--border-color);
             border-radius: 4px;
             font-size: 14px;
-            transition: var(--transition);
+            transition: border-color 0.3s;
         }
         
-        input:focus,
-        select:focus,
-        textarea:focus {
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color: var(--secondary-color);
             outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.25);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
         }
         
-        /* Buttons */
+        .form-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+            display: block;
+        }
+        
+        /* Button Styles */
         .btn {
-            padding: 10px 20px;
+            background-color: var(--secondary-color);
+            color: white;
             border: none;
+            padding: 12px 20px;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 14px;
-            transition: var(--transition);
-            text-decoration: none;
-            display: inline-block;
+            font-size: 16px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.3s;
         }
         
-        .btn-primary {
-            background-color: var(--primary-color);
-            color: white;
-        }
-        
-        .btn-primary:hover {
+        .btn:hover {
             background-color: #2980b9;
         }
         
         .btn-secondary {
-            background-color: var(--secondary-color);
-            color: white;
+            background-color: var(--light-color);
+            color: var(--dark-color);
         }
         
         .btn-secondary:hover {
-            background-color: #1a2530;
+            background-color: #d5dbdb;
         }
         
         .btn-success {
             background-color: var(--success-color);
-            color: white;
         }
         
         .btn-success:hover {
-            background-color: #27ae60;
+            background-color: #219653;
         }
         
         .btn-danger {
             background-color: var(--danger-color);
-            color: white;
         }
         
         .btn-danger:hover {
             background-color: #c0392b;
         }
         
-        .btn-warning {
-            background-color: var(--warning-color);
-            color: white;
-        }
-        
-        .btn-warning:hover {
-            background-color: #e67e22;
-        }
-        
-        /* Deployment Status */
-        .deployment-status {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: var(--shadow);
-            margin-bottom: 20px;
-        }
-        
-        .deployment-status h3 {
-            margin-top: 0;
-            color: var(--secondary-color);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .status-info {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-        
-        .status-item {
-            padding: 10px;
-            background: var(--light-bg);
-            border-radius: 4px;
-        }
-        
-        .status-item strong {
-            display: block;
-            color: var(--text-light);
-            font-size: 12px;
-            text-transform: uppercase;
-        }
-        
-        .logs-container {
-            background: #1e1e1e;
-            color: #f0f0f0;
-            padding: 15px;
-            border-radius: 4px;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
-            max-height: 400px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-        }
-        
-        .logs-container::-webkit-scrollbar {
-            width: 8px;
-        }
-        
-        .logs-container::-webkit-scrollbar-track {
-            background: #2d2d2d;
-        }
-        
-        .logs-container::-webkit-scrollbar-thumb {
-            background: #555;
-            border-radius: 4px;
-        }
-        
-        .logs-container::-webkit-scrollbar-thumb:hover {
-            background: #777;
-        }
-        
-        /* Progress Bar */
-        .progress {
-            height: 20px;
-            background: #e9ecef;
-            border-radius: 10px;
-            overflow: hidden;
-            margin: 10px 0;
-        }
-        
-        .progress-bar {
-            height: 100%;
-            background: linear-gradient(90deg, var(--primary-color), #2980b9);
-            transition: width 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 12px;
-            font-weight: bold;
-        }
-        
-        /* Host Groups */
+        /* Host Group */
         .host-group {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
             border: 1px solid var(--border-color);
-            border-radius: 4px;
-            margin-bottom: 15px;
+            border-radius: 8px;
+            background-color: #f8f9fa;
         }
         
-        .host-group-header {
-            background: var(--light-bg);
-            padding: 10px 15px;
-            border-bottom: 1px solid var(--border-color);
-            font-weight: 600;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .host-group-content {
-            padding: 15px;
-        }
-        
-        .host-item {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            margin-bottom: 10px;
-            padding: 10px;
-            background: var(--light-bg);
-            border-radius: 4px;
-        }
-        
-        .host-item input {
-            margin: 0;
-        }
-        
-        .remove-host {
-            background: var(--danger-color);
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-        }
-        
-        .remove-host:hover {
-            background: #c0392b;
-        }
-        
-        /* Segment Host */
         .segment-host {
+            margin-bottom: 1.5rem;
+            padding: 1rem;
             border: 1px solid var(--border-color);
             border-radius: 4px;
-            margin-bottom: 15px;
-            background: white;
+            background-color: white;
         }
         
         .segment-host-header {
-            background: var(--light-bg);
-            padding: 10px 15px;
-            border-bottom: 1px solid var(--border-color);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 1rem;
         }
         
         .segment-host-header h4 {
             margin: 0;
+            color: var(--dark-color);
+        }
+        
+        .remove-host {
+            background: none;
+            border: none;
+            color: var(--danger-color);
+            font-size: 18px;
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.3s;
+        }
+        
+        .remove-host:hover {
+            background-color: rgba(231, 76, 60, 0.1);
+        }
+        
+        /* Mode Selector */
+        .mode-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: #f8f9fa;
+        }
+        
+        .mode-option {
+            flex: 1;
+            min-width: 200px;
+            padding: 20px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .mode-option:hover {
+            border-color: var(--secondary-color);
+        }
+        
+        .mode-option.selected {
+            border-color: var(--secondary-color);
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+        
+        .mode-option i {
+            font-size: 2rem;
+            margin-bottom: 10px;
             color: var(--secondary-color);
         }
         
-        .segment-host-content {
-            padding: 15px;
+        .mode-option h4 {
+            margin-bottom: 10px;
         }
         
-        /* Deployment Running/Completed */
-        .deployment-running {
-            border-left: 4px solid var(--warning-color);
-        }
-        
-        .deployment-completed {
-            border-left: 4px solid var(--success-color);
-        }
-        
-        .completion-message {
-            color: var(--success-color);
-            font-weight: bold;
-            margin: 10px 0;
-        }
-        
-        /* Hidden */
+        /* Hidden class */
         .hidden {
-            display: none;
+            display: none !important;
         }
         
-        /* Responsive */
-        @media (max-width: 768px) {
-            .form-row {
-                flex-direction: column;
+        /* Required field indicator */
+        .required-info {
+            font-size: 14px;
+            color: var(--danger-color);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        /* Responsive Design */
+        @media screen and (max-width: 768px) {
+            .container {
+                padding: 10px;
             }
             
             .form-col {
@@ -474,55 +467,61 @@
                 flex-direction: column;
             }
             
-            .container {
-                padding: 10px;
+            .tab button {
+                width: 100%;
+                text-align: left;
             }
             
-            .header {
+            .mode-selector {
                 flex-direction: column;
-                align-items: flex-start;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+            
+            h2 {
+                font-size: 1.3rem;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <div>
-                <h1><i class="fas fa-server"></i> CloudBerry Cluster Deployment</h1>
-                <p>Configure and deploy your CloudBerry cluster with ease</p>
-            </div>
-        </div>
-
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div class="flash-messages">
+        <header>
+            <h1><i class="fas fa-server"></i> CloudBerry Cluster Deployment</h1>
+        </header>
+        
+        <!-- Flash Messages -->
+        <div class="flash-messages">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
                     {% for category, message in messages %}
-                        <div class="alert alert-{{ category }}">
-                            {{ message }}
+                        <div class="flash-message {{ category }}">
+                            <i class="fas fa-info-circle"></i> {{ message }}
                         </div>
                     {% endfor %}
-                </div>
-            {% endif %}
-        {% endwith %}
-
-        {% block deployment_status %}{% endblock %}
-
+                {% endif %}
+            {% endwith %}
+        </div>
+        
+        <!-- Tab Navigation -->
         <div class="tab">
-            <button class="tablinks {% if active_tab == 'configuration' %}active{% endif %}" 
+            <button class="tablinks {% if active_tab == 'configuration' or not active_tab %}active{% endif %}" 
                     onclick="openTab(event, 'configuration')">
                 <i class="fas fa-cog"></i> Configuration
             </button>
-            <button class="tablinks {% if active_tab == 'hosts' %}active{% endif %}" 
-                    onclick="openTab(event, 'hosts')">
-                <i class="fas fa-network-wired"></i> Host Configuration
+            <button class="tablinks {% if params.get('DEPLOY_TYPE', 'single') != 'multi' %}hidden{% endif %}" 
+                    onclick="openTab(event, 'hosts')" 
+                    id="hostsTabButton">
+                <i class="fas fa-network-wired"></i> Hosts
             </button>
             <button class="tablinks {% if active_tab == 'deploy' %}active{% endif %}" 
                     onclick="openTab(event, 'deploy')">
-                <i class="fas fa-rocket"></i> Deploy Cluster
+                <i class="fas fa-rocket"></i> Deploy
             </button>
         </div>
-
+        
         <div class="tabcontent">
             {% block content %}{% endblock %}
         </div>
@@ -554,8 +553,8 @@
         
         // Auto-sync coordinator fields between tabs
         function syncCoordinatorFields() {
-            const configHostname = document.getElementById('coordinator_hostname');
-            const configIp = document.getElementById('coordinator_ip');
+            const configHostname = document.getElementById('COORDINATOR_HOSTNAME');
+            const configIp = document.getElementById('COORDINATOR_IP');
             const hostHostname = document.getElementById('coordinator_hostname_hosts');
             const hostIp = document.getElementById('coordinator_ip_hosts');
             
@@ -572,8 +571,8 @@
             syncCoordinatorFields();
             
             // Add listeners for real-time sync
-            const configHostname = document.getElementById('coordinator_hostname');
-            const configIp = document.getElementById('coordinator_ip');
+            const configHostname = document.getElementById('COORDINATOR_HOSTNAME');
+            const configIp = document.getElementById('COORDINATOR_IP');
             
             if (configHostname) {
                 configHostname.addEventListener('input', syncCoordinatorFields);

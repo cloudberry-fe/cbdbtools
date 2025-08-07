@@ -1,158 +1,316 @@
 {% extends "base.html" %}
 
-{% block title %}Configuration - Greenplum Cluster Deployment{% endblock %}
+{% block title %}Configuration - CloudBerry Cluster Deployment{% endblock %}
 
 {% block content %}
 <div class="tab-pane active">
     <h2><i class="fas fa-cog"></i> Configuration Settings</h2>
-    <p>Configure your Greenplum cluster parameters</p>
     
     <form id="configForm" method="POST" action="/save_config">
+        <!-- Deployment Mode Selector -->
+        <div class="mode-selector">
+            <h3><i class="fas fa-th-large"></i> Deployment Mode</h3>
+            <div class="mode-option {% if config.DEPLOY_TYPE|default('single') == 'single' %}selected{% endif %}" 
+                 onclick="setDeploymentMode('single')">
+                <i class="fas fa-laptop"></i>
+                <h4>Single Node</h4>
+                <p>Deploy all components on a single machine</p>
+            </div>
+            <div class="mode-option {% if config.DEPLOY_TYPE|default('single') == 'multi' %}selected{% endif %}" 
+                 onclick="setDeploymentMode('multi')">
+                <i class="fas fa-server"></i>
+                <h4>Multi Node</h4>
+                <p>Deploy components across multiple machines</p>
+            </div>
+        </div>
+        
+        <!-- Hidden field for deployment type -->
+        <input type="hidden" id="DEPLOY_TYPE" name="DEPLOY_TYPE" 
+               value="{{ config.DEPLOY_TYPE|default('single') }}">
+        
+        <!-- Mandatory Options -->
+        <h3><i class="fas fa-key"></i> Mandatory Options</h3>
         <div class="form-row">
             <div class="form-col">
-                <div class="form-group">
-                    <label class="required" for="coordinator_hostname">Coordinator Hostname</label>
-                    <input type="text" id="coordinator_hostname" name="coordinator_hostname" 
-                           value="{{ config.coordinator_hostname|default('') }}" required>
+                <div class="form-group required">
+                    <label for="ADMIN_USER">Admin User:</label>
+                    <input type="text" id="ADMIN_USER" name="ADMIN_USER" 
+                           value="{{ config.ADMIN_USER|default('gpadmin') }}" required>
+                </div>
+                
+                <div class="form-group required">
+                    <label for="ADMIN_USER_PASSWORD">Admin Password:</label>
+                    <input type="password" id="ADMIN_USER_PASSWORD" name="ADMIN_USER_PASSWORD" 
+                           value="{{ config.ADMIN_USER_PASSWORD|default('Hashdata@123') }}" required>
+                </div>
+                
+                <div class="form-group required">
+                    <label for="CLOUDBERRY_RPM">RPM Package Path:</label>
+                    <input type="text" id="CLOUDBERRY_RPM" name="CLOUDBERRY_RPM" 
+                           value="{{ config.CLOUDBERRY_RPM|default('/tmp/hashdata-lightning-release.rpm') }}" required>
+                    <small class="form-text">Path to the RPM package file</small>
+                </div>
+                
+                <div class="form-group required">
+                    <label for="CLOUDBERRY_BINARY_PATH">Binary Path:</label>
+                    <input type="text" id="CLOUDBERRY_BINARY_PATH" name="CLOUDBERRY_BINARY_PATH" 
+                           value="{{ config.CLOUDBERRY_BINARY_PATH|default('/usr/local/cloudberry-db') }}" required>
                 </div>
             </div>
+            
             <div class="form-col">
-                <div class="form-group">
-                    <label class="required" for="coordinator_ip">Coordinator IP</label>
-                    <input type="text" id="coordinator_ip" name="coordinator_ip" 
-                           value="{{ config.coordinator_ip|default('') }}" required>
+                <div class="form-group required">
+                    <label for="COORDINATOR_HOSTNAME">Coordinator Hostname:</label>
+                    <input type="text" id="COORDINATOR_HOSTNAME" name="COORDINATOR_HOSTNAME" 
+                           value="{{ config.COORDINATOR_HOSTNAME|default('mdw') }}" required>
+                </div>
+                
+                <div class="form-group required">
+                    <label for="COORDINATOR_IP">Coordinator IP:</label>
+                    <input type="text" id="COORDINATOR_IP" name="COORDINATOR_IP" 
+                           value="{{ config.COORDINATOR_IP|default('192.168.193.21') }}" required>
                 </div>
             </div>
         </div>
-
+        
+        <!-- Cluster Initialization Parameters -->
+        <h3><i class="fas fa-database"></i> Cluster Initialization Parameters</h3>
         <div class="form-row">
             <div class="form-col">
-                <div class="form-group">
-                    <label class="required" for="installation_path">Installation Path</label>
-                    <input type="text" id="installation_path" name="installation_path" 
-                           value="{{ config.installation_path|default('/usr/local/greenplum-db') }}" required>
+                <div class="form-group required">
+                    <label for="COORDINATOR_PORT">Coordinator Port:</label>
+                    <input type="number" id="COORDINATOR_PORT" name="COORDINATOR_PORT" 
+                           value="{{ config.COORDINATOR_PORT|default('5432') }}" required>
                 </div>
-            </div>
-            <div class="form-col">
-                <div class="form-group">
-                    <label class="required" for="data_directory">Data Directory</label>
-                    <input type="text" id="data_directory" name="data_directory" 
-                           value="{{ config.data_directory|default('/data/master') }}" required>
+                
+                <div class="form-group required">
+                    <label for="COORDINATOR_DIRECTORY">Coordinator Directory:</label>
+                    <input type="text" id="COORDINATOR_DIRECTORY" name="COORDINATOR_DIRECTORY" 
+                           value="{{ config.COORDINATOR_DIRECTORY|default('/data0/database/coordinator') }}" required>
                 </div>
-            </div>
-        </div>
-
-        <div class="form-row">
-            <div class="form-col">
-                <div class="form-group">
-                    <label class="required" for="segment_prefix">Segment Prefix</label>
-                    <input type="text" id="segment_prefix" name="segment_prefix" 
-                           value="{{ config.segment_prefix|default('sdw') }}" required>
+                
+                <div class="form-group required">
+                    <label for="ARRAY_NAME">Cluster Name:</label>
+                    <input type="text" id="ARRAY_NAME" name="ARRAY_NAME" 
+                           value="{{ config.ARRAY_NAME|default('CBDB_SANDBOX') }}" required>
                 </div>
-            </div>
-            <div class="form-col">
-                <div class="form-group">
-                    <label class="required" for="port_base">Port Base</label>
-                    <input type="number" id="port_base" name="port_base" 
-                           value="{{ config.port_base|default(6000) }}" required>
+                
+                <div class="form-group required">
+                    <label for="SEG_PREFIX">Segment Prefix:</label>
+                    <input type="text" id="SEG_PREFIX" name="SEG_PREFIX" 
+                           value="{{ config.SEG_PREFIX|default('gpseg') }}" required>
                 </div>
-            </div>
-        </div>
-
-        <div class="form-row">
-            <div class="form-col">
-                <div class="form-group">
-                    <label class="required" for="mirror_port_base">Mirror Port Base</label>
-                    <input type="number" id="mirror_port_base" name="mirror_port_base" 
-                           value="{{ config.mirror_port_base|default(7000) }}" required>
+                
+                <div class="form-group required">
+                    <label for="PORT_BASE">Port Base:</label>
+                    <input type="number" id="PORT_BASE" name="PORT_BASE" 
+                           value="{{ config.PORT_BASE|default('6000') }}" required>
                 </div>
-            </div>
-            <div class="form-col">
-                <div class="form-group">
-                    <label class="required" for="replication_port_base">Replication Port Base</label>
-                    <input type="number" id="replication_port_base" name="replication_port_base" 
-                           value="{{ config.replication_port_base|default(8000) }}" required>
+                
+                <div class="form-group required">
+                    <label for="DATA_DIRECTORY">Data Directory:</label>
+                    <input type="text" id="DATA_DIRECTORY" name="DATA_DIRECTORY" 
+                           value="{{ config.DATA_DIRECTORY|default('/data0/database/primary /data0/database/primary') }}" required>
+                    <small class="form-text">Enter multiple directory paths separated by spaces</small>
                 </div>
-            </div>
-        </div>
-
-        <div class="form-row">
-            <div class="form-col">
+                
                 <div class="form-group">
-                    <label class="required" for="mirror_replication_port_base">Mirror Replication Port Base</label>
-                    <input type="number" id="mirror_replication_port_base" name="mirror_replication_port_base" 
-                           value="{{ config.mirror_replication_port_base|default(9000) }}" required>
-                </div>\            </div>
-            <div class="form-col">
-                <div class="form-group">
-                    <label class="required" for="database_name">Database Name</label>
-                    <input type="text" id="database_name" name="database_name" 
-                           value="{{ config.database_name|default('gpadmin') }}" required>
+                    <label for="WITH_MIRROR">Enable Mirrors:</label>
+                    <select id="WITH_MIRROR" name="WITH_MIRROR">
+                        <option value="false" {% if config.WITH_MIRROR|default('false') == 'false' %}selected{% endif %}>No</option>
+                        <option value="true" {% if config.WITH_MIRROR|default('false') == 'true' %}selected{% endif %}>Yes</option>
+                    </select>
                 </div>
-            </div>
-        </div>
-
-        <div class="form-row">
-            <div class="form-col">
-                <div class="form-group">
-                    <label class="required" for="database_port">Database Port</label>
-                    <input type="number" id="database_port" name="database_port" 
-                           value="{{ config.database_port|default(5432) }}" required>
+                
+                <div id="mirrorParams" class="{% if config.WITH_MIRROR|default('false') != 'true' %}hidden{% endif %}">
+                    <div class="form-group required">
+                        <label for="MIRROR_PORT_BASE">Mirror Port Base:</label>
+                        <input type="number" id="MIRROR_PORT_BASE" name="MIRROR_PORT_BASE" 
+                               value="{{ config.MIRROR_PORT_BASE|default('7000') }}" required>
+                    </div>
+                    
+                    <div class="form-group required">
+                        <label for="MIRROR_DATA_DIRECTORY">Mirror Data Directories:</label>
+                        <input type="text" id="MIRROR_DATA_DIRECTORY" name="MIRROR_DATA_DIRECTORY" 
+                               value="{{ config.MIRROR_DATA_DIRECTORY|default('/data0/database/mirror /data0/database/mirror') }}" required>
+                        <small class="form-text">Enter multiple directory paths separated by spaces</small>
+                    </div>
                 </div>
-            </div>
-            <div class="form-col">
+                
                 <div class="form-group">
-                    <label class="required" for="max_connections">Max Connections</label>
-                    <input type="number" id="max_connections" name="max_connections" 
-                           value="{{ config.max_connections|default(250) }}" required>
-                </div>
-            </div>
-        </div>
-
-        <h3>Cluster Initialization Parameters</h3>
-        <div class="form-row">
-            <div class="form-col">
-                <div class="form-group">
-                    <label class="required" for="encoding">Encoding</label>
-                    <select id="encoding" name="encoding" required>
-                        <option value="UTF8" {% if config.encoding == 'UTF8' %}selected{% endif %}>UTF8</option>
-                        <option value="GBK" {% if config.encoding == 'GBK' %}selected{% endif %}>GBK</option>
-                        <option value="LATIN1" {% if config.encoding == 'LATIN1' %}selected{% endif %}>LATIN1</option>
+                    <label for="WITH_STANDBY">Enable Standby:</label>
+                    <select id="WITH_STANDBY" name="WITH_STANDBY">
+                        <option value="false" {% if config.WITH_STANDBY|default('false') == 'false' %}selected{% endif %}>No</option>
+                        <option value="true" {% if config.WITH_STANDBY|default('false') == 'true' %}selected{% endif %}>Yes</option>
                     </select>
                 </div>
             </div>
+            
             <div class="form-col">
+                <div class="form-group required">
+                    <label for="TRUSTED_SHELL">Trusted Shell:</label>
+                    <input type="text" id="TRUSTED_SHELL" name="TRUSTED_SHELL" 
+                           value="{{ config.TRUSTED_SHELL|default('ssh') }}" required>
+                </div>
+                
+                <div class="form-group required">
+                    <label for="CHECK_POINT_SEGMENTS">Checkpoint Segments:</label>
+                    <input type="number" id="CHECK_POINT_SEGMENTS" name="CHECK_POINT_SEGMENTS" 
+                           value="{{ config.CHECK_POINT_SEGMENTS|default('8') }}" required>
+                </div>
+                
+                <div class="form-group required">
+                    <label for="ENCODING">Encoding:</label>
+                    <input type="text" id="ENCODING" name="ENCODING" 
+                           value="{{ config.ENCODING|default('UNICODE') }}" required>
+                </div>
+                
+                <div class="form-group required">
+                    <label for="DATABASE_NAME">Database Name:</label>
+                    <input type="text" id="DATABASE_NAME" name="DATABASE_NAME" 
+                           value="{{ config.DATABASE_NAME|default('gpadmin') }}" required>
+                </div>
+                
                 <div class="form-group">
-                    <label class="required" for="locale">Locale</label>
-                    <input type="text" id="locale" name="locale" 
-                           value="{{ config.locale|default('en_US.UTF-8') }}" required>
+                    <label for="MACHINE_LIST_FILE">Machine List File:</label>
+                    <input type="text" id="MACHINE_LIST_FILE" name="MACHINE_LIST_FILE" 
+                           value="{{ config.MACHINE_LIST_FILE|default('/tmp/hostfile_gpinitsystem') }}">
+                </div>
+                
+                <div class="form-group">
+                    <label for="INIT_CONFIGFILE">Init Config File:</label>
+                    <input type="text" id="INIT_CONFIGFILE" name="INIT_CONFIGFILE" 
+                           value="{{ config.INIT_CONFIGFILE|default('/tmp/gpinitsystem_config') }}">
                 </div>
             </div>
         </div>
-
-        <h3>Optional Parameters</h3>
+        
+        <!-- Optional Parameters -->
+        <h3><i class="fas fa-cogs"></i> Optional Parameters</h3>
         <div class="form-row">
             <div class="form-col">
                 <div class="form-group">
-                    <label for="shared_buffers">Shared Buffers (MB)</label>
-                    <input type="number" id="shared_buffers" name="shared_buffers" 
-                           value="{{ config.shared_buffers|default(128) }}">
+                    <label for="INIT_ENV_ONLY">Initialize Environment Only:</label>
+                    <select id="INIT_ENV_ONLY" name="INIT_ENV_ONLY">
+                        <option value="false" {% if config.INIT_ENV_ONLY|default('false') == 'false' %}selected{% endif %}>No</option>
+                        <option value="true" {% if config.INIT_ENV_ONLY|default('false') == 'true' %}selected{% endif %}>Yes</option>
+                    </select>
                 </div>
-            </div>
-            <div class="form-col">
+                
                 <div class="form-group">
-                    <label for="max_prepared_transactions">Max Prepared Transactions</label>
-                    <input type="number" id="max_prepared_transactions" name="max_prepared_transactions" 
-                           value="{{ config.max_prepared_transactions|default(250) }}">
+                    <label for="CLOUDBERRY_RPM_URL">RPM Download URL:</label>
+                    <input type="text" id="CLOUDBERRY_RPM_URL" name="CLOUDBERRY_RPM_URL" 
+                           value="{{ config.CLOUDBERRY_RPM_URL|default('http://downloadlink.com/cloudberry.rpm') }}">
+                    <small class="form-text">URL to download the RPM package if not locally available</small>
                 </div>
             </div>
         </div>
-
+        
+        <!-- Multi-node specific parameters -->
+        <div id="multiNodeParams" class="{% if config.DEPLOY_TYPE|default('single') != 'multi' %}hidden{% endif %}">
+            <h3><i class="fas fa-network-wired"></i> Multi-Node Specific Parameters</h3>
+            
+            <div class="form-row">
+                <div class="form-col">
+                    <div class="form-group required">
+                        <label for="SEGMENT_ACCESS_METHOD">Segment Access Method:</label>
+                        <select id="SEGMENT_ACCESS_METHOD" name="SEGMENT_ACCESS_METHOD" required>
+                            <option value="keyfile" {% if config.SEGMENT_ACCESS_METHOD|default('keyfile') == 'keyfile' %}selected{% endif %}>Key File</option>
+                            <option value="password" {% if config.SEGMENT_ACCESS_METHOD|default('keyfile') == 'password' %}selected{% endif %}>Password</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group required">
+                        <label for="SEGMENT_ACCESS_USER">Segment Access User:</label>
+                        <input type="text" id="SEGMENT_ACCESS_USER" name="SEGMENT_ACCESS_USER" 
+                               value="{{ config.SEGMENT_ACCESS_USER|default('root') }}" required>
+                    </div>
+                    
+                    <div class="form-group" id="keyfilePathGroup" 
+                           {% if config.SEGMENT_ACCESS_METHOD|default('keyfile') != 'keyfile' %}style="display:none;"{% endif %}>
+                        <label for="SEGMENT_ACCESS_KEYFILE">Key File Path:</label>
+                        <input type="text" id="SEGMENT_ACCESS_KEYFILE" name="SEGMENT_ACCESS_KEYFILE" 
+                               value="{{ config.SEGMENT_ACCESS_KEYFILE|default('/tmp/keyfiles') }}">
+                    </div>
+                    
+                    <div class="form-group" id="passwordGroup" 
+                           {% if config.SEGMENT_ACCESS_METHOD|default('keyfile') == 'keyfile' %}style="display:none;"{% endif %}>
+                        <label for="SEGMENT_ACCESS_PASSWORD">Segment Access Password:</label>
+                        <input type="password" id="SEGMENT_ACCESS_PASSWORD" name="SEGMENT_ACCESS_PASSWORD" 
+                               value="{{ config.SEGMENT_ACCESS_PASSWORD|default('XXXXXXXX') }}">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <div class="form-group">
-            <button type="submit" class="btn btn-primary">
+            <button type="submit" class="btn">
                 <i class="fas fa-save"></i> Save Configuration
             </button>
         </div>
     </form>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Set deployment mode
+    function setDeploymentMode(mode) {
+        document.getElementById('DEPLOY_TYPE').value = mode;
+        
+        // Update UI
+        document.querySelectorAll('.mode-option').forEach(option => {
+            option.classList.remove('selected');
+        });
+        event.currentTarget.classList.add('selected');
+        
+        // Show/hide multi-node parameters
+        const multiNodeParams = document.getElementById('multiNodeParams');
+        if (mode === 'multi') {
+            multiNodeParams.classList.remove('hidden');
+        } else {
+            multiNodeParams.classList.add('hidden');
+        }
+        
+        // Check if Mirror Data Directories should be shown
+        toggleMirrorDataDir();
+    }
+    
+    // Segment access method toggle
+    document.getElementById('SEGMENT_ACCESS_METHOD').addEventListener('change', function() {
+        const method = this.value;
+        document.getElementById('keyfilePathGroup').style.display = method === 'keyfile' ? 'block' : 'none';
+        document.getElementById('passwordGroup').style.display = method === 'keyfile' ? 'none' : 'block';
+    });
+    
+    // Control Mirror Data Directories visibility
+    function toggleMirrorDataDir() {
+        const withMirror = document.getElementById('WITH_MIRROR');
+        const mirrorDataDirGroup = document.getElementById('mirrorParams');
+        
+        if (withMirror && mirrorDataDirGroup) {
+            if (withMirror.value === 'true') {
+                mirrorDataDirGroup.classList.remove('hidden');
+            } else {
+                mirrorDataDirGroup.classList.add('hidden');
+            }
+        }
+    }
+    
+    // Listen for Enable Mirrors changes
+    document.addEventListener('DOMContentLoaded', function() {
+        const withMirror = document.getElementById('WITH_MIRROR');
+        if (withMirror) {
+            withMirror.addEventListener('change', toggleMirrorDataDir);
+            // Initialize on load
+            toggleMirrorDataDir();
+        }
+        
+        // Initialize form based on deployment mode
+        const deployType = document.getElementById('DEPLOY_TYPE').value;
+        if (deployType === 'multi') {
+            document.getElementById('multiNodeParams').classList.remove('hidden');
+        }
+    });
+</script>
 {% endblock %}
