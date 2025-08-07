@@ -128,22 +128,63 @@
         
         /* Deployment Status and Logs */
         .deployment-status {
-            margin-top: 20px;
+            margin: 20px 0;
             padding: 15px;
             border: 1px solid #ddd;
-            border-radius: 4px;
+            border-radius: 8px;
             background-color: #f9f9f9;
+            animation: fadeIn 0.5s;
+        }
+        
+        .deployment-status h4 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         
         .log-container {
-            background-color: #000;
-            color: #0f0;
-            padding: 10px;
+            background-color: #1e1e1e;
+            color: #00ff00;
+            padding: 15px;
             border-radius: 4px;
             height: 300px;
             overflow-y: auto;
-            font-family: monospace;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.4;
             margin: 10px 0;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        
+        .log-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .log-container::-webkit-scrollbar-track {
+            background: #333;
+        }
+        
+        .log-container::-webkit-scrollbar-thumb {
+            background: #666;
+            border-radius: 4px;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .deployment-completed {
+            border-color: var(--success-color);
+            background-color: rgba(46, 204, 113, 0.1);
+        }
+        
+        .deployment-running {
+            border-color: var(--secondary-color);
+            background-color: rgba(52, 152, 219, 0.1);
         }
         
         /* Tab Navigation */
@@ -1119,16 +1160,28 @@
                     
                     if (data.running) {
                         deployButton.disabled = true;
-                        deployButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deployment Running...';
+                        deployButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 部署运行中...';
                         deploymentStatus.classList.remove('hidden');
+                        deploymentStatus.classList.add('deployment-running');
+                        deploymentStatus.classList.remove('deployment-completed');
                         refreshLogs();
                     } else {
                         deployButton.disabled = false;
-                        deployButton.innerHTML = '<i class="fas fa-rocket"></i> Deploy Cluster';
-                        // Keep logs visible even after deployment completes
+                        deployButton.innerHTML = '<i class="fas fa-rocket"></i> 部署集群';
+                        deploymentStatus.classList.add('deployment-completed');
+                        deploymentStatus.classList.remove('deployment-running');
+                        
+                        // 添加完成提示
+                        if (!deploymentStatus.querySelector('.completion-message')) {
+                            const msg = document.createElement('div');
+                            msg.className = 'completion-message';
+                            msg.style.cssText = 'color: var(--success-color); font-weight: bold; margin: 10px 0;';
+                            msg.innerHTML = '<i class="fas fa-check-circle"></i> 部署已完成！请检查日志详情。';
+                            deploymentStatus.insertBefore(msg, deploymentStatus.firstChild.nextSibling);
+                        }
                     }
                 })
-                .catch(error => console.error('Error checking deployment status:', error));
+                .catch(error => console.error('检查部署状态出错:', error));
         }
         
         // Refresh deployment logs
@@ -1138,12 +1191,17 @@
                 .then(data => {
                     const logContainer = document.getElementById('deploymentLog');
                     if (logContainer) {
-                        logContainer.textContent = data.logs;
-                        // Auto-scroll to bottom
+                        logContainer.textContent = data.logs || '暂无日志内容...';
                         logContainer.scrollTop = logContainer.scrollHeight;
                     }
                 })
-                .catch(error => console.error('Error refreshing logs:', error));
+                .catch(error => {
+                    console.error('获取日志出错:', error);
+                    const logContainer = document.getElementById('deploymentLog');
+                    if (logContainer) {
+                        logContainer.textContent = '获取日志失败，请刷新页面重试。';
+                    }
+                });
         }
         
         // Start deployment with confirmation

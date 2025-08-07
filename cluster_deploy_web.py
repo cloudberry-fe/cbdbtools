@@ -235,62 +235,69 @@ DEPLOYMENT_STATUS = {
 DEPLOYMENT_LOCK = threading.Lock()
 
 # Function to check if there's a running deployment process
+# 在文件顶部添加导入
+import psutil
+import signal
+
+# 修改is_deployment_running函数
 def is_deployment_running():
     with DEPLOYMENT_LOCK:
         if not DEPLOYMENT_STATUS['running']:
             return False
         
-        # Check if the process is actually running
-        if DEPLOYMENT_STATUS['log_file']:
-            # Check if the log file is still being updated
-            try:
-                # Check if log file exists and get its last modification time
-                if os.path.exists(DEPLOYMENT_STATUS['log_file']):
-                    mtime = os.path.getmtime(DEPLOYMENT_STATUS['log_file'])
-                    # If file hasn't been modified in the last 10 seconds, assume deployment finished
-                    if time.time() - mtime > 10:
-                        DEPLOYMENT_STATUS['running'] = False
-                        return False
+        # 检查进程是否实际存在
+        try:
+            # 获取当前所有python相关进程
+            for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+                try:
+                    cmdline = ' '.join(proc.info['cmdline'] or [])
+                    if 'deploycluster.sh' in cmdline or 'run.sh' in cmdline:
+                        return True
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    continue
+            
+            # 如果找不到进程，检查日志文件是否最近更新
+            if DEPLOYMENT_STATUS['log_file'] and os.path.exists(DEPLOYMENT_STATUS['log_file']):
+                mtime = os.path.getmtime(DEPLOYMENT_STATUS['log_file'])
+                if time.time() - mtime < 30:  # 30秒内更新过认为仍在运行
                     return True
-                else:
-                    DEPLOYMENT_STATUS['running'] = False
-                    return False
-            except Exception:
-                DEPLOYMENT_STATUS['running'] = False
-                return False
-        return True
+            
+            DEPLOYMENT_STATUS['running'] = False
+            return False
+            
+        except Exception:
+            DEPLOYMENT_STATUS['running'] = False
+            return False
 
-# Function to start deployment in background
+# 修改start_background_deployment函数，保存进程PID
 def start_background_deployment(cluster_type='single'):
     global DEPLOYMENT_STATUS
     
     with DEPLOYMENT_LOCK:
-        # Check if deployment is already running
         if DEPLOYMENT_STATUS['running']:
             return False, "Deployment is already running. Please wait for it to complete."
         
-        # Generate log filename
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         log_file = f'deploy_cluster_{timestamp}.log'
         
-        # Update deployment status
         DEPLOYMENT_STATUS['running'] = True
         DEPLOYMENT_STATUS['log_file'] = log_file
         DEPLOYMENT_STATUS['start_time'] = time.time()
+        DEPLOYMENT_STATUS['pid'] = None  # 新增：保存进程PID
     
     try:
-        # Start deployment in background using run.sh
-        with open(log_file, 'w') as log_f:
-            process = subprocess.Popen(
-                ['sh', 'run.sh', cluster_type],
-                stdout=log_f,
-                stderr=subprocess.STDOUT,
-                preexec_fn=os.setsid
-            )
+        # 使用Popen启动进程并获取PID
+        process = subprocess.Popen(
+            ['sh', 'run.sh', cluster_type],
+            stdout=open(log_file, 'w'),
+            stderr=subprocess.STDOUT,
+            preexec_fn=os.setsid
+        )
         
-        # Start a thread to monitor the process
+        DEPLOYMENT_STATUS['pid'] = process.pid
+        
         def monitor_process():
-            process.wait()  # Wait for process to complete
+            process.wait()
             with DEPLOYMENT_LOCK:
                 DEPLOYMENT_STATUS['running'] = False
         
@@ -303,7 +310,7 @@ def start_background_deployment(cluster_type='single'):
     except Exception as e:
         with DEPLOYMENT_LOCK:
             DEPLOYMENT_STATUS['running'] = False
-        return False, f"Failed to start deployment: {str(e)}"
+        return False, str(e)
 
 # Function to get deployment log content
 def get_deployment_log(log_file=None, lines=100):
