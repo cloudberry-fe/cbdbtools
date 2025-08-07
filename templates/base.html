@@ -507,16 +507,16 @@
         
         <!-- Tab Navigation -->
         <div class="tab">
-            <button class="tablinks {% if active_tab == 'configuration' or not active_tab %}active{% endif %}" 
+            <button class="tablinks {% if active_tab == 'configuration' or not active_tab %}active{% endif %}"
                     onclick="openTab(event, 'configuration')">
                 <i class="fas fa-cog"></i> Configuration
             </button>
-            <button class="tablinks {% if params.get('DEPLOY_TYPE', 'single') != 'multi' %}hidden{% endif %}" 
-                    onclick="openTab(event, 'hosts')" 
+            <button class="tablinks {% if active_tab == 'hosts' %}active{% endif %}"
+                    onclick="openTab(event, 'hosts')"
                     id="hostsTabButton">
                 <i class="fas fa-network-wired"></i> Hosts
             </button>
-            <button class="tablinks {% if active_tab == 'deploy' %}active{% endif %}" 
+            <button class="tablinks {% if active_tab == 'deploy' %}active{% endif %}"
                     onclick="openTab(event, 'deploy')">
                 <i class="fas fa-rocket"></i> Deploy
             </button>
