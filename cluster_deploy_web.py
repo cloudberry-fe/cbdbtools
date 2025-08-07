@@ -214,7 +214,23 @@ def save_hosts_only():
 def index_with_tab(tab):
     params = read_parameters()
     hosts = read_hosts()
-    return render_template('index.html', params=params, hosts=hosts, active_tab=tab)
+    # Add deployment_info to be passed to the template
+    deployment_info = {
+        'mode': params.get('DEPLOY_TYPE', 'single'),
+        'coordinator': hosts.get('coordinator', []),
+        'segment_hosts': hosts.get('segments', []),
+        'running': False,
+        'log_file': None,
+        'start_time': None
+    }
+    # If we're on the deploy tab, get actual deployment status
+    if tab == 'deploy':
+        with DEPLOYMENT_LOCK:
+            deployment_info['running'] = DEPLOYMENT_STATUS['running']
+            deployment_info['log_file'] = DEPLOYMENT_STATUS['log_file']
+            deployment_info['start_time'] = DEPLOYMENT_STATUS['start_time']
+    
+    return render_template('index.html', params=params, hosts=hosts, active_tab=tab, deployment_info=deployment_info)
 
 if __name__ == '__main__':
     # Ensure templates directory exists
