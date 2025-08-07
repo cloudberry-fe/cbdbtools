@@ -418,7 +418,8 @@
         
         <!-- Tab Navigation -->
         <div class="tab">
-            <button class="tablinks active" onclick="openTab(event, 'configuration')">
+            <button class="tablinks {% if active_tab == 'configuration' or not active_tab %}active{% endif %}" 
+                    onclick="openTab(event, 'configuration')">
                 <i class="fas fa-cog"></i> Configuration
             </button>
             <button class="tablinks {% if params.get('DEPLOY_TYPE', 'single') != 'multi' %}hidden{% endif %}" 
@@ -426,14 +427,15 @@
                     id="hostsTabButton">
                 <i class="fas fa-network-wired"></i> Hosts
             </button>
-            <button class="tablinks" onclick="openTab(event, 'deploy')">
+            <button class="tablinks {% if active_tab == 'deploy' %}active{% endif %}" 
+                    onclick="openTab(event, 'deploy')">
                 <i class="fas fa-rocket"></i> Deploy
             </button>
         </div>
         
         <!-- Configuration Tab -->
-        <div id="configuration" class="tabcontent active">
-            <form method="post" action="/save_params">
+        <div id="configuration" class="tabcontent {% if active_tab == 'configuration' or not active_tab %}active{% endif %}">
+            <form method="post" action="/save_params" id="configForm">
                 <!-- Deployment Mode Selector -->
                 <div class="mode-selector">
                     <h3><i class="fas fa-th-large"></i> Deployment Mode</h3>
@@ -686,10 +688,10 @@
         </div>
         
         <!-- Hosts Tab -->
-        <div id="hosts" class="tabcontent">
+        <div id="hosts" class="tabcontent {% if active_tab == 'hosts' %}active{% endif %}">
             <h2><i class="fas fa-network-wired"></i> Host Configuration</h2>
             
-            <form method="post" action="/save_hosts">
+            <form method="post" action="/save_hosts" id="hostsForm">
                 <div class="host-group">
                     <h3><i class="fas fa-server"></i> Coordinator Host</h3>
                     <div class="form-row">
@@ -746,7 +748,7 @@
                     <input type="hidden" id="segment_count_input" name="segment_count" 
                            value="{{ hosts.segments|length }}">
                 </div>
-            
+                
                 <!-- Hidden fields for parameters -->
                 {% for key, value in params.items() %}
                     <input type="hidden" name="{{ key }}" value="{{ value }}">
@@ -759,7 +761,7 @@
         </div>
         
         <!-- Deploy Tab -->
-        <div id="deploy" class="tabcontent">
+        <div id="deploy" class="tabcontent {% if active_tab == 'deploy' %}active{% endif %}">
             <h2><i class="fas fa-rocket"></i> Cluster Deployment</h2>
             
             <div class="mode-selector">
@@ -889,6 +891,12 @@
                 // Initialize on load
                 toggleMirrorDataDir();
             }
+            
+            // Initialize form based on deployment mode
+            const deployType = document.getElementById('DEPLOY_TYPE').value;
+            if (deployType === 'multi') {
+                document.getElementById('multiNodeParams').classList.remove('hidden');
+            }
         });
         
         // Add segment host
@@ -938,11 +946,44 @@
             }
         }
         
-        // Initialize form based on deployment mode
+        // Handle form submissions with proper redirects
         document.addEventListener('DOMContentLoaded', function() {
-            const deployType = document.getElementById('DEPLOY_TYPE').value;
-            if (deployType === 'multi') {
-                document.getElementById('multiNodeParams').classList.remove('hidden');
+            // Handle configuration form submission
+            const configForm = document.getElementById('configForm');
+            if (configForm) {
+                configForm.addEventListener('submit', function(e) {
+                    // Let the form submit normally to the server
+                    // Server will redirect to appropriate tab based on deployment mode
+                });
+            }
+            
+            // Handle hosts form submission
+            const hostsForm = document.getElementById('hostsForm');
+            if (hostsForm) {
+                hostsForm.addEventListener('submit', function(e) {
+                    // Let the form submit normally to the server
+                    // Server will redirect to deploy tab
+                });
+            }
+            
+            // Set initial active tab based on URL parameter
+            const urlParams = new URLSearchParams(window.location.search);
+            const tabParam = urlParams.get('tab');
+            if (tabParam) {
+                // Find the tab button and content
+                const tabButton = document.querySelector(`.tablinks[onclick*="'${tabParam}'"]`);
+                const tabContent = document.getElementById(tabParam);
+                
+                if (tabButton && tabContent) {
+                    // Remove active class from all tabs
+                    document.querySelectorAll('.tablinks, .tabcontent').forEach(el => {
+                        el.classList.remove('active');
+                    });
+                    
+                    // Add active class to the target tab
+                    tabButton.classList.add('active');
+                    tabContent.classList.add('active');
+                }
             }
         });
     </script>

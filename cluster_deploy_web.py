@@ -152,7 +152,9 @@ def save_params():
         params = request.form.to_dict()
         save_parameters(params)
         flash('Configuration parameters saved successfully!')
-        return redirect(url_for('index'))
+        # Get deployment type to determine redirect target
+        deploy_type = params.get('DEPLOY_TYPE', 'single')
+        return redirect(url_for('index_with_tab', tab='hosts' if deploy_type == 'multi' else 'deploy'))
     except Exception as e:
         flash(f'Error saving parameters: {str(e)}')
         return redirect(url_for('index'))
@@ -173,10 +175,16 @@ def save_hosts_only():
                 hosts['segments'].append([ip, hostname])
         save_hosts(hosts)
         flash('Host configuration saved successfully!')
-        return redirect(url_for('index'))
+        return redirect(url_for('index_with_tab', tab='deploy'))
     except Exception as e:
         flash(f'Error saving hosts: {str(e)}')
         return redirect(url_for('index'))
+
+@app.route('/<tab>')
+def index_with_tab(tab):
+    params = read_parameters()
+    hosts = read_hosts()
+    return render_template('index.html', params=params, hosts=hosts, active_tab=tab)
 
 if __name__ == '__main__':
     # Ensure templates directory exists
