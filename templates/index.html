@@ -838,6 +838,18 @@
                     {% endif %}
                 {% endif %}
                 
+                <!-- Segments and mirrors count consistency check -->
+                {% set data_dirs = params.get('DATA_DIRECTORY', '').split() %}
+                {% set mirror_dirs = params.get('MIRROR_DATA_DIRECTORY', '').split() %}
+                {% if params.get('WITH_MIRROR', 'false') == 'true' and data_dirs|length != mirror_dirs|length %}
+                <div class="warning">
+                    <p><strong>Warning:</strong> Segments and mirrors count mismatch detected!</p>
+                    <p>Segments per host: {{ data_dirs|length if data_dirs else 0 }}</p>
+                    <p>Mirrors per host: {{ mirror_dirs|length if mirror_dirs else 0 }}</p>
+                    <p>Please ensure both counts are consistent for proper cluster operation.</p>
+                </div>
+                {% endif %}
+                
                 <!-- Display detailed deployment information -->
                 <div class="deployment-details">
                     <h4>Cluster Configuration Details</h4>
