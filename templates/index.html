@@ -790,9 +790,22 @@
                 <div class="deployment-details">
                     <h4>Cluster Configuration Details</h4>
                     
+                    <!-- Coordinator information -->
+                    <p>Coordinator port: 
+                        <strong>{{ params.get('COORDINATOR_PORT', 'Not configured') }}</strong>
+                    </p>
+                    
+                    <p>Coordinator directory: 
+                        <strong>{{ params.get('COORDINATOR_DIRECTORY', 'Not configured') }}</strong>
+                    </p>
+                    
                     <!-- Segment directory information -->
                     <p>Segment data directory: 
                         <strong>{{ params.get('DATA_DIRECTORY', 'Not configured') }}</strong>
+                    </p>
+                    
+                    <p>Segment port base: 
+                        <strong>{{ params.get('PORT_BASE', 'Not configured') }}</strong>
                     </p>
                     
                     <!-- Number of segments per host -->
@@ -813,6 +826,10 @@
                     </p>
                     
                     {% if params.get('WITH_MIRROR', 'false') == 'true' %}
+                    <p>Mirror port base: 
+                        <strong>{{ params.get('MIRROR_PORT_BASE', 'Not configured') }}</strong>
+                    </p>
+                    
                     <p>Mirror data directory: 
                         <strong>{{ params.get('MIRROR_DATA_DIRECTORY', 'Not configured') }}</strong>
                     </p>
