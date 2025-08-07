@@ -230,6 +230,7 @@ function initializePage() {
     // Set initial active tab based on URL parameter
     const urlParams = new URLSearchParams(window.location.search);
     const tabParam = urlParams.get('tab');
+    
     if (tabParam) {
         // Find the tab button and content
         const tabButton = document.querySelector(`.tablinks[onclick*="'${tabParam}'"]`);
@@ -244,6 +245,21 @@ function initializePage() {
             // Add active class to the target tab
             tabButton.classList.add('active');
             tabContent.classList.add('active');
+        }
+    } else {
+        // Set default active tab to configuration if no URL parameter
+        const defaultTabButton = document.querySelector('.tablinks[onclick*="configuration"]');
+        const defaultTabContent = document.getElementById('configuration');
+        
+        if (defaultTabButton && defaultTabContent) {
+            // Remove active class from all tabs first
+            document.querySelectorAll('.tablinks, .tabcontent').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // Add active class to default tab
+            defaultTabButton.classList.add('active');
+            defaultTabContent.classList.add('active');
         }
     }
 
