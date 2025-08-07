@@ -11,5 +11,18 @@
     {% else %}
         {% include 'configuration.html' %}
     {% endif %}
+
+    <script>
+        // Initialize tab display
+        document.addEventListener('DOMContentLoaded', function() {
+            // Show the active tab or default to configuration
+            const activeTab = '{{ active_tab }}';
+            if (activeTab) {
+                document.getElementById(activeTab).classList.add('active');
+            } else {
+                document.getElementById('configuration').classList.add('active');
+            }
+        });
+    </script>
 </div>
 {% endblock %}
