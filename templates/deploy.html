@@ -47,36 +47,89 @@
 {% endblock %}
 
 {% block content %}
-<div class="tab-pane active">
+<div class="deploy-section">
     <h2><i class="fas fa-rocket"></i> Deploy Cluster</h2>
-    <p>Review your configuration and start the deployment</p>
-    
-    <form id="deployForm" method="POST" action="/deploy">
-        <div class="form-group">
-            <label>
-                <input type="checkbox" id="skipConsistencyCheck" name="skip_consistency_check" value="1">
-                Skip consistency check (Not recommended)
-            </label>
-        </div>
-        
-        <div class="form-group">
-            <label>
-                <input type="checkbox" id="forceDeploy" name="force_deploy" value="1">
-                Force deploy (Overwrite existing installation)
-            </label>
+    <p>Review your configuration and start the deployment process</p>
+
+    <!-- Deployment Status -->
+    <div class="deployment-status">
+        <h3><i class="fas fa-info-circle"></i> Deployment Status</h3>
+        <div class="status-grid">
+            <div class="status-item">
+                <strong>Deployment Mode:</strong>
+                <span>{{ config.DEPLOY_TYPE|default('single') }}</span>
+            </div>
+            <div class="status-item">
+                <strong>Coordinator:</strong>
+                <span>{{ config.COORDINATOR_HOSTNAME|default('Not configured') }}</span>
+            </div>
+            <div class="status-item">
+                <strong>Segment Hosts:</strong>
+                <span>{{ hosts.segment_hosts|length if hosts.segment_hosts else 0 }} hosts</span>
+            </div>
+            <div class="status-item">
+                <strong>Status:</strong>
+                <span id="deploymentStatus" class="status-badge">{{ deployment_info.status|default('Ready') }}</span>
+            </div>
         </div>
 
-        <div class="form-group">
-            <button type="submit" class="btn btn-success" id="deployButton" 
-                    {% if not deployment_info.ready %}disabled{% endif %}>
-                <i class="fas fa-rocket"></i> Start Deployment
+        {% if deployment_info.status == 'running' %}
+        <div class="progress-container">
+            <div class="progress">
+                <div class="progress-bar" id="progressBar" style="width: {{ deployment_info.progress|default(0) }}%">
+                    {{ deployment_info.progress|default(0) }}%
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Deployment Actions -->
+    <div class="deployment-actions">
+        <form id="deployForm" method="POST" action="/deploy">
+            <div class="form-check">
+                <label>
+                    <input type="checkbox" id="skipConsistencyCheck" name="skip_consistency_check" value="1">
+                    Skip consistency check (Not recommended)
+                </label>
+            </div>
+            
+            <div class="form-check">
+                <label>
+                    <input type="checkbox" id="forceDeploy" name="force_deploy" value="1">
+                    Force deploy (Overwrite existing installation)
+                </label>
+            </div>
+
+            <div class="action-buttons">
+                <button type="submit" class="btn btn-success" id="deployButton" 
+                        {% if not deployment_info.ready %}disabled{% endif %}>
+                    <i class="fas fa-rocket"></i> Start Deployment
+                </button>
+                <button type="button" class="btn btn-danger" id="cancelButton" 
+                        onclick="cancelDeployment()" style="display: none;">
+                    <i class="fas fa-stop"></i> Cancel Deployment
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Deployment Logs -->
+    <div class="deployment-logs">
+        <h3><i class="fas fa-terminal"></i> Deployment Logs</h3>
+        <div class="log-controls">
+            <button type="button" class="btn btn-secondary" onclick="refreshLogs()">
+                <i class="fas fa-sync"></i> Refresh Logs
             </button>
-            <button type="button" class="btn btn-danger" id="cancelButton" 
-                    onclick="cancelDeployment()" style="display: none;">
-                <i class="fas fa-stop"></i> Cancel Deployment
+            <button type="button" class="btn btn-info" onclick="downloadLogs()" 
+                    {% if not deployment_info.log_file %}disabled{% endif %}>
+                <i class="fas fa-download"></i> Download Logs
             </button>
         </div>
-    </form>
+        <div class="log-container" id="deploymentLogs">
+            {{ deployment_info.logs|default('No logs available. Start deployment to see logs.') }}
+        </div>
+    </div>
 </div>
 
 <script>
@@ -95,9 +148,11 @@ function updateDeploymentStatus() {
     fetch('/deployment_status')
         .then(response => response.json())
         .then(data => {
-            document.getElementById('deploymentStatus').textContent = data.status;
+            const statusElement = document.getElementById('deploymentStatus');
+            statusElement.textContent = data.status;
+            statusElement.className = `status-badge status-${data.status}`;
             
-            if (data.status === 'running' && data.progress) {
+            if (data.status === 'running' && data.progress !== undefined) {
                 const progressBar = document.getElementById('progressBar');
                 progressBar.style.width = data.progress + '%';
                 progressBar.textContent = data.progress + '%';
@@ -109,49 +164,82 @@ function updateDeploymentStatus() {
                 document.getElementById('deployButton').style.display = 'inline-block';
                 document.getElementById('cancelButton').style.display = 'none';
                 refreshLogs();
+                
+                // Show completion message
+                if (data.status === 'completed') {
+                    showNotification('Deployment completed successfully!', 'success');
+                } else if (data.status === 'failed') {
+                    showNotification('Deployment failed. Please check logs.', 'error');
+                }
             }
         })
-        .catch(error => console.error('Error updating status:', error));
+        .catch(error => {
+            console.error('Error updating status:', error);
+            showNotification('Error checking deployment status', 'error');
+        });
 }
 
 function refreshLogs() {
     fetch('/deployment_logs')
         .then(response => response.text())
         .then(logs => {
-            document.getElementById('deploymentLogs').textContent = logs;
             const logsContainer = document.getElementById('deploymentLogs');
+            logsContainer.textContent = logs;
             logsContainer.scrollTop = logsContainer.scrollHeight;
         })
-        .catch(error => console.error('Error refreshing logs:', error));
+        .catch(error => {
+            console.error('Error refreshing logs:', error);
+            showNotification('Error refreshing logs', 'error');
+        });
 }
 
 function cancelDeployment() {
-    if (confirm('Are you sure you want to cancel the deployment?')) {
+    if (confirm('Are you sure you want to cancel the deployment? This action cannot be undone.')) {
         fetch('/cancel_deployment', { method: 'POST' })
-            .then(() => {
+            .then(response => response.json())
+            .then(data => {
                 clearInterval(deploymentInterval);
                 isDeploying = false;
+                showNotification('Deployment cancelled', 'info');
                 location.reload();
+            })
+            .catch(error => {
+                console.error('Error cancelling deployment:', error);
+                showNotification('Error cancelling deployment', 'error');
             });
     }
 }
 
 function downloadLogs() {
-    window.location.href = '/download_logs';
+    window.open('/download_logs', '_blank');
 }
 
-// Start monitoring if deployment is running
-document.addEventListener('DOMContentLoaded', startDeploymentMonitoring);
-
-// Handle form submission
-document.getElementById('deployForm').addEventListener('submit', function(e) {
-    if (!confirm('Are you ready to start the deployment? This will take several minutes.')) {
-        e.preventDefault();
-        return;
-    }
+function showNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i> ${message}`;
+    document.body.appendChild(notification);
     
-    isDeploying = true;
+    setTimeout(() => {
+        notification.remove();
+    }, 5000);
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
     startDeploymentMonitoring();
+    
+    // Handle form submission
+    document.getElementById('deployForm').addEventListener('submit', function(e) {
+        if (!confirm('Are you ready to start the deployment? This will take several minutes.')) {
+            e.preventDefault();
+            return;
+        }
+        
+        isDeploying = true;
+        startDeploymentMonitoring();
+        showNotification('Deployment started successfully', 'success');
+    });
 });
 </script>
 {% endblock %}

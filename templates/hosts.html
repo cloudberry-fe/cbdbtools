@@ -2,118 +2,205 @@
 
 {% block content %}
 <div class="tabcontent" id="hosts">
-    <h2><i class="fas fa-network-wired"></i> Host Configuration</h2>
-    <p>Configure your cluster hosts and connection details</p>
+    <div class="hosts-section">
+        <h2><i class="fas fa-network-wired"></i> Host Configuration</h2>
+        <p>Configure your cluster hosts based on segmenthosts.conf format</p>
+        
+        <form id="hostsForm" method="POST" action="/save_hosts">
+            <!-- Coordinator Configuration -->
+            <div class="host-group">
+                <div class="host-group-header">
+                    <i class="fas fa-server"></i> Coordinator Host
+                </div>
+                <div class="host-group-content">
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="form-group required">
+                                <label for="coordinator_hostname">Hostname *</label>
+                                <input type="text" id="coordinator_hostname" name="coordinator_hostname"
+                                       value="{{ hosts.coordinator.hostname|default('mdw') }}" required>
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group required">
+                                <label for="coordinator_ip">IP Address *</label>
+                                <input type="text" id="coordinator_ip" name="coordinator_ip"
+                                       value="{{ hosts.coordinator.ip|default('') }}" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="form-group required">
+                                <label for="coordinator_username">Username *</label>
+                                <input type="text" id="coordinator_username" name="coordinator_username"
+                                       value="{{ hosts.coordinator.username|default('gpadmin') }}" required>
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group required">
+                                <label for="coordinator_password">Password *</label>
+                                <input type="password" id="coordinator_password" name="coordinator_password"
+                                       value="{{ hosts.coordinator.password|default('') }}" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
     
-    <form id="hostsForm" method="POST" action="/save_hosts">
-        <div class="host-group">
-            <div class="host-group-header">
-                <i class="fas fa-server"></i> Coordinator Configuration
-            </div>
-            <div class="host-group-content">
-                <div class="form-row">
-                    <div class="form-col">
-                        <div class="form-group required">
-                            <label for="coordinator_hostname_hosts">Coordinator Hostname *</label>
-                            <input type="text" id="coordinator_hostname_hosts" name="coordinator_hostname"
-                                   value="{{ hosts.coordinator.hostname|default('') }}" required>
-                        </div>
-                    </div>
-                    <div class="form-col">
-                        <div class="form-group required">
-                            <label for="coordinator_ip_hosts">Coordinator IP *</label>
-                            <input type="text" id="coordinator_ip_hosts" name="coordinator_ip"
-                                   value="{{ hosts.coordinator.ip|default('') }}" required>
-                        </div>
+            <!-- Segment Hosts -->
+            <div class="host-group">
+                <div class="host-group-header">
+                    <i class="fas fa-layer-group"></i> Segment Hosts
+                    <button type="button" class="btn btn-sm" onclick="addSegmentHost()" style="float: right;">
+                        <i class="fas fa-plus"></i> Add Host
+                    </button>
+                </div>
+                <div class="host-group-content">
+                    <div id="segmentHosts">
+                        {% if hosts.segment_hosts %}
+                            {% for host in hosts.segment_hosts %}
+                            <div class="host-item" data-index="{{ loop.index0 }}">
+                                <div class="form-row">
+                                    <div class="form-col">
+                                        <input type="text" name="segment_hostname[]" placeholder="Hostname (e.g., sdw1)"
+                                               value="{{ host.hostname }}" required>
+                                    </div>
+                                    <div class="form-col">
+                                        <input type="text" name="segment_ip[]" placeholder="IP Address"
+                                               value="{{ host.ip }}" required>
+                                    </div>
+                                    <div class="form-col">
+                                        <input type="text" name="segment_username[]" placeholder="Username"
+                                               value="{{ host.username|default('gpadmin') }}" required>
+                                    </div>
+                                    <div class="form-col">
+                                        <input type="password" name="segment_password[]" placeholder="Password"
+                                               value="{{ host.password }}" required>
+                                    </div>
+                                    <div class="form-col-auto">
+                                        <button type="button" class="btn btn-danger btn-sm" onclick="removeHost(this)">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="host-item" data-index="0">
+                                <div class="form-row">
+                                    <div class="form-col">
+                                        <input type="text" name="segment_hostname[]" placeholder="Hostname (e.g., sdw1)" required>
+                                    </div>
+                                    <div class="form-col">
+                                        <input type="text" name="segment_ip[]" placeholder="IP Address" required>
+                                    </div>
+                                    <div class="form-col">
+                                        <input type="text" name="segment_username[]" placeholder="Username" value="gpadmin" required>
+                                    </div>
+                                    <div class="form-col">
+                                        <input type="password" name="segment_password[]" placeholder="Password" required>
+                                    </div>
+                                    <div class="form-col-auto">
+                                        <button type="button" class="btn btn-danger btn-sm" onclick="removeHost(this)">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
-                <div class="form-row">
-                    <div class="form-col">
-                        <div class="form-group required">
-                            <label for="coordinator_username">Username *</label>
-                            <input type="text" id="coordinator_username" name="coordinator_username"
-                                   value="{{ hosts.coordinator.username|default('gpadmin') }}" required>
-                        </div>
-                    </div>
-                    <div class="form-col">
-                        <div class="form-group required">
-                            <label for="coordinator_password">Password *</label>
-                            <input type="password" id="coordinator_password" name="coordinator_password"
-                                   value="{{ hosts.coordinator.password|default('') }}" required>
-                        </div>
-                    </div>
+            </div>
+    
+            <!-- Preview segmenthosts.conf -->
+            <div class="config-group">
+                <h3><i class="fas fa-file-code"></i> Preview segmenthosts.conf</h3>
+                <div class="preview-container">
+                    <pre id="segmenthostsPreview">##Define hosts used for CloudBerry
+    
+                    #CloudBerry hosts begin
+                    ##Coordinator hosts
+                    <span id="coordinatorPreview">{{ hosts.coordinator.ip|default('') }} {{ hosts.coordinator.hostname|default('mdw') }}</span>
+                    ##Segment hosts
+                    <span id="segmentsPreview">{% for host in hosts.segment_hosts %}{{ host.ip }} {{ host.hostname }}
+                    {% endfor %}{% if not hosts.segment_hosts %}192.168.198.201 sdw1
+                    192.168.198.13 sdw2{% endif %}</span>
+                    #CloudBerry hosts end</pre>
                 </div>
             </div>
-        </div>
-
-        <div class="host-group">
-            <div class="host-group-header">
-                <i class="fas fa-layer-group"></i> Segment Hosts
-                <button type="button" class="btn" onclick="addSegmentHost()" style="float: right; margin-left: 10px;">
-                    <i class="fas fa-plus"></i> Add Host
+    
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Save Hosts Configuration
                 </button>
             </div>
-            <div class="host-group-content">
-                <div id="segmentHosts">
-                    {% if hosts.segment_hosts %}
-                        {% for host in hosts.segment_hosts %}
-                        <div class="host-item">
-                            <input type="text" name="segment_hostname[]" placeholder="Hostname"
-                                   value="{{ host.hostname }}" required>
-                            <input type="text" name="segment_ip[]" placeholder="IP Address"
-                                   value="{{ host.ip }}" required>
-                            <input type="text" name="segment_username[]" placeholder="Username"
-                                   value="{{ host.username|default('gpadmin') }}" required>
-                            <input type="password" name="segment_password[]" placeholder="Password"
-                                   value="{{ host.password }}" required>
-                            <button type="button" class="remove-host" onclick="removeHost(this)">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="host-item">
-                            <input type="text" name="segment_hostname[]" placeholder="Hostname" required>
-                            <input type="text" name="segment_ip[]" placeholder="IP Address" required>
-                            <input type="text" name="segment_username[]" placeholder="Username" value="gpadmin" required>
-                            <input type="password" name="segment_password[]" placeholder="Password" required>
-                            <button type="button" class="remove-host" onclick="removeHost(this)">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    {% endif %}
+        </form>
+    </div>
+    
+    <script>
+        function addSegmentHost() {
+            const container = document.getElementById('segmentHosts');
+            const index = container.children.length;
+            const hostItem = document.createElement('div');
+            hostItem.className = 'host-item';
+            hostItem.setAttribute('data-index', index);
+            hostItem.innerHTML = `
+                <div class="form-row">
+                    <div class="form-col">
+                        <input type="text" name="segment_hostname[]" placeholder="Hostname (e.g., sdw${index + 1})" required>
+                    </div>
+                    <div class="form-col">
+                        <input type="text" name="segment_ip[]" placeholder="IP Address" required>
+                    </div>
+                    <div class="form-col">
+                        <input type="text" name="segment_username[]" placeholder="Username" value="gpadmin" required>
+                    </div>
+                    <div class="form-col">
+                        <input type="password" name="segment_password[]" placeholder="Password" required>
+                    </div>
+                    <div class="form-col-auto">
+                        <button type="button" class="btn btn-danger btn-sm" onclick="removeHost(this)">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
                 </div>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <button type="submit" class="btn">
-                <i class="fas fa-save"></i> Save Hosts
-            </button>
-        </div>
-    </form>
-</div>
-
-<script>
-function addSegmentHost() {
-    const container = document.getElementById('segmentHosts');
-    const hostItem = document.createElement('div');
-    hostItem.className = 'host-item';
-    hostItem.innerHTML = `
-        <input type="text" name="segment_hostname[]" placeholder="Hostname" required>
-        <input type="text" name="segment_ip[]" placeholder="IP Address" required>
-        <input type="text" name="segment_username[]" placeholder="Username" value="gpadmin" required>
-        <input type="password" name="segment_password[]" placeholder="Password" required>
-        <button type="button" class="remove-host" onclick="removeHost(this)">
-            <i class="fas fa-trash"></i>
-        </button>
-    `;
-    container.appendChild(hostItem);
-}
-
-function removeHost(button) {
-    const hostItem = button.closest('.host-item');
-    hostItem.remove();
-}
-</script>
+            `;
+            container.appendChild(hostItem);
+            updatePreview();
+        }
+    
+        function removeHost(button) {
+            const hostItem = button.closest('.host-item');
+            hostItem.remove();
+            updatePreview();
+        }
+    
+        function updatePreview() {
+            const coordinatorIP = document.getElementById('coordinator_ip').value || '192.168.193.21';
+            const coordinatorHostname = document.getElementById('coordinator_hostname').value || 'mdw';
+            
+            document.getElementById('coordinatorPreview').textContent = `${coordinatorIP} ${coordinatorHostname}`;
+            
+            const segmentItems = document.querySelectorAll('#segmentHosts .host-item');
+            let segmentsText = '';
+            segmentItems.forEach((item, index) => {
+                const ip = item.querySelector('input[name="segment_ip[]"]').value || `192.168.198.${201 + index}`;
+                const hostname = item.querySelector('input[name="segment_hostname[]"]').value || `sdw${index + 1}`;
+                segmentsText += `${ip} ${hostname}\n`;
+            });
+            
+            document.getElementById('segmentsPreview').textContent = segmentsText || '192.168.198.201 sdw1\n192.168.198.13 sdw2';
+        }
+    
+        // Update preview on input changes
+        document.addEventListener('input', function(e) {
+            if (e.target.matches('#coordinator_ip, #coordinator_hostname, input[name*="segment_"]')) {
+                updatePreview();
+            }
+        });
+    
+        // Initial preview update
+        document.addEventListener('DOMContentLoaded', updatePreview);
+    </script>
 {% endblock %}

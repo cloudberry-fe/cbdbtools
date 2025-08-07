@@ -1,25 +1,72 @@
 {% extends "base.html" %}
 
 {% block content %}
-    {% if active_tab == 'configuration' %}
-        {% include 'configuration.html' %}
-    {% elif active_tab == 'hosts' %}
-        {% include 'hosts.html' %}
-    {% elif active_tab == 'deploy' %}
-        {% include 'deploy.html' %}
-    {% else %}
-        {% include 'configuration.html' %}
-    {% endif %}
+    <!-- Tab Navigation -->
+    <div class="tab">
+        <button class="tablinks {% if active_tab == 'configuration' or not active_tab %}active{% endif %}"
+                onclick="openTab(event, 'configuration')">
+            <i class="fas fa-cog"></i> Configuration
+        </button>
+        <button class="tablinks {% if active_tab == 'hosts' %}active{% endif %}"
+                onclick="openTab(event, 'hosts')">
+            <i class="fas fa-network-wired"></i> Hosts
+        </button>
+        <button class="tablinks {% if active_tab == 'deploy' %}active{% endif %}"
+                onclick="openTab(event, 'deploy')">
+            <i class="fas fa-rocket"></i> Deploy
+        </button>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="tab-content">
+        <div id="configuration" class="tabcontent {% if active_tab == 'configuration' or not active_tab %}active{% endif %}">
+            {% include 'configuration.html' %}
+        </div>
+
+        <div id="hosts" class="tabcontent {% if active_tab == 'hosts' %}active{% endif %}">
+            {% include 'hosts.html' %}
+        </div>
+
+        <div id="deploy" class="tabcontent {% if active_tab == 'deploy' %}active{% endif %}">
+            {% include 'deploy.html' %}
+        </div>
+    </div>
 
     <script>
-        // Initialize tab display
+        function openTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            
+            // Hide all tab content
+            tabcontent = document.getElementsByClassName("tabcontent");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].classList.remove("active");
+            }
+            
+            // Remove active class from all tab buttons
+            tablinks = document.getElementsByClassName("tablinks");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].classList.remove("active");
+            }
+            
+            // Show the current tab and add active class to the button
+            document.getElementById(tabName).classList.add("active");
+            if (evt) {
+                evt.currentTarget.classList.add("active");
+            }
+            
+            // Update URL
+            history.pushState(null, null, '/' + tabName);
+        }
+
+        // Initialize tab display on page load
         document.addEventListener('DOMContentLoaded', function() {
-            // Show the active tab or default to configuration
-            const activeTab = '{{ active_tab }}';
-            if (activeTab) {
-                document.getElementById(activeTab).classList.add('active');
+            const urlParams = new URLSearchParams(window.location.search);
+            const tab = window.location.pathname.split('/')[1];
+            
+            if (tab && ['configuration', 'hosts', 'deploy'].includes(tab)) {
+                openTab(null, tab);
             } else {
-                document.getElementById('configuration').classList.add('active');
+                openTab(null, 'configuration');
             }
         });
     </script>
