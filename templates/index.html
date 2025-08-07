@@ -432,296 +432,289 @@
         </div>
         
         <!-- Configuration Tab -->
-        <div id="configuration" class="tabcontent active">
-            <h2><i class="fas fa-sliders-h"></i> Cluster Configuration</h2>
-            
-            <div class="required-info">
-                <i class="fas fa-exclamation-circle"></i> Fields marked with * are required
+        <form method="post" action="/save_params">
+            <!-- Deployment Mode Selector -->
+            <div class="mode-selector">
+                <h3><i class="fas fa-th-large"></i> Deployment Mode</h3>
+                <div class="mode-option {% if params.get('DEPLOY_TYPE', 'single') == 'single' %}selected{% endif %}" 
+                     onclick="setDeploymentMode('single')">
+                    <i class="fas fa-laptop"></i>
+                    <h4>Single Node</h4>
+                    <p>Deploy all components on a single machine</p>
+                </div>
+                <div class="mode-option {% if params.get('DEPLOY_TYPE', 'single') == 'multi' %}selected{% endif %}" 
+                     onclick="setDeploymentMode('multi')">
+                    <i class="fas fa-server"></i>
+                    <h4>Multi Node</h4>
+                    <p>Deploy components across multiple machines</p>
+                </div>
             </div>
             
-            <form method="post" action="/save">
-                <!-- Deployment Mode Selector -->
-                <div class="mode-selector">
-                    <h3><i class="fas fa-th-large"></i> Deployment Mode</h3>
-                    <div class="mode-option {% if params.get('DEPLOY_TYPE', 'single') == 'single' %}selected{% endif %}" 
-                         onclick="setDeploymentMode('single')">
-                        <i class="fas fa-laptop"></i>
-                        <h4>Single Node</h4>
-                        <p>Deploy all components on a single machine</p>
-                    </div>
-                    <div class="mode-option {% if params.get('DEPLOY_TYPE', 'single') == 'multi' %}selected{% endif %}" 
-                         onclick="setDeploymentMode('multi')">
-                        <i class="fas fa-server"></i>
-                        <h4>Multi Node</h4>
-                        <p>Deploy components across multiple machines</p>
-                    </div>
-                </div>
-                
-                <!-- Hidden field for deployment type -->
-                <input type="hidden" id="DEPLOY_TYPE" name="DEPLOY_TYPE" 
-                       value="{{ params.get('DEPLOY_TYPE', 'single') }}">
-                
-                <!-- Mandatory Options -->
-                <h3><i class="fas fa-key"></i> Mandatory Options</h3>
-                <div class="form-row">
-                    <div class="form-col">
-                        <div class="form-group required">
-                            <label for="ADMIN_USER">Admin User:</label>
-                            <input type="text" id="ADMIN_USER" name="ADMIN_USER" 
-                                   value="{{ params.get('ADMIN_USER', 'gpadmin') }}" required>
-                        </div>
-                        
-                        <div class="form-group required">
-                            <label for="ADMIN_USER_PASSWORD">Admin Password:</label>
-                            <input type="password" id="ADMIN_USER_PASSWORD" name="ADMIN_USER_PASSWORD" 
-                                   value="{{ params.get('ADMIN_USER_PASSWORD', 'Hashdata@123') }}" required>
-                        </div>
-                        
-                        <div class="form-group required">
-                            <label for="CLOUDBERRY_RPM">RPM Package Path:</label>
-                            <input type="text" id="CLOUDBERRY_RPM" name="CLOUDBERRY_RPM" 
-                                   value="{{ params.get('CLOUDBERRY_RPM', '/tmp/hashdata-lightning-release.rpm') }}" required>
-                            <small class="form-text">Path to the RPM package file</small>
-                        </div>
-                        
-                        <div class="form-group required">
-                            <label for="CLOUDBERRY_BINARY_PATH">Binary Path:</label>
-                            <input type="text" id="CLOUDBERRY_BINARY_PATH" name="CLOUDBERRY_BINARY_PATH" 
-                                   value="{{ params.get('CLOUDBERRY_BINARY_PATH', '/usr/local/cloudberry-db') }}" required>
-                        </div>
+            <!-- Hidden field for deployment type -->
+            <input type="hidden" id="DEPLOY_TYPE" name="DEPLOY_TYPE" 
+                   value="{{ params.get('DEPLOY_TYPE', 'single') }}">
+            
+            <!-- Mandatory Options -->
+            <h3><i class="fas fa-key"></i> Mandatory Options</h3>
+            <div class="form-row">
+                <div class="form-col">
+                    <div class="form-group required">
+                        <label for="ADMIN_USER">Admin User:</label>
+                        <input type="text" id="ADMIN_USER" name="ADMIN_USER" 
+                               value="{{ params.get('ADMIN_USER', 'gpadmin') }}" required>
                     </div>
                     
-                    <div class="form-col">
-                        <div class="form-group required">
-                            <label for="COORDINATOR_HOSTNAME">Coordinator Hostname:</label>
-                            <input type="text" id="COORDINATOR_HOSTNAME" name="COORDINATOR_HOSTNAME" 
-                                   value="{{ params.get('COORDINATOR_HOSTNAME', 'mdw') }}" required>
-                        </div>
-                        
-                        <div class="form-group required">
-                            <label for="COORDINATOR_IP">Coordinator IP:</label>
-                            <input type="text" id="COORDINATOR_IP" name="COORDINATOR_IP" 
-                                   value="{{ params.get('COORDINATOR_IP', '192.168.193.21') }}" required>
-                        </div>
-                        
-                        <!-- 这里删除了重复的Deployment Type设置 -->
+                    <div class="form-group required">
+                        <label for="ADMIN_USER_PASSWORD">Admin Password:</label>
+                        <input type="password" id="ADMIN_USER_PASSWORD" name="ADMIN_USER_PASSWORD" 
+                               value="{{ params.get('ADMIN_USER_PASSWORD', 'Hashdata@123') }}" required>
+                    </div>
+                    
+                    <div class="form-group required">
+                        <label for="CLOUDBERRY_RPM">RPM Package Path:</label>
+                        <input type="text" id="CLOUDBERRY_RPM" name="CLOUDBERRY_RPM" 
+                               value="{{ params.get('CLOUDBERRY_RPM', '/tmp/hashdata-lightning-release.rpm') }}" required>
+                        <small class="form-text">Path to the RPM package file</small>
+                    </div>
+                    
+                    <div class="form-group required">
+                        <label for="CLOUDBERRY_BINARY_PATH">Binary Path:</label>
+                        <input type="text" id="CLOUDBERRY_BINARY_PATH" name="CLOUDBERRY_BINARY_PATH" 
+                               value="{{ params.get('CLOUDBERRY_BINARY_PATH', '/usr/local/cloudberry-db') }}" required>
                     </div>
                 </div>
                 
-                <!-- Cluster Initialization Parameters -->
-                <h3><i class="fas fa-database"></i> Cluster Initialization Parameters</h3>
-                <div class="form-row">
-                    <div class="form-col">
+                <div class="form-col">
+                    <div class="form-group required">
+                        <label for="COORDINATOR_HOSTNAME">Coordinator Hostname:</label>
+                        <input type="text" id="COORDINATOR_HOSTNAME" name="COORDINATOR_HOSTNAME" 
+                               value="{{ params.get('COORDINATOR_HOSTNAME', 'mdw') }}" required>
+                    </div>
+                    
+                    <div class="form-group required">
+                        <label for="COORDINATOR_IP">Coordinator IP:</label>
+                        <input type="text" id="COORDINATOR_IP" name="COORDINATOR_IP" 
+                               value="{{ params.get('COORDINATOR_IP', '192.168.193.21') }}" required>
+                    </div>
+                    
+                    <!-- 这里删除了重复的Deployment Type设置 -->
+                </div>
+            </div>
+            
+            <!-- Cluster Initialization Parameters -->
+            <h3><i class="fas fa-database"></i> Cluster Initialization Parameters</h3>
+            <div class="form-row">
+                <div class="form-col">
+                    <div class="form-group required">
+                        <label for="COORDINATOR_PORT">Coordinator Port:</label>
+                        <input type="number" id="COORDINATOR_PORT" name="COORDINATOR_PORT" 
+                               value="{{ params.get('COORDINATOR_PORT', '5432') }}" required>
+                    </div>
+                    
+                    <div class="form-group required">
+                        <label for="COORDINATOR_DIRECTORY">Coordinator Directory:</label>
+                        <input type="text" id="COORDINATOR_DIRECTORY" name="COORDINATOR_DIRECTORY" 
+                               value="{{ params.get('COORDINATOR_DIRECTORY', '/data0/database/coordinator') }}" required>
+                    </div>
+                    
+                    <div class="form-group required">
+                        <label for="ARRAY_NAME">Cluster Name:</label>
+                        <input type="text" id="ARRAY_NAME" name="ARRAY_NAME" 
+                               value="{{ params.get('ARRAY_NAME', 'CBDB_SANDBOX') }}" required>
+                    </div>
+                    
+                    <div class="form-group required">
+                        <label for="SEG_PREFIX">Segment Prefix:</label>
+                        <input type="text" id="SEG_PREFIX" name="SEG_PREFIX" 
+                               value="{{ params.get('SEG_PREFIX', 'gpseg') }}" required>
+                    </div>
+                    
+                    <div class="form-group required">
+                        <label for="PORT_BASE">Port Base:</label>
+                        <input type="number" id="PORT_BASE" name="PORT_BASE" 
+                               value="{{ params.get('PORT_BASE', '6000') }}" required>
+                    </div>
+                    
+                    <div class="form-group required">
+                        <label for="DATA_DIRECTORY">Data Directory:</label>
+                        <input type="text" id="DATA_DIRECTORY" name="DATA_DIRECTORY" 
+                               value="{{ params.get('DATA_DIRECTORY', '/data0/database/primary /data0/database/primary') }}" required>
+                        <small class="form-text">Enter multiple directory paths separated by spaces</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="WITH_MIRROR">Enable Mirrors:</label>
+                        <select id="WITH_MIRROR" name="WITH_MIRROR">
+                            <option value="false" {% if params.get('WITH_MIRROR') == 'false' %}selected{% endif %}>No</option>
+                            <option value="true" {% if params.get('WITH_MIRROR') == 'true' %}selected{% endif %}>Yes</option>
+                        </select>
+                    </div>
+                    
+                    <!-- 将Mirror Parameters移动到这里 -->
+                    <div id="mirrorParams" class="{% if params.get('WITH_MIRROR') != 'true' %}hidden{% endif %}">
                         <div class="form-group required">
-                            <label for="COORDINATOR_PORT">Coordinator Port:</label>
-                            <input type="number" id="COORDINATOR_PORT" name="COORDINATOR_PORT" 
-                                   value="{{ params.get('COORDINATOR_PORT', '5432') }}" required>
+                            <label for="MIRROR_PORT_BASE">Mirror Port Base:</label>
+                            <input type="number" id="MIRROR_PORT_BASE" name="MIRROR_PORT_BASE" 
+                                   value="{{ params.get('MIRROR_PORT_BASE', '7000') }}" required>
                         </div>
                         
                         <div class="form-group required">
-                            <label for="COORDINATOR_DIRECTORY">Coordinator Directory:</label>
-                            <input type="text" id="COORDINATOR_DIRECTORY" name="COORDINATOR_DIRECTORY" 
-                                   value="{{ params.get('COORDINATOR_DIRECTORY', '/data0/database/coordinator') }}" required>
-                        </div>
-                        
-                        <div class="form-group required">
-                            <label for="ARRAY_NAME">Cluster Name:</label>
-                            <input type="text" id="ARRAY_NAME" name="ARRAY_NAME" 
-                                   value="{{ params.get('ARRAY_NAME', 'CBDB_SANDBOX') }}" required>
-                        </div>
-                        
-                        <div class="form-group required">
-                            <label for="SEG_PREFIX">Segment Prefix:</label>
-                            <input type="text" id="SEG_PREFIX" name="SEG_PREFIX" 
-                                   value="{{ params.get('SEG_PREFIX', 'gpseg') }}" required>
-                        </div>
-                        
-                        <div class="form-group required">
-                            <label for="PORT_BASE">Port Base:</label>
-                            <input type="number" id="PORT_BASE" name="PORT_BASE" 
-                                   value="{{ params.get('PORT_BASE', '6000') }}" required>
-                        </div>
-                        
-                        <div class="form-group required">
-                            <label for="DATA_DIRECTORY">Data Directory:</label>
-                            <input type="text" id="DATA_DIRECTORY" name="DATA_DIRECTORY" 
-                                   value="{{ params.get('DATA_DIRECTORY', '/data0/database/primary /data0/database/primary') }}" required>
+                            <label for="MIRROR_DATA_DIRECTORY">Mirror Data Directories:</label>
+                            <input type="text" id="MIRROR_DATA_DIRECTORY" name="MIRROR_DATA_DIRECTORY" 
+                                   value="{{ params.get('MIRROR_DATA_DIRECTORY', '/data0/database/mirror /data0/database/mirror') }}" required>
                             <small class="form-text">Enter multiple directory paths separated by spaces</small>
                         </div>
-                        
-                        <div class="form-group">
-                            <label for="WITH_MIRROR">Enable Mirrors:</label>
-                            <select id="WITH_MIRROR" name="WITH_MIRROR">
-                                <option value="false" {% if params.get('WITH_MIRROR') == 'false' %}selected{% endif %}>No</option>
-                                <option value="true" {% if params.get('WITH_MIRROR') == 'true' %}selected{% endif %}>Yes</option>
-                            </select>
-                        </div>
-                        
-                        <!-- 将Mirror Parameters移动到这里 -->
-                        <div id="mirrorParams" class="{% if params.get('WITH_MIRROR') != 'true' %}hidden{% endif %}">
-                            <div class="form-group required">
-                                <label for="MIRROR_PORT_BASE">Mirror Port Base:</label>
-                                <input type="number" id="MIRROR_PORT_BASE" name="MIRROR_PORT_BASE" 
-                                       value="{{ params.get('MIRROR_PORT_BASE', '7000') }}" required>
-                            </div>
-                            
-                            <div class="form-group required">
-                                <label for="MIRROR_DATA_DIRECTORY">Mirror Data Directories:</label>
-                                <input type="text" id="MIRROR_DATA_DIRECTORY" name="MIRROR_DATA_DIRECTORY" 
-                                       value="{{ params.get('MIRROR_DATA_DIRECTORY', '/data0/database/mirror /data0/database/mirror') }}" required>
-                                <small class="form-text">Enter multiple directory paths separated by spaces</small>
-                            </div>
-                        </div>
-                        <!-- Mirror Parameters结束 -->
-                        
-                        <div class="form-group">
-                            <label for="WITH_STANDBY">Enable Standby:</label>
-                            <select id="WITH_STANDBY" name="WITH_STANDBY">
-                                <option value="false" {% if params.get('WITH_STANDBY') == 'false' %}selected{% endif %}>No</option>
-                                <option value="true" {% if params.get('WITH_STANDBY') == 'true' %}selected{% endif %}>Yes</option>
-                            </select>
-                        </div>
                     </div>
+                    <!-- Mirror Parameters结束 -->
                     
-                    <div class="form-col">
-                        <div class="form-group required">
-                            <label for="TRUSTED_SHELL">Trusted Shell:</label>
-                            <input type="text" id="TRUSTED_SHELL" name="TRUSTED_SHELL" 
-                                   value="{{ params.get('TRUSTED_SHELL', 'ssh') }}" required>
-                        </div>
-                        
-                        <div class="form-group required">
-                            <label for="CHECK_POINT_SEGMENTS">Checkpoint Segments:</label>
-                            <input type="number" id="CHECK_POINT_SEGMENTS" name="CHECK_POINT_SEGMENTS" 
-                                   value="{{ params.get('CHECK_POINT_SEGMENTS', '8') }}" required>
-                        </div>
-                        
-                        <div class="form-group required">
-                            <label for="ENCODING">Encoding:</label>
-                            <input type="text" id="ENCODING" name="ENCODING" 
-                                   value="{{ params.get('ENCODING', 'UNICODE') }}" required>
-                        </div>
-                        
-                        <div class="form-group required">
-                            <label for="DATABASE_NAME">Database Name:</label>
-                            <input type="text" id="DATABASE_NAME" name="DATABASE_NAME" 
-                                   value="{{ params.get('DATABASE_NAME', 'gpadmin') }}" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="MACHINE_LIST_FILE">Machine List File:</label>
-                            <input type="text" id="MACHINE_LIST_FILE" name="MACHINE_LIST_FILE" 
-                                   value="{{ params.get('MACHINE_LIST_FILE', '/tmp/hostfile_gpinitsystem') }}">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="INIT_CONFIGFILE">Init Config File:</label>
-                            <input type="text" id="INIT_CONFIGFILE" name="INIT_CONFIGFILE" 
-                                   value="{{ params.get('INIT_CONFIGFILE', '/tmp/gpinitsystem_config') }}">
-                        </div>
+                    <div class="form-group">
+                        <label for="WITH_STANDBY">Enable Standby:</label>
+                        <select id="WITH_STANDBY" name="WITH_STANDBY">
+                            <option value="false" {% if params.get('WITH_STANDBY') == 'false' %}selected{% endif %}>No</option>
+                            <option value="true" {% if params.get('WITH_STANDBY') == 'true' %}selected{% endif %}>Yes</option>
+                        </select>
                     </div>
                 </div>
                 
-                <!-- Optional Parameters -->
-                <h3><i class="fas fa-cogs"></i> Optional Parameters</h3>
+                <div class="form-col">
+                    <div class="form-group required">
+                        <label for="TRUSTED_SHELL">Trusted Shell:</label>
+                        <input type="text" id="TRUSTED_SHELL" name="TRUSTED_SHELL" 
+                               value="{{ params.get('TRUSTED_SHELL', 'ssh') }}" required>
+                    </div>
+                    
+                    <div class="form-group required">
+                        <label for="CHECK_POINT_SEGMENTS">Checkpoint Segments:</label>
+                        <input type="number" id="CHECK_POINT_SEGMENTS" name="CHECK_POINT_SEGMENTS" 
+                               value="{{ params.get('CHECK_POINT_SEGMENTS', '8') }}" required>
+                    </div>
+                    
+                    <div class="form-group required">
+                        <label for="ENCODING">Encoding:</label>
+                        <input type="text" id="ENCODING" name="ENCODING" 
+                               value="{{ params.get('ENCODING', 'UNICODE') }}" required>
+                    </div>
+                    
+                    <div class="form-group required">
+                        <label for="DATABASE_NAME">Database Name:</label>
+                        <input type="text" id="DATABASE_NAME" name="DATABASE_NAME" 
+                               value="{{ params.get('DATABASE_NAME', 'gpadmin') }}" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="MACHINE_LIST_FILE">Machine List File:</label>
+                        <input type="text" id="MACHINE_LIST_FILE" name="MACHINE_LIST_FILE" 
+                               value="{{ params.get('MACHINE_LIST_FILE', '/tmp/hostfile_gpinitsystem') }}">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="INIT_CONFIGFILE">Init Config File:</label>
+                        <input type="text" id="INIT_CONFIGFILE" name="INIT_CONFIGFILE" 
+                               value="{{ params.get('INIT_CONFIGFILE', '/tmp/gpinitsystem_config') }}">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Optional Parameters -->
+            <h3><i class="fas fa-cogs"></i> Optional Parameters</h3>
+            <div class="form-row">
+                <div class="form-col">
+                    <div class="form-group">
+                        <label for="INIT_ENV_ONLY">Initialize Environment Only:</label>
+                        <select id="INIT_ENV_ONLY" name="INIT_ENV_ONLY">
+                            <option value="false" {% if params.get('INIT_ENV_ONLY') == 'false' %}selected{% endif %}>No</option>
+                            <option value="true" {% if params.get('INIT_ENV_ONLY') == 'true' %}selected{% endif %}>Yes</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="CLOUDBERRY_RPM_URL">RPM Download URL:</label>
+                        <input type="text" id="CLOUDBERRY_RPM_URL" name="CLOUDBERRY_RPM_URL" 
+                               value="{{ params.get('CLOUDBERRY_RPM_URL', 'http://downloadlink.com/cloudberry.rpm') }}">
+                        <small class="form-text">URL to download the RPM package if not locally available</small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Mirror Parameters -->
+            <div id="mirrorParams" class="{% if params.get('WITH_MIRROR') != 'true' %}hidden{% endif %}">
+                <h3><i class="fas fa-clone"></i> Mirror Parameters</h3>
                 <div class="form-row">
                     <div class="form-col">
-                        <div class="form-group">
-                            <label for="INIT_ENV_ONLY">Initialize Environment Only:</label>
-                            <select id="INIT_ENV_ONLY" name="INIT_ENV_ONLY">
-                                <option value="false" {% if params.get('INIT_ENV_ONLY') == 'false' %}selected{% endif %}>No</option>
-                                <option value="true" {% if params.get('INIT_ENV_ONLY') == 'true' %}selected{% endif %}>Yes</option>
+                        <div class="form-group required">
+                            <label for="MIRROR_PORT_BASE">Mirror Port Base:</label>
+                            <input type="number" id="MIRROR_PORT_BASE" name="MIRROR_PORT_BASE" 
+                                   value="{{ params.get('MIRROR_PORT_BASE', '7000') }}" required>
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-group required">
+                            <label for="MIRROR_DATA_DIRECTORY">Mirror Data Directories:</label>
+                            <input type="text" id="MIRROR_DATA_DIRECTORY" name="MIRROR_DATA_DIRECTORY" 
+                                   value="{{ params.get('MIRROR_DATA_DIRECTORY', '/data0/database/mirror /data0/database/mirror') }}" required>
+                            <small class="form-text">Enter multiple directory paths separated by spaces</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Multi-node specific parameters -->
+            <div id="multiNodeParams" class="{% if params.get('DEPLOY_TYPE', 'single') != 'multi' %}hidden{% endif %}">
+                <h3><i class="fas fa-network-wired"></i> Multi-Node Specific Parameters</h3>
+                
+                <div class="form-row">
+                    <div class="form-col">
+                        <div class="form-group required">
+                            <label for="SEGMENT_ACCESS_METHOD">Segment Access Method:</label>
+                            <select id="SEGMENT_ACCESS_METHOD" name="SEGMENT_ACCESS_METHOD" required>
+                                <option value="keyfile" {% if params.get('SEGMENT_ACCESS_METHOD') == 'keyfile' %}selected{% endif %}>Key File</option>
+                                <option value="password" {% if params.get('SEGMENT_ACCESS_METHOD') == 'password' %}selected{% endif %}>Password</option>
                             </select>
                         </div>
                         
-                        <div class="form-group">
-                            <label for="CLOUDBERRY_RPM_URL">RPM Download URL:</label>
-                            <input type="text" id="CLOUDBERRY_RPM_URL" name="CLOUDBERRY_RPM_URL" 
-                                   value="{{ params.get('CLOUDBERRY_RPM_URL', 'http://downloadlink.com/cloudberry.rpm') }}">
-                            <small class="form-text">URL to download the RPM package if not locally available</small>
+                        <div class="form-group required">
+                            <label for="SEGMENT_ACCESS_USER">Segment Access User:</label>
+                            <input type="text" id="SEGMENT_ACCESS_USER" name="SEGMENT_ACCESS_USER" 
+                                   value="{{ params.get('SEGMENT_ACCESS_USER', 'root') }}" required>
+                        </div>
+                        
+                        <div class="form-group" id="keyfilePathGroup" 
+                               {% if params.get('SEGMENT_ACCESS_METHOD') != 'keyfile' %}style="display:none;"{% endif %}>
+                            <label for="SEGMENT_ACCESS_KEYFILE">Key File Path:</label>
+                            <input type="text" id="SEGMENT_ACCESS_KEYFILE" name="SEGMENT_ACCESS_KEYFILE" 
+                                   value="{{ params.get('SEGMENT_ACCESS_KEYFILE', '/tmp/keyfiles') }}">
+                        </div>
+                        
+                        <div class="form-group" id="passwordGroup" 
+                               {% if params.get('SEGMENT_ACCESS_METHOD') == 'keyfile' %}style="display:none;"{% endif %}>
+                            <label for="SEGMENT_ACCESS_PASSWORD">Segment Access Password:</label>
+                            <input type="password" id="SEGMENT_ACCESS_PASSWORD" name="SEGMENT_ACCESS_PASSWORD" 
+                                   value="{{ params.get('SEGMENT_ACCESS_PASSWORD', 'XXXXXXXX') }}">
                         </div>
                     </div>
                 </div>
-                
-                <!-- Mirror Parameters -->
-                <div id="mirrorParams" class="{% if params.get('WITH_MIRROR') != 'true' %}hidden{% endif %}">
-                    <h3><i class="fas fa-clone"></i> Mirror Parameters</h3>
-                    <div class="form-row">
-                        <div class="form-col">
-                            <div class="form-group required">
-                                <label for="MIRROR_PORT_BASE">Mirror Port Base:</label>
-                                <input type="number" id="MIRROR_PORT_BASE" name="MIRROR_PORT_BASE" 
-                                       value="{{ params.get('MIRROR_PORT_BASE', '7000') }}" required>
-                            </div>
-                        </div>
-                        <div class="form-col">
-                            <div class="form-group required">
-                                <label for="MIRROR_DATA_DIRECTORY">Mirror Data Directories:</label>
-                                <input type="text" id="MIRROR_DATA_DIRECTORY" name="MIRROR_DATA_DIRECTORY" 
-                                       value="{{ params.get('MIRROR_DATA_DIRECTORY', '/data0/database/mirror /data0/database/mirror') }}" required>
-                                <small class="form-text">Enter multiple directory paths separated by spaces</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Multi-node specific parameters -->
-                <div id="multiNodeParams" class="{% if params.get('DEPLOY_TYPE', 'single') != 'multi' %}hidden{% endif %}">
-                    <h3><i class="fas fa-network-wired"></i> Multi-Node Specific Parameters</h3>
-                    
-                    <div class="form-row">
-                        <div class="form-col">
-                            <div class="form-group required">
-                                <label for="SEGMENT_ACCESS_METHOD">Segment Access Method:</label>
-                                <select id="SEGMENT_ACCESS_METHOD" name="SEGMENT_ACCESS_METHOD" required>
-                                    <option value="keyfile" {% if params.get('SEGMENT_ACCESS_METHOD') == 'keyfile' %}selected{% endif %}>Key File</option>
-                                    <option value="password" {% if params.get('SEGMENT_ACCESS_METHOD') == 'password' %}selected{% endif %}>Password</option>
-                                </select>
-                            </div>
-                            
-                            <div class="form-group required">
-                                <label for="SEGMENT_ACCESS_USER">Segment Access User:</label>
-                                <input type="text" id="SEGMENT_ACCESS_USER" name="SEGMENT_ACCESS_USER" 
-                                       value="{{ params.get('SEGMENT_ACCESS_USER', 'root') }}" required>
-                            </div>
-                            
-                            <div class="form-group" id="keyfilePathGroup" 
-                                  {% if params.get('SEGMENT_ACCESS_METHOD') != 'keyfile' %}style="display:none;"{% endif %}>
-                                <label for="SEGMENT_ACCESS_KEYFILE">Key File Path:</label>
-                                <input type="text" id="SEGMENT_ACCESS_KEYFILE" name="SEGMENT_ACCESS_KEYFILE" 
-                                       value="{{ params.get('SEGMENT_ACCESS_KEYFILE', '/tmp/keyfiles') }}">
-                            </div>
-                            
-                            <div class="form-group" id="passwordGroup" 
-                                  {% if params.get('SEGMENT_ACCESS_METHOD') == 'keyfile' %}style="display:none;"{% endif %}>
-                                <label for="SEGMENT_ACCESS_PASSWORD">Segment Access Password:</label>
-                                <input type="password" id="SEGMENT_ACCESS_PASSWORD" name="SEGMENT_ACCESS_PASSWORD" 
-                                       value="{{ params.get('SEGMENT_ACCESS_PASSWORD', 'XXXXXXXX') }}">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Hidden fields for hosts -->
-                <input type="hidden" id="coord_ip" name="coord_ip" value="{{ hosts.coordinator[0] if hosts.coordinator else '' }}">
-                <input type="hidden" id="coord_hostname" name="coord_hostname" value="{{ hosts.coordinator[1] if hosts.coordinator else '' }}">
-                <input type="hidden" id="segment_count" name="segment_count" value="{{ hosts.segments|length }}">
-                {% for segment in hosts.segments %}
-                    <input type="hidden" id="segment_ip_{{ loop.index0 }}" name="segment_ip_{{ loop.index0 }}" value="{{ segment[0] }}">
-                    <input type="hidden" id="segment_hostname_{{ loop.index0 }}" name="segment_hostname_{{ loop.index0 }}" value="{{ segment[1] }}">
-                {% endfor %}
-                
-                <button type="submit" class="btn">
-                    <i class="fas fa-save"></i> Save Configuration
-                </button>
-            </form>
+            </div>
+            
+            <!-- Hidden fields for hosts -->
+            <input type="hidden" id="coord_ip" name="coord_ip" value="{{ hosts.coordinator[0] if hosts.coordinator else '' }}">
+            <input type="hidden" id="coord_hostname" name="coord_hostname" value="{{ hosts.coordinator[1] if hosts.coordinator else '' }}">
+            <input type="hidden" id="segment_count" name="segment_count" value="{{ hosts.segments|length }}">
+            {% for segment in hosts.segments %}
+                <input type="hidden" id="segment_ip_{{ loop.index0 }}" name="segment_ip_{{ loop.index0 }}" value="{{ segment[0] }}">
+                <input type="hidden" id="segment_hostname_{{ loop.index0 }}" name="segment_hostname_{{ loop.index0 }}" value="{{ segment[1] }}">
+            {% endfor %}
+            
+            <button type="submit" class="btn">
+                <i class="fas fa-save"></i> Save Configuration
+            </button>
+        </form>
         </div>
         
         <!-- Hosts Tab -->
         <div id="hosts" class="tabcontent">
             <h2><i class="fas fa-network-wired"></i> Host Configuration</h2>
             
-            <form method="post" action="/save">
+            <form method="post" action="/save_hosts">
                 <div class="host-group">
                     <h3><i class="fas fa-server"></i> Coordinator Host</h3>
                     <div class="form-row">
@@ -729,14 +722,14 @@
                             <div class="form-group">
                                 <label for="coord_ip_input">IP Address:</label>
                                 <input type="text" id="coord_ip_input" name="coord_ip" 
-                                       value="{{ hosts.coordinator[0] if hosts.coordinator else '' }}" required>
+                                       value="{{ params.get('COORDINATOR_IP', hosts.coordinator[0] if hosts.coordinator else '') }}" required>
                             </div>
                         </div>
                         <div class="form-col">
                             <div class="form-group">
                                 <label for="coord_hostname_input">Hostname:</label>
                                 <input type="text" id="coord_hostname_input" name="coord_hostname" 
-                                       value="{{ hosts.coordinator[1] if hosts.coordinator else '' }}" required>
+                                       value="{{ params.get('COORDINATOR_IP', hosts.coordinator[1] if hosts.coordinator else '') }}" required>
                             </div>
                         </div>
                     </div>

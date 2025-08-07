@@ -146,6 +146,38 @@ def deploy():
         flash(f"Cluster deployment failed: {result.get('error', result.get('stderr', 'Unknown error'))}")
     return redirect(url_for('index'))
 
+@app.route('/save_params', methods=['POST'])
+def save_params():
+    try:
+        params = request.form.to_dict()
+        save_parameters(params)
+        flash('Configuration parameters saved successfully!')
+        return redirect(url_for('index'))
+    except Exception as e:
+        flash(f'Error saving parameters: {str(e)}')
+        return redirect(url_for('index'))
+
+@app.route('/save_hosts', methods=['POST'])
+def save_hosts_only():
+    try:
+        hosts = {
+            'coordinator': [request.form.get('coord_ip'), request.form.get('coord_hostname')],
+            'segments': []
+        }
+        # Extract segment hosts
+        segment_count = int(request.form.get('segment_count', 0))
+        for i in range(segment_count):
+            ip = request.form.get(f'segment_ip_{i}')
+            hostname = request.form.get(f'segment_hostname_{i}')
+            if ip and hostname:
+                hosts['segments'].append([ip, hostname])
+        save_hosts(hosts)
+        flash('Host configuration saved successfully!')
+        return redirect(url_for('index'))
+    except Exception as e:
+        flash(f'Error saving hosts: {str(e)}')
+        return redirect(url_for('index'))
+
 if __name__ == '__main__':
     # Ensure templates directory exists
     if not os.path.exists('templates'):
