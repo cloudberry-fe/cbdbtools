@@ -231,36 +231,35 @@ function initializePage() {
     const urlParams = new URLSearchParams(window.location.search);
     const tabParam = urlParams.get('tab');
     
+    // 明确设置默认选项卡
+    let activeTab = 'configuration';
+    
     if (tabParam) {
-        // Find the tab button and content
-        const tabButton = document.querySelector(`.tablinks[onclick*="'${tabParam}'"]`);
-        const tabContent = document.getElementById(tabParam);
-
-        if (tabButton && tabContent) {
-            // Remove active class from all tabs
-            document.querySelectorAll('.tablinks, .tabcontent').forEach(el => {
-                el.classList.remove('active');
-            });
-
-            // Add active class to the target tab
-            tabButton.classList.add('active');
-            tabContent.classList.add('active');
-        }
+        activeTab = tabParam;
+    }
+    
+    // 确保选择有效的选项卡
+    const validTabs = ['configuration', 'hosts', 'deploy'];
+    if (!validTabs.includes(activeTab)) {
+        activeTab = 'configuration';
+    }
+    
+    // 移除所有选项卡的active类
+    document.querySelectorAll('.tablinks, .tabcontent').forEach(el => {
+        el.classList.remove('active');
+    });
+    
+    // 添加active类到目标选项卡
+    const tabButton = document.querySelector(`button[onclick="openTab(event, '${activeTab}')"]`);
+    const tabContent = document.getElementById(activeTab);
+    
+    if (tabButton && tabContent) {
+        tabButton.classList.add('active');
+        tabContent.classList.add('active');
     } else {
-        // Set default active tab to configuration if no URL parameter
-        const defaultTabButton = document.querySelector('.tablinks[onclick*="configuration"]');
-        const defaultTabContent = document.getElementById('configuration');
-        
-        if (defaultTabButton && defaultTabContent) {
-            // Remove active class from all tabs first
-            document.querySelectorAll('.tablinks, .tabcontent').forEach(el => {
-                el.classList.remove('active');
-            });
-            
-            // Add active class to default tab
-            defaultTabButton.classList.add('active');
-            defaultTabContent.classList.add('active');
-        }
+        // 如果找不到目标选项卡，回退到configuration选项卡
+        document.querySelector('button[onclick="openTab(event, \'configuration\')"]').classList.add('active');
+        document.getElementById('configuration').classList.add('active');
     }
 
     // Check deployment status immediately
