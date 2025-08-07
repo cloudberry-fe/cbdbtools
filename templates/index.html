@@ -1160,28 +1160,28 @@
                     
                     if (data.running) {
                         deployButton.disabled = true;
-                        deployButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 部署运行中...';
+                        deployButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deployment running...';
                         deploymentStatus.classList.remove('hidden');
                         deploymentStatus.classList.add('deployment-running');
                         deploymentStatus.classList.remove('deployment-completed');
                         refreshLogs();
                     } else {
                         deployButton.disabled = false;
-                        deployButton.innerHTML = '<i class="fas fa-rocket"></i> 部署集群';
+                        deployButton.innerHTML = '<i class="fas fa-rocket"></i> Deploy Cluster';
                         deploymentStatus.classList.add('deployment-completed');
                         deploymentStatus.classList.remove('deployment-running');
                         
-                        // 添加完成提示
+                        // Add completion message
                         if (!deploymentStatus.querySelector('.completion-message')) {
                             const msg = document.createElement('div');
                             msg.className = 'completion-message';
                             msg.style.cssText = 'color: var(--success-color); font-weight: bold; margin: 10px 0;';
-                            msg.innerHTML = '<i class="fas fa-check-circle"></i> 部署已完成！请检查日志详情。';
+                            msg.innerHTML = '<i class="fas fa-check-circle"></i> Deployment completed! Please check the log details.';
                             deploymentStatus.insertBefore(msg, deploymentStatus.firstChild.nextSibling);
                         }
                     }
                 })
-                .catch(error => console.error('检查部署状态出错:', error));
+                .catch(error => console.error('Error checking deployment status:', error));
         }
         
         // Refresh deployment logs
@@ -1191,15 +1191,15 @@
                 .then(data => {
                     const logContainer = document.getElementById('deploymentLog');
                     if (logContainer) {
-                        logContainer.textContent = data.logs || '暂无日志内容...';
+                        logContainer.textContent = data.logs || 'No log content yet...';
                         logContainer.scrollTop = logContainer.scrollHeight;
                     }
                 })
                 .catch(error => {
-                    console.error('获取日志出错:', error);
+                    console.error('Error retrieving logs:', error);
                     const logContainer = document.getElementById('deploymentLog');
                     if (logContainer) {
-                        logContainer.textContent = '获取日志失败，请刷新页面重试。';
+                        logContainer.textContent = 'Failed to retrieve logs. Please refresh the page to try again.';
                     }
                 });
         }
