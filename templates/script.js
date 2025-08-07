@@ -14,7 +14,7 @@ function openTab(evt, tabName) {
 }
 
 // Set deployment mode
-function setDeploymentMode(mode) {
+function setDeploymentMode(mode, event) {
     document.getElementById('DEPLOY_TYPE').value = mode;
 
     // Update UI
