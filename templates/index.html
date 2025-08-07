@@ -776,15 +776,39 @@
                     </strong>
                 </p>
                 
+                <!-- Coordinator host information with consistency check -->
                 <p>Coordinator host: 
                     <strong>
-                        {% if hosts.coordinator %}
-                            {{ hosts.coordinator[1] }} ({{ hosts.coordinator[0] }})
+                        {% if params.get('DEPLOY_TYPE', 'single') == 'single' %}
+                            <!-- Single mode: use configuration from params -->
+                            {{ params.get('COORDINATOR_HOSTNAME', 'Not configured') }} ({{ params.get('COORDINATOR_IP', 'Not configured') }})
                         {% else %}
-                            Not configured
+                            <!-- Multi mode: use configuration from hosts -->
+                            {% if hosts.coordinator %}
+                                {{ hosts.coordinator[1] }} ({{ hosts.coordinator[0] }})
+                            {% else %}
+                                Not configured
+                            {% endif %}
                         {% endif %}
                     </strong>
                 </p>
+                
+                <!-- Consistency check warning for multi-node deployment -->
+                {% if params.get('DEPLOY_TYPE', 'single') == 'multi' and hosts.coordinator %}
+                    {% set config_hostname = params.get('COORDINATOR_HOSTNAME', '') %}
+                    {% set config_ip = params.get('COORDINATOR_IP', '') %}
+                    {% set hosts_hostname = hosts.coordinator[1] %}
+                    {% set hosts_ip = hosts.coordinator[0] %}
+                    
+                    {% if config_hostname != hosts_hostname or config_ip != hosts_ip %}
+                    <div class="warning">
+                        <p><strong>Warning:</strong> Coordinator configuration mismatch detected!</p>
+                        <p>Configuration tab: {{ config_hostname }} ({{ config_ip }})</p>
+                        <p>Hosts tab: {{ hosts_hostname }} ({{ hosts_ip }})</p>
+                        <p>Please ensure both configurations are consistent.</p>
+                    </div>
+                    {% endif %}
+                {% endif %}
                 
                 <!-- Display detailed deployment information -->
                 <div class="deployment-details">
