@@ -78,6 +78,13 @@ def read_hosts():
 
 # Save host configuration
 def save_hosts(hosts):
+    # If hosts file exists, backup it first
+    if os.path.exists(HOSTS_FILE):
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        backup_file = f'{HOSTS_FILE}.backup_{timestamp}'
+        shutil.copy2(HOSTS_FILE, backup_file)
+        print(f'Hosts file backed up as: {backup_file}')
+    
     with open(HOSTS_FILE, 'w') as f:
         f.write('##Define hosts used for Hashdata\n')
         f.write('#Hashdata hosts begin\n')
