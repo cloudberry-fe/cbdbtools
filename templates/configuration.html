@@ -31,7 +31,137 @@
         <!-- Mandatory Options -->
         <h3><i class="fas fa-key"></i> Mandatory Options</h3>
         <p class="required-info"><i class="fas fa-exclamation-circle"></i> Fields marked with * are required</p>
-        <!-- Rest of the form remains the same -->
+        
+        <div class="form-row">
+            <div class="form-col">
+                <div class="form-group required">
+                    <label for="COORDINATOR_HOSTNAME">Coordinator Hostname *</label>
+                    <input type="text" id="COORDINATOR_HOSTNAME" name="COORDINATOR_HOSTNAME" 
+                           value="{{ config.COORDINATOR_HOSTNAME|default('') }}" required>
+                </div>
+            </div>
+            <div class="form-col">
+                <div class="form-group required">
+                    <label for="COORDINATOR_IP">Coordinator IP *</label>
+                    <input type="text" id="COORDINATOR_IP" name="COORDINATOR_IP" 
+                           value="{{ config.COORDINATOR_IP|default('') }}" required>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-col">
+                <div class="form-group required">
+                    <label for="MASTER_DATA_DIRECTORY">Master Data Directory *</label>
+                    <input type="text" id="MASTER_DATA_DIRECTORY" name="MASTER_DATA_DIRECTORY" 
+                           value="{{ config.MASTER_DATA_DIRECTORY|default('/data/master') }}" required>
+                </div>
+            </div>
+            <div class="form-col">
+                <div class="form-group required">
+                    <label for="TRUSTED_SHELL">Trusted Shell *</label>
+                    <input type="text" id="TRUSTED_SHELL" name="TRUSTED_SHELL" 
+                           value="{{ config.TRUSTED_SHELL|default('ssh') }}" required>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-col">
+                <div class="form-group required">
+                    <label for="CHECK_POINT_SEGMENTS">Check Point Segments *</label>
+                    <input type="number" id="CHECK_POINT_SEGMENTS" name="CHECK_POINT_SEGMENTS" 
+                           value="{{ config.CHECK_POINT_SEGMENTS|default(8) }}" required>
+                </div>
+            </div>
+            <div class="form-col">
+                <div class="form-group required">
+                    <label for="ENCODING">Encoding *</label>
+                    <select id="ENCODING" name="ENCODING" required>
+                        <option value="UTF-8" {% if config.ENCODING|default('UTF-8') == 'UTF-8' %}selected{% endif %}>UTF-8</option>
+                        <option value="SQL_ASCII" {% if config.ENCODING|default('UTF-8') == 'SQL_ASCII' %}selected{% endif %}>SQL_ASCII</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Multi-Node Parameters (Initially hidden) -->
+        <div id="multiNodeParams" class="{% if config.DEPLOY_TYPE|default('single') != 'multi' %}hidden{% endif %}">
+            <h3><i class="fas fa-server"></i> Multi-Node Parameters</h3>
+            
+            <div class="form-row">
+                <div class="form-col">
+                    <div class="form-group required">
+                        <label for="SEGMENT_ACCESS_METHOD">Segment Access Method *</label>
+                        <select id="SEGMENT_ACCESS_METHOD" name="SEGMENT_ACCESS_METHOD" required>
+                            <option value="keyfile" {% if config.SEGMENT_ACCESS_METHOD|default('keyfile') == 'keyfile' %}selected{% endif %}>Key File</option>
+                            <option value="password" {% if config.SEGMENT_ACCESS_METHOD|default('keyfile') == 'password' %}selected{% endif %}>Password</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-col">
+                    <div class="form-group required" id="keyfilePathGroup" 
+                         style="{% if config.SEGMENT_ACCESS_METHOD|default('keyfile') != 'keyfile' %}display: none;{% endif %}">
+                        <label for="SSH_KEY_FILE_PATH">SSH Key File Path *</label>
+                        <input type="text" id="SSH_KEY_FILE_PATH" name="SSH_KEY_FILE_PATH" 
+                               value="{{ config.SSH_KEY_FILE_PATH|default('~/.ssh/id_rsa') }}">
+                    </div>
+                    <div class="form-group required" id="passwordGroup" 
+                         style="{% if config.SEGMENT_ACCESS_METHOD|default('keyfile') == 'keyfile' %}display: none;{% endif %}">
+                        <label for="SEGMENT_PASSWORD">Segment Password *</label>
+                        <input type="password" id="SEGMENT_PASSWORD" name="SEGMENT_PASSWORD" 
+                               value="{{ config.SEGMENT_PASSWORD|default('') }}">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-col">
+                    <div class="form-group required">
+                        <label for="WITH_MIRROR">Enable Mirrors *</label>
+                        <select id="WITH_MIRROR" name="WITH_MIRROR" required>
+                            <option value="true" {% if config.WITH_MIRROR|default('true') == 'true' %}selected{% endif %}>Yes</option>
+                            <option value="false" {% if config.WITH_MIRROR|default('true') == 'false' %}selected{% endif %}>No</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-col">
+                    <div class="form-group required">
+                        <label for="SEGMENT_DATA_DIRECTORY">Segment Data Directory *</label>
+                        <input type="text" id="SEGMENT_DATA_DIRECTORY" name="SEGMENT_DATA_DIRECTORY" 
+                               value="{{ config.SEGMENT_DATA_DIRECTORY|default('/data/primary') }}" required>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Mirror Parameters (Initially hidden) -->
+            <div id="mirrorParams" class="{% if config.WITH_MIRROR|default('true') != 'true' %}hidden{% endif %}">
+                <h4><i class="fas fa-copy"></i> Mirror Configuration</h4>
+                
+                <div class="form-row">
+                    <div class="form-col">
+                        <div class="form-group required">
+                            <label for="MIRROR_DATA_DIRECTORY">Mirror Data Directory *</label>
+                            <input type="text" id="MIRROR_DATA_DIRECTORY" name="MIRROR_DATA_DIRECTORY" 
+                                   value="{{ config.MIRROR_DATA_DIRECTORY|default('/data/mirror') }}" required>
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-group required">
+                            <label for="REPLICATION_PORT_BASE">Replication Port Base *</label>
+                            <input type="number" id="REPLICATION_PORT_BASE" name="REPLICATION_PORT_BASE" 
+                                   value="{{ config.REPLICATION_PORT_BASE|default(50000) }}" required>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <button type="submit" class="btn">
+                <i class="fas fa-save"></i> Save Configuration
+            </button>
+        </div>
     </form>
 </div>
 {% endblock %}
