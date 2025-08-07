@@ -5,6 +5,8 @@ import subprocess
 import shutil
 from datetime import datetime
 import json
+import time
+import threading
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
@@ -139,12 +141,40 @@ def save():
 
 @app.route('/deploy', methods=['POST'])
 def deploy():
-    result = deploy_cluster()
-    if result['success']:
-        flash('Cluster deployed successfully!')
+    # Check if deployment is already running
+    if is_deployment_running():
+        flash('Deployment is already running. Please wait for it to complete or check the logs for progress.')
+        return redirect(url_for('index_with_tab', tab='deploy'))
+    
+    # Get deployment type
+    params = read_parameters()
+    deploy_type = params.get('DEPLOY_TYPE', 'single')
+    
+    # Start background deployment
+    success, message = start_background_deployment(deploy_type)
+    
+    if success:
+        flash(f'Deployment started successfully! Log file: {DEPLOYMENT_STATUS["log_file"]}')
     else:
-        flash(f"Cluster deployment failed: {result.get('error', result.get('stderr', 'Unknown error'))}")
-    return redirect(url_for('index'))
+        flash(f'Failed to start deployment: {message}')
+    
+    return redirect(url_for('index_with_tab', tab='deploy'))
+
+# New route to get deployment status
+@app.route('/deployment_status')
+def deployment_status():
+    with DEPLOYMENT_LOCK:
+        return jsonify({
+            'running': DEPLOYMENT_STATUS['running'],
+            'log_file': DEPLOYMENT_STATUS['log_file'],
+            'start_time': DEPLOYMENT_STATUS['start_time']
+        })
+
+# New route to get deployment logs
+@app.route('/deployment_logs')
+def deployment_logs():
+    log_content = get_deployment_log()
+    return jsonify({'logs': log_content})
 
 @app.route('/save_params', methods=['POST'])
 def save_params():
@@ -192,3 +222,104 @@ if __name__ == '__main__':
         os.makedirs('templates')
     # Start application
     app.run(host='0.0.0.0', port=5000, debug=True)
+
+
+# Global variable to track deployment status
+DEPLOYMENT_STATUS = {
+    'running': False,
+    'log_file': None,
+    'start_time': None
+}
+
+# Lock for thread safety
+DEPLOYMENT_LOCK = threading.Lock()
+
+# Function to check if there's a running deployment process
+def is_deployment_running():
+    with DEPLOYMENT_LOCK:
+        if not DEPLOYMENT_STATUS['running']:
+            return False
+        
+        # Check if the process is actually running
+        if DEPLOYMENT_STATUS['log_file']:
+            # Check if the log file is still being updated
+            try:
+                # Check if log file exists and get its last modification time
+                if os.path.exists(DEPLOYMENT_STATUS['log_file']):
+                    mtime = os.path.getmtime(DEPLOYMENT_STATUS['log_file'])
+                    # If file hasn't been modified in the last 10 seconds, assume deployment finished
+                    if time.time() - mtime > 10:
+                        DEPLOYMENT_STATUS['running'] = False
+                        return False
+                    return True
+                else:
+                    DEPLOYMENT_STATUS['running'] = False
+                    return False
+            except Exception:
+                DEPLOYMENT_STATUS['running'] = False
+                return False
+        return True
+
+# Function to start deployment in background
+def start_background_deployment(cluster_type='single'):
+    global DEPLOYMENT_STATUS
+    
+    with DEPLOYMENT_LOCK:
+        # Check if deployment is already running
+        if DEPLOYMENT_STATUS['running']:
+            return False, "Deployment is already running. Please wait for it to complete."
+        
+        # Generate log filename
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        log_file = f'deploy_cluster_{timestamp}.log'
+        
+        # Update deployment status
+        DEPLOYMENT_STATUS['running'] = True
+        DEPLOYMENT_STATUS['log_file'] = log_file
+        DEPLOYMENT_STATUS['start_time'] = time.time()
+    
+    try:
+        # Start deployment in background using run.sh
+        with open(log_file, 'w') as log_f:
+            process = subprocess.Popen(
+                ['sh', 'run.sh', cluster_type],
+                stdout=log_f,
+                stderr=subprocess.STDOUT,
+                preexec_fn=os.setsid
+            )
+        
+        # Start a thread to monitor the process
+        def monitor_process():
+            process.wait()  # Wait for process to complete
+            with DEPLOYMENT_LOCK:
+                DEPLOYMENT_STATUS['running'] = False
+        
+        monitor_thread = threading.Thread(target=monitor_process)
+        monitor_thread.daemon = True
+        monitor_thread.start()
+        
+        return True, f"Deployment started successfully. Log file: {log_file}"
+    
+    except Exception as e:
+        with DEPLOYMENT_LOCK:
+            DEPLOYMENT_STATUS['running'] = False
+        return False, f"Failed to start deployment: {str(e)}"
+
+# Function to get deployment log content
+def get_deployment_log(log_file=None, lines=100):
+    if not log_file:
+        with DEPLOYMENT_LOCK:
+            log_file = DEPLOYMENT_STATUS['log_file']
+    
+    if not log_file or not os.path.exists(log_file):
+        return "Log file not found."
+    
+    try:
+        with open(log_file, 'r') as f:
+            # Read last N lines
+            lines_content = f.readlines()
+            if len(lines_content) > lines:
+                lines_content = lines_content[-lines:]
+            return ''.join(lines_content)
+    except Exception as e:
+        return f"Error reading log file: {str(e)}"

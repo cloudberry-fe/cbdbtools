@@ -126,6 +126,28 @@
             margin-bottom: 0;
         }
         
+        /* Deployment log styles */
+        .deployment-status {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: #f8f9fa;
+        }
+        
+        .log-container {
+            background-color: #000;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            height: 300px;
+            overflow-y: auto;
+            margin: 10px 0;
+            white-space: pre-wrap;
+        }
+        
         /* Tab Navigation */
         .tab {
             display: flex;
@@ -934,8 +956,17 @@
             <div class="form-group">
                 <p>Click the button below to start the cluster deployment. This process may take several minutes.</p>
                 
+                <!-- Deployment status and logs -->
+                <div id="deploymentStatus" class="deployment-status hidden">
+                    <h4><i class="fas fa-info-circle"></i> Deployment Status</h4>
+                    <div id="deploymentLog" class="log-container"></div>
+                    <button type="button" class="btn btn-secondary" onclick="refreshLogs()">
+                        <i class="fas fa-sync-alt"></i> Refresh Logs
+                    </button>
+                </div>
+                
                 <form method="post" action="/deploy" id="deployForm">
-                    <button type="submit" class="btn btn-success" onclick="return confirm('Are you sure you want to deploy the cluster? This may take several minutes.')">
+                    <button type="submit" class="btn btn-success" id="deployButton" onclick="return startDeployment()">
                         <i class="fas fa-rocket"></i> Deploy Cluster
                     </button>
                 </form>
@@ -1080,7 +1111,61 @@
             }
         }
         
-        // Handle form submissions with proper redirects
+        // Check deployment status periodically
+        function checkDeploymentStatus() {
+            fetch('/deployment_status')
+                .then(response => response.json())
+                .then(data => {
+                    const deployButton = document.getElementById('deployButton');
+                    const deploymentStatus = document.getElementById('deploymentStatus');
+                    
+                    if (data.running) {
+                        deployButton.disabled = true;
+                        deployButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deployment Running...';
+                        deploymentStatus.classList.remove('hidden');
+                        refreshLogs();
+                    } else {
+                        deployButton.disabled = false;
+                        deployButton.innerHTML = '<i class="fas fa-rocket"></i> Deploy Cluster';
+                        // Keep logs visible even after deployment completes
+                    }
+                })
+                .catch(error => console.error('Error checking deployment status:', error));
+        }
+        
+        // Refresh deployment logs
+        function refreshLogs() {
+            fetch('/deployment_logs')
+                .then(response => response.json())
+                .then(data => {
+                    const logContainer = document.getElementById('deploymentLog');
+                    if (logContainer) {
+                        logContainer.textContent = data.logs;
+                        // Auto-scroll to bottom
+                        logContainer.scrollTop = logContainer.scrollHeight;
+                    }
+                })
+                .catch(error => console.error('Error refreshing logs:', error));
+        }
+        
+        // Start deployment with confirmation
+        function startDeployment() {
+            if (confirm('Are you sure you want to deploy the cluster? This may take several minutes.')) {
+                // Show deployment status area
+                document.getElementById('deploymentStatus').classList.remove('hidden');
+                
+                // Start checking deployment status
+                checkDeploymentStatus();
+                
+                // Set up periodic status checking
+                setInterval(checkDeploymentStatus, 5000); // Check every 5 seconds
+                
+                return true;
+            }
+            return false;
+        }
+        
+        // Initialize deployment status check on page load
         document.addEventListener('DOMContentLoaded', function() {
             // Handle configuration form submission
             const configForm = document.getElementById('configForm');
@@ -1119,6 +1204,12 @@
                     tabContent.classList.add('active');
                 }
             }
+            
+            // Check deployment status immediately
+            checkDeploymentStatus();
+            
+            // Set up periodic status checking
+            setInterval(checkDeploymentStatus, 5000); // Check every 5 seconds
         });
     </script>
 </body>
