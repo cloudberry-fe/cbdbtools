@@ -233,34 +233,28 @@ function initializePage() {
             const deployType = document.getElementById('DEPLOY_TYPE').value;
             
             // Submit form data asynchronously
-            fetch(configForm.action, {{
+            fetch(configForm.action, {
                 method: configForm.method,
                 body: new FormData(configForm)
-            }})
+            })
             .then(response => response.ok ? response : Promise.reject(response))
-            .then(() => {{
+            .then(() => {
                 // 调用刷新部署信息函数
                 refreshDeploymentInfo();
                 
                 // Determine target tab based on deployment mode
-                if (deployType === 'multi') {{
+                if (deployType === 'multi') {
                     // Multi-node mode: navigate to hosts tab
-                    const hostsButton = document.querySelector('button[onclick="openTab(event, \'hosts\')"]');
-                    if (hostsButton) {{
-                        hostsButton.click();
-                    }}
-                }} else {{
+                    openTab(event, 'hosts');
+                } else {
                     // Single node mode: navigate directly to deploy tab
-                    const deployButton = document.querySelector('button[onclick="openTab(event, \'deploy\')"]');
-                    if (deployButton) {{
-                        deployButton.click();
-                    }}
-                }}
-            }})
-            .catch(error => {{
+                    openTab(event, 'deploy');
+                }
+            })
+            .catch(error => {
                 console.error('Form submission failed:', error);
                 alert('Failed to save configuration. Please try again.');
-            }});
+            });
         });
     }
 
