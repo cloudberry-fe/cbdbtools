@@ -519,20 +519,11 @@
                         <h3><i class="fas fa-cogs"></i> Cluster Configuration Details</h3>
                     </div>
                     <div class="card-body">
-                        <div class="details-tabs">
-                            <button class="tab-btn active" onclick="openDetailsTab(event, 'coordinator-details')">Coordinator</button>
-                            <button class="tab-btn" onclick="openDetailsTab(event, 'segment-details')">Segments</button>
-                            {% if params.get('WITH_MIRROR', 'false') == 'true' %}
-                            <button class="tab-btn" onclick="openDetailsTab(event, 'mirror-details')">Mirror</button>
-                            {% endif %}
-                            <!-- 删除Multi-Node Tab按钮 -->
-                            <!-- {% if params.get('DEPLOY_TYPE', 'single') == 'multi' %}
-                            <button class="tab-btn" onclick="openDetailsTab(event, 'multi-node-details')">Multi-Node</button>
-                            {% endif %} -->
-                        </div>
-
+                        <!-- Remove tabs navigation -->
+                        
                         <!-- Coordinator Details -->
-                        <div id="coordinator-details" class="details-tabcontent active">
+                        <div class="configuration-section">
+                            <h4><i class="fas fa-server"></i> Coordinator</h4>
                             <div class="details-grid">
                                 <div class="detail-item">
                                     <div class="detail-label">Port:</div>
@@ -546,7 +537,8 @@
                         </div>
 
                         <!-- Segment Details -->
-                        <div id="segment-details" class="details-tabcontent">
+                        <div class="configuration-section">
+                            <h4><i class="fas fa-database"></i> Segments</h4>
                             <div class="details-grid">
                                 <div class="detail-item">
                                     <div class="detail-label">Data Directory:</div>
@@ -565,7 +557,8 @@
 
                         <!-- Mirror Details -->
                         {% if params.get('WITH_MIRROR', 'false') == 'true' %}
-                        <div id="mirror-details" class="details-tabcontent">
+                        <div class="configuration-section">
+                            <h4><i class="fas fa-sync-alt"></i> Mirror</h4>
                             <div class="details-grid">
                                 <div class="detail-item">
                                     <div class="detail-label">Port Base:</div>
@@ -582,20 +575,6 @@
                             </div>
                         </div>
                         {% endif %}
-
-                        <!-- Multi-Node Details -->
-                        <!-- {% if params.get('DEPLOY_TYPE', 'single') == 'multi' %}
-                        <div id="multi-node-details" class="details-tabcontent">
-                            <div class="details-grid">
-                                <div class="detail-item">
-                                    <div class="detail-label">Segment Hosts:</div>
-                                    <div class="detail-value">{{ hosts.segments|length }} configured</div>
-                                </div>
-                            </div>
-                        
-                            <!-- 移除重复的Segment Hosts列表 -->
-                        </div>
-                        {% endif %} -->
                     </div>
                 </div>
             </div>

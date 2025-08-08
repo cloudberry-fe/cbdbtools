@@ -625,7 +625,29 @@ h3 {
     white-space: normal; /* 允许文本换行 */
 }
 
-/* 标签页样式 */
+/* Configuration section styles */
+.configuration-section {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.configuration-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.configuration-section h4 {
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--secondary-color);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--dark-color);
+}
+
 .details-tabs {
     display: flex;
     flex-wrap: wrap;

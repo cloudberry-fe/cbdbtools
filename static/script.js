@@ -328,6 +328,8 @@ function initializePage() {
 // Initialize the page when DOM is fully loaded
 document.addEventListener('DOMContentLoaded', initializePage);
 
+// Remove the following function as it's no longer used
+/*
 // Function to open details tabs in deploy section
 function openDetailsTab(evt, tabName) {
     // Hide all tab contents
@@ -351,6 +353,7 @@ function openDetailsTab(evt, tabName) {
         console.error(`Tab content with id '${tabName}' not found`);
     }
 }
+*/
 
 // Improved function to refresh deployment information
 function refreshDeploymentInfo() {
