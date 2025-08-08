@@ -215,33 +215,38 @@ function initializePage() {
     const configForm = document.getElementById('configForm');
     if (configForm) {
         configForm.addEventListener('submit', function(e) {
-            // Prevent default submission to add custom navigation logic
+            // Prevent default submission to avoid page reload
             e.preventDefault();
             
             // Get deployment mode
             const deployType = document.getElementById('DEPLOY_TYPE').value;
             
-            // Submit the form normally
-            this.submit();
-            
-            // Determine target tab based on deployment mode
-            if (deployType === 'multi') {
-                // Multi-node mode: navigate to hosts tab
-                setTimeout(() => {
+            // Submit form data asynchronously
+            fetch(configForm.action, {
+                method: configForm.method,
+                body: new FormData(configForm)
+            })
+            .then(response => response.ok ? response : Promise.reject(response))
+            .then(() => {
+                // Determine target tab based on deployment mode
+                if (deployType === 'multi') {
+                    // Multi-node mode: navigate to hosts tab
                     const hostsButton = document.querySelector('button[onclick="openTab(event, \'hosts\')"]');
                     if (hostsButton) {
                         hostsButton.click();
                     }
-                }, 100);
-            } else {
-                // Single node mode: navigate directly to deploy tab
-                setTimeout(() => {
+                } else {
+                    // Single node mode: navigate directly to deploy tab
                     const deployButton = document.querySelector('button[onclick="openTab(event, \'deploy\')"]');
                     if (deployButton) {
                         deployButton.click();
                     }
-                }, 100);
-            }
+                }
+            })
+            .catch(error => {
+                console.error('Form submission failed:', error);
+                alert('Failed to save configuration. Please try again.');
+            });
         });
     }
 
@@ -249,19 +254,26 @@ function initializePage() {
     const hostsForm = document.getElementById('hostsForm');
     if (hostsForm) {
         hostsForm.addEventListener('submit', function(e) {
-            // Prevent default submission to add custom navigation logic
+            // Prevent default submission to avoid page reload
             e.preventDefault();
             
-            // Submit the form normally
-            this.submit();
-            
-            // Navigate to deploy tab after saving hosts configuration
-            setTimeout(() => {
+            // Submit form data asynchronously
+            fetch(hostsForm.action, {
+                method: hostsForm.method,
+                body: new FormData(hostsForm)
+            })
+            .then(response => response.ok ? response : Promise.reject(response))
+            .then(() => {
+                // Navigate to deploy tab after saving hosts configuration
                 const deployButton = document.querySelector('button[onclick="openTab(event, \'deploy\')"]');
                 if (deployButton) {
                     deployButton.click();
                 }
-            }, 100);
+            })
+            .catch(error => {
+                console.error('Form submission failed:', error);
+                alert('Failed to save hosts configuration. Please try again.');
+            });
         });
     }
 
