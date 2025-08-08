@@ -374,203 +374,229 @@
         <!-- Deploy Tab -->
         <div id="deploy" class="tabcontent {% if active_tab == 'deploy' %}active{% endif %}">
             <h2><i class="fas fa-rocket"></i> Cluster Deployment</h2>
-            
-            <!-- Main deployment information card -->
-            <div class="info-card">
-                <h3><i class="fas fa-info-circle"></i> Deployment Overview</h3>
-                <div class="info-row">
-                    <div class="info-label">Deployment Mode:</div>
-                    <div class="info-value">
-                        <strong>
-                            {% if params.get('DEPLOY_TYPE', 'single') == 'single' %}
-                                Single Node
-                            {% else %}
-                                Multi Node
-                            {% endif %}
-                        </strong>
-                    </div>
-                </div>
-                
-                <div class="info-row">
-                    <div class="info-label">Coordinator Host:</div>
-                    <div class="info-value">
-                        <strong>
-                            {% if params.get('DEPLOY_TYPE', 'single') == 'single' %}
-                                <!-- Single mode: always use configuration from params -->
-                                {{ params.get('COORDINATOR_HOSTNAME', 'Not configured') }} ({{ params.get('COORDINATOR_IP', 'Not configured') }})
-                            {% else %}
-                                <!-- Multi mode: use hosts configuration but check consistency with params -->
-                                {% if hosts.coordinator %}
-                                    {{ hosts.coordinator[1] }} ({{ hosts.coordinator[0] }})
-                                    {% if hosts.coordinator[1] != params.get('COORDINATOR_HOSTNAME', '') or hosts.coordinator[0] != params.get('COORDINATOR_IP', '') %}
-                                        <span class="warning-icon" title="Coordinator configuration mismatch detected!">⚠️</span>
-                                    {% endif %}
-                                {% else %}
-                                    Not configured
-                                {% endif %}
-                            {% endif %}
-                        </strong>
-                    </div>
-                </div>
-                
-                <div class="info-row">
-                    <div class="info-label">Mirror Status:</div>
-                    <div class="info-value">
-                        <strong>
-                            {% if params.get('WITH_MIRROR', 'false') == 'true' %}
-                                Enabled
-                                <span class="mirror-count-info">
-                                    (Primary: {{ data_dirs|length if data_dirs else 0 }}, Mirror: {{ mirror_dirs|length if mirror_dirs else 0 }})
-                                    {% if data_dirs|length != mirror_dirs|length %}
-                                        <span class="warning-icon" title="Primary and mirror count mismatch detected!">⚠️</span>
-                                    {% endif %}
-                                </span>
-                            {% else %}
-                                Disabled
-                            {% endif %}
-                        </strong>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Warning messages section -->
-            <div class="warnings-container">
-                <!-- Consistency check warning for multi-node deployment -->
-                {% if params.get('DEPLOY_TYPE', 'single') == 'multi' and hosts.coordinator %}
-                    {% set config_hostname = params.get('COORDINATOR_HOSTNAME', '') %}
-                    {% set config_ip = params.get('COORDINATOR_IP', '') %}
-                    {% set hosts_hostname = hosts.coordinator[1] %}
-                    {% set hosts_ip = hosts.coordinator[0] %}
 
-                    {% if config_hostname != hosts_hostname or config_ip != hosts_ip %}
-                    <div class="warning">
-                        <p><strong>Warning:</strong> Coordinator configuration mismatch detected!</p>
-                        <p>Configuration tab: {{ config_hostname }} ({{ config_ip }})</p>
-                        <p>Hosts tab: {{ hosts_hostname }} ({{ hosts_ip }})</p>
-                        <p>Please ensure both configurations are consistent.</p>
+            <!-- Main deployment dashboard with cards layout -->
+            <div class="dashboard-container">
+                <!-- Deployment Overview Card -->
+                <div class="dashboard-card info-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-info-circle"></i> Deployment Overview</h3>
                     </div>
-                    {% endif %}
-                {% endif %}
-                
-                <!-- Segments and mirrors count consistency check -->
-                {% set data_dirs = params.get('DATA_DIRECTORY', '').split() %}
-                {% set mirror_dirs = params.get('MIRROR_DATA_DIRECTORY', '').split() %}
-                {% if params.get('WITH_MIRROR', 'false') == 'true' and data_dirs|length != mirror_dirs|length %}
-                <div class="warning">
-                    <p><strong>Warning:</strong> Primary and mirror count mismatch detected!</p>
-                    <p>Primary count: {{ data_dirs|length if data_dirs else 0 }}</p>
-                    <p>Mirror count: {{ mirror_dirs|length if mirror_dirs else 0 }}</p>
-                    <p>Please ensure both counts are consistent for proper cluster operation.</p>
+                    <div class="card-body">
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <div class="info-label">Deployment Mode:</div>
+                                <div class="info-value">
+                                    <span class="badge {% if params.get('DEPLOY_TYPE', 'single') == 'single' %}badge-blue{% else %}badge-green{% endif %}">
+                                        {% if params.get('DEPLOY_TYPE', 'single') == 'single' %}
+                                            Single Node
+                                        {% else %}
+                                            Multi Node
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="info-item">
+                                <div class="info-label">Coordinator Host:</div>
+                                <div class="info-value">
+                                    {% if params.get('DEPLOY_TYPE', 'single') == 'single' %}
+                                        <!-- Single mode: always use configuration from params -->
+                                        <strong>{{ params.get('COORDINATOR_HOSTNAME', 'Not configured') }}</strong> ({{ params.get('COORDINATOR_IP', 'Not configured') }})
+                                    {% else %}
+                                        <!-- Multi mode: use hosts configuration but check consistency with params -->
+                                        {% if hosts.coordinator %}
+                                            <strong>{{ hosts.coordinator[1] }}</strong> ({{ hosts.coordinator[0] }})
+                                            {% if hosts.coordinator[1] != params.get('COORDINATOR_HOSTNAME', '') or hosts.coordinator[0] != params.get('COORDINATOR_IP', '') %}
+                                                <span class="warning-icon" title="Coordinator configuration mismatch detected!">⚠️</span>
+                                            {% endif %}
+                                        {% else %}
+                                            Not configured
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="info-item">
+                                <div class="info-label">Mirror Status:</div>
+                                <div class="info-value">
+                                    {% if params.get('WITH_MIRROR', 'false') == 'true' %}
+                                        <span class="badge badge-purple">Enabled</span>
+                                        <span class="mirror-count-info">
+                                            (Primary: {{ data_dirs|length if data_dirs else 0 }}, Mirror: {{ mirror_dirs|length if mirror_dirs else 0 }})
+                                            {% if data_dirs|length != mirror_dirs|length %}
+                                                <span class="warning-icon" title="Primary and mirror count mismatch detected!">⚠️</span>
+                                            {% endif %}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge badge-gray">Disabled</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                {% endif %}
-            </div>
-            
-            <!-- Detailed configuration section -->
-            <div class="details-card">
-                <h3><i class="fas fa-cogs"></i> Cluster Configuration Details</h3>
-                
-                <div class="details-grid">
-                    <div class="detail-item">
-                        <div class="detail-label">Coordinator Port:</div>
-                        <div class="detail-value">{{ params.get('COORDINATOR_PORT', 'Not configured') }}</div>
+
+                <!-- Warning Messages Card -->
+                <div class="dashboard-card warnings-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-exclamation-triangle"></i> Warnings</h3>
                     </div>
-                    
-                    <div class="detail-item">
-                        <div class="detail-label">Coordinator Directory:</div>
-                        <div class="detail-value">{{ params.get('COORDINATOR_DIRECTORY', 'Not configured') }}</div>
+                    <div class="card-body">
+                        <!-- Consistency check warning for multi-node deployment -->
+                        {% if params.get('DEPLOY_TYPE', 'single') == 'multi' and hosts.coordinator %}
+                            {% set config_hostname = params.get('COORDINATOR_HOSTNAME', '') %}
+                            {% set config_ip = params.get('COORDINATOR_IP', '') %}
+                            {% set hosts_hostname = hosts.coordinator[1] %}
+                            {% set hosts_ip = hosts.coordinator[0] %}
+
+                            {% if config_hostname != hosts_hostname or config_ip != hosts_ip %}
+                            <div class="warning-item">
+                                <div class="warning-header">
+                                    <i class="fas fa-exclamation-circle"></i> Coordinator configuration mismatch
+                                </div>
+                                <div class="warning-body">
+                                    <p>Configuration tab: {{ config_hostname }} ({{ config_ip }})</p>
+                                    <p>Hosts tab: {{ hosts_hostname }} ({{ hosts_ip }})</p>
+                                    <p>Please ensure both configurations are consistent.</p>
+                                </div>
+                            </div>
+                            {% endif %}
+                        {% endif %}
+
+                        <!-- Segments and mirrors count consistency check -->
+                        {% set data_dirs = params.get('DATA_DIRECTORY', '').split() %}
+                        {% set mirror_dirs = params.get('MIRROR_DATA_DIRECTORY', '').split() %}
+                        {% if params.get('WITH_MIRROR', 'false') == 'true' and data_dirs|length != mirror_dirs|length %}
+                        <div class="warning-item">
+                            <div class="warning-header">
+                                <i class="fas fa-exclamation-circle"></i> Primary and mirror count mismatch
+                            </div>
+                            <div class="warning-body">
+                                <p>Primary count: {{ data_dirs|length if data_dirs else 0 }}</p>
+                                <p>Mirror count: {{ mirror_dirs|length if mirror_dirs else 0 }}</p>
+                                <p>Please ensure both counts are consistent for proper cluster operation.</p>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- No warnings message -->
+                        {% if ((params.get('DEPLOY_TYPE', 'single') != 'multi' or not hosts.coordinator or (config_hostname == hosts_hostname and config_ip == hosts_ip)) and (params.get('WITH_MIRROR', 'false') != 'true' or data_dirs|length == mirror_dirs|length)) %}
+                        <div class="no-warnings">
+                            <i class="fas fa-check-circle"></i> No configuration warnings detected
+                        </div>
+                        {% endif %}
                     </div>
-                    
-                    <div class="detail-item">
-                        <div class="detail-label">Segment Data Directory:</div>
-                        <div class="detail-value">{{ params.get('DATA_DIRECTORY', 'Not configured') }}</div>
+                </div>
+
+                <!-- Detailed Configuration Card -->
+                <div class="dashboard-card details-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-cogs"></i> Cluster Configuration Details</h3>
                     </div>
-                    
-                    <div class="detail-item">
-                        <div class="detail-label">Segment Port Base:</div>
-                        <div class="detail-value">{{ params.get('PORT_BASE', 'Not configured') }}</div>
-                    </div>
-                    
-                    <div class="detail-item">
-                        <div class="detail-label">Segments per Host:</div>
-                        <div class="detail-value">{{ data_dirs|length if data_dirs else 0 }}</div>
-                    </div>
-                    
-                    <div class="detail-item">
-                        <div class="detail-label">Mirror Enabled:</div>
-                        <div class="detail-value">
+                    <div class="card-body">
+                        <div class="details-tabs">
+                            <button class="tab-btn active" onclick="openDetailsTab(event, 'coordinator-details')">Coordinator</button>
+                            <button class="tab-btn" onclick="openDetailsTab(event, 'segment-details')">Segments</button>
                             {% if params.get('WITH_MIRROR', 'false') == 'true' %}
-                                Yes
-                            {% else %}
-                                No
+                            <button class="tab-btn" onclick="openDetailsTab(event, 'mirror-details')">Mirror</button>
+                            {% endif %}
+                            {% if params.get('DEPLOY_TYPE', 'single') == 'multi' %}
+                            <button class="tab-btn" onclick="openDetailsTab(event, 'multi-node-details')">Multi-Node</button>
                             {% endif %}
                         </div>
+
+                        <!-- Coordinator Details -->
+                        <div id="coordinator-details" class="details-tabcontent active">
+                            <div class="details-grid">
+                                <div class="detail-item">
+                                    <div class="detail-label">Port:</div>
+                                    <div class="detail-value">{{ params.get('COORDINATOR_PORT', 'Not configured') }}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Directory:</div>
+                                    <div class="detail-value word-break">{{ params.get('COORDINATOR_DIRECTORY', 'Not configured') }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Segment Details -->
+                        <div id="segment-details" class="details-tabcontent">
+                            <div class="details-grid">
+                                <div class="detail-item">
+                                    <div class="detail-label">Data Directory:</div>
+                                    <div class="detail-value word-break">{{ params.get('DATA_DIRECTORY', 'Not configured') }}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Port Base:</div>
+                                    <div class="detail-value">{{ params.get('PORT_BASE', 'Not configured') }}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Segments per Host:</div>
+                                    <div class="detail-value">{{ data_dirs|length if data_dirs else 0 }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Mirror Details -->
+                        {% if params.get('WITH_MIRROR', 'false') == 'true' %}
+                        <div id="mirror-details" class="details-tabcontent">
+                            <div class="details-grid">
+                                <div class="detail-item">
+                                    <div class="detail-label">Port Base:</div>
+                                    <div class="detail-value">{{ params.get('MIRROR_PORT_BASE', 'Not configured') }}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Data Directory:</div>
+                                    <div class="detail-value word-break">{{ params.get('MIRROR_DATA_DIRECTORY', 'Not configured') }}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Mirrors per Host:</div>
+                                    <div class="detail-value">{{ mirror_dirs|length if mirror_dirs else 0 }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Multi-Node Details -->
+                        {% if params.get('DEPLOY_TYPE', 'single') == 'multi' %}
+                        <div id="multi-node-details" class="details-tabcontent">
+                            <div class="details-grid">
+                                <div class="detail-item">
+                                    <div class="detail-label">Segment Hosts:</div>
+                                    <div class="detail-value">{{ hosts.segments|length }} configured</div>
+                                </div>
+                            </div>
+
+                            {% if hosts.segments %}
+                            <div class="segment-hosts-list">
+                                <h5>Segment Hosts:</h5>
+                                <ul>
+                                    {% for segment in hosts.segments %}
+                                    <li>{{ segment[1] }} ({{ segment[0] }})</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
-                
-                {% if params.get('WITH_MIRROR', 'false') == 'true' %}
-                <div class="mirror-details">
-                    <h4>Mirror Configuration</h4>
-                    <div class="details-grid">
-                        <div class="detail-item">
-                            <div class="detail-label">Mirror Port Base:</div>
-                            <div class="detail-value">{{ params.get('MIRROR_PORT_BASE', 'Not configured') }}</div>
-                        </div>
-                        
-                        <div class="detail-item">
-                            <div class="detail-label">Mirror Data Directory:</div>
-                            <div class="detail-value">{{ params.get('MIRROR_DATA_DIRECTORY', 'Not configured') }}</div>
-                        </div>
-                        
-                        <div class="detail-item">
-                            <div class="detail-label">Mirrors per Host:</div>
-                            <div class="detail-value">{{ mirror_dirs|length if mirror_dirs else 0 }}</div>
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
-                
-                {% if params.get('DEPLOY_TYPE', 'single') == 'multi' %}
-                <div class="multi-node-details">
-                    <h4>Multi-Node Configuration</h4>
-                    <div class="details-grid">
-                        <div class="detail-item">
-                            <div class="detail-label">Segment Hosts:</div>
-                            <div class="detail-value">{{ hosts.segments|length }} configured</div>
-                        </div>
-                    </div>
-                    
-                    {% if hosts.segments %}
-                    <div class="segment-hosts-list">
-                        <h5>Segment Hosts:</h5>
-                        <ul>
-                            {% for segment in hosts.segments %}
-                            <li>{{ segment[1] }} ({{ segment[0] }})</li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    {% endif %}
-                </div>
-                {% endif %}
             </div>
-            
-            <!-- Deployment action section -->
-            <div class="action-section">
+
+            <!-- Deployment Action Button -->
+            <div class="deploy-action-container">
                 <p>Click the button below to start the cluster deployment. This process may take several minutes.</p>
-                
-                <!-- Deployment status and logs -->
-                <div id="deploymentStatus" class="deployment-status hidden">
-                    <h4><i class="fas fa-info-circle"></i> Deployment Status</h4>
-                    <div id="deploymentLog" class="log-container"></div>
-                    <button type="button" class="btn btn-secondary" onclick="refreshLogs()">
-                        <i class="fas fa-sync-alt"></i> Refresh Logs
-                    </button>
-                </div>
-                
-                <form method="post" action="/deploy" id="deployForm">
-                    <button type="submit" class="btn btn-success" id="deployButton" onclick="return startDeployment()">
-                        <i class="fas fa-rocket"></i> Deploy Cluster
-                    </button>
-                </form>
+                <button type="button" class="btn btn-primary" onclick="startDeployment()">
+                    <i class="fas fa-play"></i> Deploy Cluster
+                </button>
+            </div>
+
+            <!-- Deployment Status and Logs -->
+            <div id="deployment-status" class="hidden">
+                <h3><i class="fas fa-spinner"></i> Deployment Status</h3>
+                <div id="status-message"></div>
+                <div id="deployment-logs"></div>
             </div>
         </div>
     </div>

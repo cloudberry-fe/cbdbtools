@@ -321,3 +321,22 @@ function initializePage() {
 
 // Initialize the page when DOM is fully loaded
 document.addEventListener('DOMContentLoaded', initializePage);
+
+// Function to open details tabs in deploy section
+function openDetailsTab(evt, tabName) {
+    // Hide all tab contents
+    var tabcontents = document.getElementsByClassName("details-tabcontent");
+    for (var i = 0; i < tabcontents.length; i++) {
+        tabcontents[i].classList.remove("active");
+    }
+
+    // Remove active class from all tab buttons
+    var tabbuttons = document.getElementsByClassName("tab-btn");
+    for (var i = 0; i < tabbuttons.length; i++) {
+        tabbuttons[i].classList.remove("active");
+    }
+
+    // Show the selected tab content and mark button as active
+    document.getElementById(tabName).classList.add("active");
+    evt.currentTarget.classList.add("active");
+}
