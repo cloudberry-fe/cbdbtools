@@ -164,8 +164,7 @@ def deploy():
     
     if success:
         flash(f'Deployment started successfully!')
-        # 启动后立即开始检查状态
-        checkDeploymentStatus()
+        # 移除错误的函数调用
     else:
         flash(f'Failed to start deployment: {message}')
     
