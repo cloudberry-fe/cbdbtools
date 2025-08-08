@@ -381,8 +381,12 @@ def get_deployment_log(log_file=None, lines=100):
         with DEPLOYMENT_LOCK:
             log_file = DEPLOYMENT_STATUS['log_file']
     
-    if not log_file or not os.path.exists(log_file):
-        return "Log file not found."
+    # 检查日志文件是否存在
+    if not log_file:
+        return "No log file specified."
+    
+    if not os.path.exists(log_file):
+        return f"Log file not found: {log_file}"
     
     try:
         with open(log_file, 'r') as f:

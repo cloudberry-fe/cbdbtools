@@ -1175,6 +1175,9 @@
                 const deploymentStatus = document.getElementById('deploymentStatus');
                 deploymentStatus.classList.remove('hidden');
                 
+                // 标记部署已开始
+                window.deploymentStarted = true;
+                
                 // 提交表单
                 document.getElementById('deployForm').submit();
                 
@@ -1191,34 +1194,37 @@
                     const deployButton = document.getElementById('deployButton');
                     const deploymentStatus = document.getElementById('deploymentStatus');
                     
-                    // 如果有日志文件信息，显示日志文件路径
-                    if (data.log_file) {
-                        // 在状态区域顶部显示日志文件路径
-                        let logPathElement = deploymentStatus.querySelector('.log-path-info');
-                        if (!logPathElement) {
-                            logPathElement = document.createElement('div');
-                            logPathElement.className = 'log-path-info';
-                            logPathElement.style.cssText = 'background-color: #e9ecef; padding: 10px; margin-bottom: 10px; border-radius: 4px;';
-                            logPathElement.innerHTML = `<strong>Deployment log file:</strong> ${data.log_file}<br>` +
-                                '<small>You can check this file for detailed deployment progress.</small>';
-                            deploymentStatus.insertBefore(logPathElement, deploymentStatus.firstChild);
+                    // 只有在部署已开始的情况下才更新UI
+                    if (window.deploymentStarted) {
+                        // 如果有日志文件信息，显示日志文件路径
+                        if (data.log_file) {
+                            // 在状态区域顶部显示日志文件路径
+                            let logPathElement = deploymentStatus.querySelector('.log-path-info');
+                            if (!logPathElement) {
+                                logPathElement = document.createElement('div');
+                                logPathElement.className = 'log-path-info';
+                                logPathElement.style.cssText = 'background-color: #e9ecef; padding: 10px; margin-bottom: 10px; border-radius: 4px;';
+                                logPathElement.innerHTML = `<strong>Deployment log file:</strong> ${data.log_file}<br>` +
+                                    '<small>You can check this file for detailed deployment progress.</small>';
+                                deploymentStatus.insertBefore(logPathElement, deploymentStatus.firstChild);
+                            }
+                            
+                            // 刷新日志内容
+                            refreshLogs();
                         }
                         
-                        // 刷新日志内容
-                        refreshLogs();
-                    }
-                    
-                    // 显示部署状态区域
-                    deploymentStatus.classList.remove('hidden');
-                    
-                    // 如果部署仍在运行，继续定期检查
-                    if (data.running) {
-                        deployButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deployment running...';
-                        setTimeout(checkDeploymentStatus, 3000); // 3秒后再次检查
-                    } else {
-                        // 部署完成，重新启用按钮
-                        deployButton.disabled = false;
-                        deployButton.innerHTML = '<i class="fas fa-rocket"></i> Deploy Cluster';
+                        // 显示部署状态区域
+                        deploymentStatus.classList.remove('hidden');
+                        
+                        // 如果部署仍在运行，继续定期检查
+                        if (data.running) {
+                            deployButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deployment running...';
+                            setTimeout(checkDeploymentStatus, 3000); // 3秒后再次检查
+                        } else {
+                            // 部署完成，重新启用按钮
+                            deployButton.disabled = false;
+                            deployButton.innerHTML = '<i class="fas fa-rocket"></i> Deploy Cluster';
+                        }
                     }
                 })
                 .catch(error => {
@@ -1232,6 +1238,11 @@
 
         // 简化日志刷新函数
         function refreshLogs() {
+            // 只有在部署已开始的情况下才尝试刷新日志
+            if (!window.deploymentStarted) {
+                return;
+            }
+            
             fetch('/deployment_logs')
                 .then(response => response.json())
                 .then(data => {
