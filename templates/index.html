@@ -30,7 +30,7 @@
         <!-- Tab Navigation -->
         <div class="tab">
             <button class="tablinks {% if active_tab == 'configuration' or not active_tab %}active{% endif %}" 
-                    onclick="openTab(event, 'configuration')">
+                    onclick="openTab(event, 'configuration')" id="configTabButton">
                 <i class="fas fa-cog"></i> Configuration
             </button>
             <button class="tablinks {% if params.get('DEPLOY_TYPE', 'single') != 'multi' %}hidden{% endif %}" 
@@ -39,7 +39,7 @@
                 <i class="fas fa-network-wired"></i> Hosts
             </button>
             <button class="tablinks {% if active_tab == 'deploy' %}active{% endif %}" 
-                    onclick="openTab(event, 'deploy')">
+                    onclick="openTab(event, 'deploy')" id="deployTabButton">
                 <i class="fas fa-rocket"></i> Deploy
             </button>
         </div>
