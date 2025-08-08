@@ -408,6 +408,25 @@
                             {% endif %}
                         </strong>
                     </p>
+
+                    <!-- Mirror configuration check -->
+                    {% set data_dirs = params.get('DATA_DIRECTORY', '').split() %}
+                    {% set mirror_dirs = params.get('MIRROR_DATA_DIRECTORY', '').split() %}
+                    <p>Mirror status: 
+                        <strong>
+                            {% if params.get('WITH_MIRROR', 'false') == 'true' %}
+                                Enabled
+                                <span class="mirror-count-info">
+                                    (Primary: {{ data_dirs|length if data_dirs else 0 }}, Mirror: {{ mirror_dirs|length if mirror_dirs else 0 }})
+                                    {% if data_dirs|length != mirror_dirs|length %}
+                                        <span class="warning-icon" title="Primary and mirror count mismatch detected!">⚠️</span>
+                                    {% endif %}
+                                </span>
+                            {% else %}
+                                Disabled
+                            {% endif %}
+                        </strong>
+                    </p>
                 </div>
 
                 <!-- Consistency check warning for multi-node deployment -->
