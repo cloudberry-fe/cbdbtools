@@ -215,18 +215,18 @@ function initializePage() {
     const configForm = document.getElementById('configForm');
     if (configForm) {
         configForm.addEventListener('submit', function(e) {
-            // 阻止默认提交行为以便添加跳转逻辑
+            // Prevent default submission to add custom navigation logic
             e.preventDefault();
             
-            // 获取部署模式
+            // Get deployment mode
             const deployType = document.getElementById('DEPLOY_TYPE').value;
             
-            // 正常提交表单
+            // Submit the form normally
             this.submit();
             
-            // 根据部署模式决定跳转目标
+            // Determine target tab based on deployment mode
             if (deployType === 'multi') {
-                // 多节点模式：跳转到hosts选项卡
+                // Multi-node mode: navigate to hosts tab
                 setTimeout(() => {
                     const hostsButton = document.querySelector('button[onclick="openTab(event, \'hosts\')"]');
                     if (hostsButton) {
@@ -234,7 +234,7 @@ function initializePage() {
                     }
                 }, 100);
             } else {
-                // 单机模式：直接跳转到deploy选项卡
+                // Single node mode: navigate directly to deploy tab
                 setTimeout(() => {
                     const deployButton = document.querySelector('button[onclick="openTab(event, \'deploy\')"]');
                     if (deployButton) {
@@ -249,13 +249,13 @@ function initializePage() {
     const hostsForm = document.getElementById('hostsForm');
     if (hostsForm) {
         hostsForm.addEventListener('submit', function(e) {
-            // 阻止默认提交行为以便添加跳转逻辑
+            // Prevent default submission to add custom navigation logic
             e.preventDefault();
             
-            // 正常提交表单
+            // Submit the form normally
             this.submit();
             
-            // 保存完host配置后跳转到deploy选项卡
+            // Navigate to deploy tab after saving hosts configuration
             setTimeout(() => {
                 const deployButton = document.querySelector('button[onclick="openTab(event, \'deploy\')"]');
                 if (deployButton) {
