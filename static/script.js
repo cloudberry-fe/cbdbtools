@@ -215,7 +215,33 @@ function initializePage() {
     const configForm = document.getElementById('configForm');
     if (configForm) {
         configForm.addEventListener('submit', function(e) {
-            // Let the form submit normally to the server
+            // 阻止默认提交行为以便添加跳转逻辑
+            e.preventDefault();
+            
+            // 获取部署模式
+            const deployType = document.getElementById('DEPLOY_TYPE').value;
+            
+            // 正常提交表单
+            this.submit();
+            
+            // 根据部署模式决定跳转目标
+            if (deployType === 'multi') {
+                // 多节点模式：跳转到hosts选项卡
+                setTimeout(() => {
+                    const hostsButton = document.querySelector('button[onclick="openTab(event, \'hosts\')"]');
+                    if (hostsButton) {
+                        hostsButton.click();
+                    }
+                }, 100);
+            } else {
+                // 单机模式：直接跳转到deploy选项卡
+                setTimeout(() => {
+                    const deployButton = document.querySelector('button[onclick="openTab(event, \'deploy\')"]');
+                    if (deployButton) {
+                        deployButton.click();
+                    }
+                }, 100);
+            }
         });
     }
 
@@ -223,7 +249,19 @@ function initializePage() {
     const hostsForm = document.getElementById('hostsForm');
     if (hostsForm) {
         hostsForm.addEventListener('submit', function(e) {
-            // Let the form submit normally to the server
+            // 阻止默认提交行为以便添加跳转逻辑
+            e.preventDefault();
+            
+            // 正常提交表单
+            this.submit();
+            
+            // 保存完host配置后跳转到deploy选项卡
+            setTimeout(() => {
+                const deployButton = document.querySelector('button[onclick="openTab(event, \'deploy\')"]');
+                if (deployButton) {
+                    deployButton.click();
+                }
+            }, 100);
         });
     }
 
