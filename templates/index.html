@@ -1152,54 +1152,56 @@
         
         // Check deployment status periodically
         function checkDeploymentStatus() {
-            fetch('/deployment_status')
-                .then(response => response.json())
-                .then(data => {
-                    const deployButton = document.getElementById('deployButton');
-                    const deploymentStatus = document.getElementById('deploymentStatus');
-                    const completionMessage = deploymentStatus.querySelector('.completion-message');
+    fetch('/deployment_status')
+        .then(response => response.json())
+        .then(data => {
+            const deployButton = document.getElementById('deployButton');
+            const deploymentStatus = document.getElementById('deploymentStatus');
+            const completionMessage = deploymentStatus.querySelector('.completion-message');
 
-                    if (data.running) {
-                        deployButton.disabled = true;
-                        deployButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deployment running...';
-                        deploymentStatus.classList.remove('hidden');
-                        deploymentStatus.classList.add('deployment-running');
-                        deploymentStatus.classList.remove('deployment-completed');
-                        // 移除之前的完成消息
-                        if (completionMessage) {
-                            completionMessage.remove();
-                        }
-                        refreshLogs();
-                    } else if (data.log_file) {
-                        deployButton.disabled = false;
-                        deployButton.innerHTML = '<i class="fas fa-rocket"></i> Deploy Cluster';
-                        deploymentStatus.classList.add('deployment-completed');
-                        deploymentStatus.classList.remove('deployment-running');
-                        deploymentStatus.classList.remove('hidden');
+            // 确保状态区域始终显示
+            deploymentStatus.classList.remove('hidden');
 
-                        // 移除之前的完成消息
-                        if (completionMessage) {
-                            completionMessage.remove();
-                        }
+            if (data.running) {
+                deployButton.disabled = true;
+                deployButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deployment running...';
+                deploymentStatus.classList.add('deployment-running');
+                deploymentStatus.classList.remove('deployment-completed');
+                // 移除之前的完成消息
+                if (completionMessage) {
+                    completionMessage.remove();
+                }
+                refreshLogs();
+            } else if (data.log_file) {
+                deployButton.disabled = false;
+                deployButton.innerHTML = '<i class="fas fa-rocket"></i> Deploy Cluster';
+                deploymentStatus.classList.add('deployment-completed');
+                deploymentStatus.classList.remove('deployment-running');
 
-                        // 添加完成消息，区分成功和失败
-                        const msg = document.createElement('div');
-                        msg.className = 'completion-message';
-                        if (data.success === true) {
-                            msg.style.cssText = 'color: var(--success-color); font-weight: bold; margin: 10px 0;';
-                            msg.innerHTML = '<i class="fas fa-check-circle"></i> Deployment completed successfully!';
-                        } else if (data.success === false) {
-                            msg.style.cssText = 'color: var(--danger-color); font-weight: bold; margin: 10px 0;';
-                            msg.innerHTML = '<i class="fas fa-times-circle"></i> Deployment failed! Please check the log details.';
-                        } else {
-                            msg.style.cssText = 'color: var(--warning-color); font-weight: bold; margin: 10px 0;';
-                            msg.innerHTML = '<i class="fas fa-info-circle"></i> Deployment finished. Please check the log details to verify.';
-                        }
-                        deploymentStatus.insertBefore(msg, deploymentStatus.firstChild.nextSibling);
-                    }
-                })
-                .catch(error => console.error('Error checking deployment status:', error));
-        }
+                // 移除之前的完成消息
+                if (completionMessage) {
+                    completionMessage.remove();
+                }
+
+                // 添加完成消息，区分成功和失败
+                const msg = document.createElement('div');
+                msg.className = 'completion-message';
+                if (data.success === true) {
+                    msg.style.cssText = 'color: var(--success-color); font-weight: bold; margin: 10px 0;';
+                    msg.innerHTML = '<i class="fas fa-check-circle"></i> Deployment completed successfully!';
+                } else if (data.success === false) {
+                    msg.style.cssText = 'color: var(--danger-color); font-weight: bold; margin: 10px 0;';
+                    msg.innerHTML = '<i class="fas fa-times-circle"></i> Deployment failed! Please check the log details.';
+                } else {
+                    msg.style.cssText = 'color: var(--warning-color); font-weight: bold; margin: 10px 0;';
+                    msg.innerHTML = '<i class="fas fa-info-circle"></i> Deployment finished. Please check the log details to verify.';
+                }
+                deploymentStatus.insertBefore(msg, deploymentStatus.firstChild.nextSibling);
+                refreshLogs(); // 部署完成后刷新一次日志
+            }
+        })
+        .catch(error => console.error('Error checking deployment status:', error));
+}
         
         // Refresh deployment logs
         function refreshLogs() {
@@ -1234,15 +1236,15 @@
                 return false;
             }
 
-            if (confirm('Are you sure you want to deploy the cluster? This may take several minutes.')) {
-                // Show deployment status area
-                document.getElementById('deploymentStatus').classList.remove('hidden');
+            // 立即显示部署状态区域，不等待确认
+            document.getElementById('deploymentStatus').classList.remove('hidden');
 
-                // Start checking deployment status
+            if (confirm('Are you sure you want to deploy the cluster? This may take several minutes.')) {
+                // 开始检查部署状态
                 checkDeploymentStatus();
 
-                // Set up periodic status checking
-                setInterval(checkDeploymentStatus, 5000); // Check every 5 seconds
+                // 设置定期状态检查
+                setInterval(checkDeploymentStatus, 5000); // 每5秒检查一次
 
                 return true;
             }

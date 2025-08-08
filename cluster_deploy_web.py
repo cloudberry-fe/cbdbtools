@@ -350,8 +350,9 @@ def start_background_deployment(cluster_type='single'):
                     with open(log_file, 'r') as f:
                         log_content = f.read()
                         # 根据日志内容判断部署是否成功
-                        # 这里需要根据实际部署脚本的成功/失败标志进行调整
-                        DEPLOYMENT_STATUS['success'] = 'deployment completed successfully' in log_content.lower()
+                        # 更新判断条件以匹配实际日志输出
+                        DEPLOYMENT_STATUS['success'] = ('deployment completed successfully' in log_content.lower() or 
+                                                       'finished deploy cluster' in log_content.lower())
                 except:
                     DEPLOYMENT_STATUS['success'] = None
         
