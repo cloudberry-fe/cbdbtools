@@ -437,7 +437,25 @@
                     </div>
                 </div>
 
-                <!-- Warning Messages Card -->
+                <!-- Warning Messages Card - 仅在有警告时显示 -->
+                {% set has_warnings = false %}
+                {% if params.get('DEPLOY_TYPE', 'single') == 'multi' and hosts.coordinator %}
+                    {% set config_hostname = params.get('COORDINATOR_HOSTNAME', '') %}
+                    {% set config_ip = params.get('COORDINATOR_IP', '') %}
+                    {% set hosts_hostname = hosts.coordinator[1] %}
+                    {% set hosts_ip = hosts.coordinator[0] %}
+                    {% if config_hostname != hosts_hostname or config_ip != hosts_ip %}
+                        {% set has_warnings = true %}
+                    {% endif %}
+                {% endif %}
+
+                {% set data_dirs = params.get('DATA_DIRECTORY', '').split() %}
+                {% set mirror_dirs = params.get('MIRROR_DATA_DIRECTORY', '').split() %}
+                {% if params.get('WITH_MIRROR', 'false') == 'true' and data_dirs|length != mirror_dirs|length %}
+                    {% set has_warnings = true %}
+                {% endif %}
+
+                {% if has_warnings %}
                 <div class="dashboard-card warnings-card">
                     <div class="card-header">
                         <h3><i class="fas fa-exclamation-triangle"></i> Warnings</h3>
@@ -445,11 +463,6 @@
                     <div class="card-body">
                         <!-- Consistency check warning for multi-node deployment -->
                         {% if params.get('DEPLOY_TYPE', 'single') == 'multi' and hosts.coordinator %}
-                            {% set config_hostname = params.get('COORDINATOR_HOSTNAME', '') %}
-                            {% set config_ip = params.get('COORDINATOR_IP', '') %}
-                            {% set hosts_hostname = hosts.coordinator[1] %}
-                            {% set hosts_ip = hosts.coordinator[0] %}
-
                             {% if config_hostname != hosts_hostname or config_ip != hosts_ip %}
                             <div class="warning-item">
                                 <div class="warning-header">
@@ -465,8 +478,6 @@
                         {% endif %}
 
                         <!-- Segments and mirrors count consistency check -->
-                        {% set data_dirs = params.get('DATA_DIRECTORY', '').split() %}
-                        {% set mirror_dirs = params.get('MIRROR_DATA_DIRECTORY', '').split() %}
                         {% if params.get('WITH_MIRROR', 'false') == 'true' and data_dirs|length != mirror_dirs|length %}
                         <div class="warning-item">
                             <div class="warning-header">
@@ -479,15 +490,9 @@
                             </div>
                         </div>
                         {% endif %}
-
-                        <!-- No warnings message -->
-                        {% if ((params.get('DEPLOY_TYPE', 'single') != 'multi' or not hosts.coordinator or (config_hostname == hosts_hostname and config_ip == hosts_ip)) and (params.get('WITH_MIRROR', 'false') != 'true' or data_dirs|length == mirror_dirs|length)) %}
-                        <div class="no-warnings">
-                            <i class="fas fa-check-circle"></i> No configuration warnings detected
-                        </div>
-                        {% endif %}
                     </div>
                 </div>
+                {% endif %}
 
                 <!-- Detailed Configuration Card -->
                 <div class="dashboard-card details-card">
@@ -572,9 +577,25 @@
                             <div class="segment-hosts-list">
                                 <h5>Segment Hosts:</h5>
                                 <ul>
-                                    {% for segment in hosts.segments %}
-                                    <li>{{ segment[1] }} ({{ segment[0] }})</li>
-                                    {% endfor %}
+                                    <!-- 现有代码保持不变 -->
+                                    
+                                    <!-- 多机模式下显示Segment Hosts信息 -->
+                                    {% if params.get('DEPLOY_TYPE', 'single') == 'multi' %}
+                                    <div class="info-item">
+                                        <div class="info-label">Segment Hosts:</div>
+                                        <div class="info-value">
+                                            {% if hosts.segments and hosts.segments|length > 0 %}
+                                                <ul class="segment-hosts-list">
+                                                    {% for segment in hosts.segments %}
+                                                    <li><strong>{{ segment[1] }}</strong> ({{ segment[0] }})</li>
+                                                    {% endfor %}
+                                                </ul>
+                                            {% else %}
+                                                No segment hosts configured
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endif %}
                                 </ul>
                             </div>
                             {% endif %}

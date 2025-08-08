@@ -521,15 +521,15 @@ h3 {
 /* Dashboard and Cards */
 /* 部署仪表板样式 */
 .dashboard-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    display: flex;
+    flex-direction: column;
     gap: 20px;
     margin-bottom: 30px;
 }
 
 @media (max-width: 768px) {
     .dashboard-container {
-        grid-template-columns: 1fr;
+        flex-direction: column;
     }
 }
 
