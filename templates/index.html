@@ -376,41 +376,47 @@
             <h2><i class="fas fa-rocket"></i> Cluster Deployment</h2>
             
             <div class="mode-selector">
-                <h3><i class="fas fa-info-circle"></i> Deployment Information</h3>
-                <p>Current deployment mode: 
-                    <strong>
-                        {% if params.get('DEPLOY_TYPE', 'single') == 'single' %}
-                            Single Node
-                        {% else %}
-                            Multi Node
-                        {% endif %}
-                    </strong>
-                </p>
-                
-                <!-- Coordinator host information with consistency check -->
-                <p>Coordinator host: 
-                    <strong>
-                        {% if params.get('DEPLOY_TYPE', 'single') == 'single' %}
-                            <!-- Single mode: use configuration from params -->
-                            {{ params.get('COORDINATOR_HOSTNAME', 'Not configured') }} ({{ params.get('COORDINATOR_IP', 'Not configured') }})
-                        {% else %}
-                            <!-- Multi mode: use configuration from hosts -->
-                            {% if hosts.coordinator %}
-                                {{ hosts.coordinator[1] }} ({{ hosts.coordinator[0] }})
+                <!-- Deployment Information Section -->
+                <div class="deployment-info">
+                    <h3><i class="fas fa-info-circle"></i> Deployment Information</h3>
+                    <p>Current deployment mode: 
+                        <strong>
+                            {% if params.get('DEPLOY_TYPE', 'single') == 'single' %}
+                                Single Node
                             {% else %}
-                                Not configured
+                                Multi Node
                             {% endif %}
-                        {% endif %}
-                    </strong>
-                </p>
-                
+                        </strong>
+                    </p>
+
+                    <!-- Coordinator host information -->
+                    <p>Coordinator host: 
+                        <strong>
+                            {% if params.get('DEPLOY_TYPE', 'single') == 'single' %}
+                                <!-- Single mode: always use configuration from params -->
+                                {{ params.get('COORDINATOR_HOSTNAME', 'Not configured') }} ({{ params.get('COORDINATOR_IP', 'Not configured') }})
+                            {% else %}
+                                <!-- Multi mode: use hosts configuration but check consistency with params -->
+                                {% if hosts.coordinator %}
+                                    {{ hosts.coordinator[1] }} ({{ hosts.coordinator[0] }})
+                                    {% if hosts.coordinator[1] != params.get('COORDINATOR_HOSTNAME', '') or hosts.coordinator[0] != params.get('COORDINATOR_IP', '') %}
+                                        <span class="warning-icon" title="Coordinator configuration mismatch detected!">⚠️</span>
+                                    {% endif %}
+                                {% else %}
+                                    Not configured
+                                {% endif %}
+                            {% endif %}
+                        </strong>
+                    </p>
+                </div>
+
                 <!-- Consistency check warning for multi-node deployment -->
                 {% if params.get('DEPLOY_TYPE', 'single') == 'multi' and hosts.coordinator %}
                     {% set config_hostname = params.get('COORDINATOR_HOSTNAME', '') %}
                     {% set config_ip = params.get('COORDINATOR_IP', '') %}
                     {% set hosts_hostname = hosts.coordinator[1] %}
                     {% set hosts_ip = hosts.coordinator[0] %}
-                    
+
                     {% if config_hostname != hosts_hostname or config_ip != hosts_ip %}
                     <div class="warning">
                         <p><strong>Warning:</strong> Coordinator configuration mismatch detected!</p>
