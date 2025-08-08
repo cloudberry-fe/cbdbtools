@@ -159,8 +159,10 @@ def save():
 def deploy():
     # Check if deployment is already running
     if is_deployment_running():
-        flash('Deployment is already running. Please wait for it to complete or check the logs for progress.')
-        return redirect(url_for('index_with_tab', tab='deploy'))
+        return jsonify({
+            'success': False,
+            'message': 'Deployment is already running. Please wait for it to complete or check the logs for progress.'
+        })
     
     # Get deployment type
     params = read_parameters()
@@ -172,7 +174,7 @@ def deploy():
     if success:
         # 从message中提取日志文件名
         log_file = message.split(': ')[-1] if ': ' in message else ''
-        # 返回JSON响应包含日志文件路径
+        # 返回JSON响应包含日志文件绝对路径
         return jsonify({
             'success': True,
             'message': message,
@@ -337,7 +339,7 @@ def is_deployment_running():
             DEPLOYMENT_STATUS['running'] = False
             return False
 
-# 修改start_background_deployment函数，保存进程PID
+# 修改start_background_deployment函数，使用绝对路径
 def start_background_deployment(cluster_type='single'):
     global DEPLOYMENT_STATUS
     
@@ -346,7 +348,8 @@ def start_background_deployment(cluster_type='single'):
             return False, "Deployment is already running. Please wait for it to complete."
         
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        log_file = f'deploy_cluster_{timestamp}.log'
+        # 使用绝对路径生成日志文件
+        log_file = os.path.abspath(f'deploy_cluster_{timestamp}.log')
         
         DEPLOYMENT_STATUS['running'] = True
         DEPLOYMENT_STATUS['log_file'] = log_file
