@@ -222,31 +222,34 @@ function initializePage() {
             const deployType = document.getElementById('DEPLOY_TYPE').value;
             
             // Submit form data asynchronously
-            fetch(configForm.action, {
+            fetch(configForm.action, {{
                 method: configForm.method,
                 body: new FormData(configForm)
-            })
+            }})
             .then(response => response.ok ? response : Promise.reject(response))
-            .then(() => {
+            .then(() => {{
+                // 调用刷新部署信息函数
+                refreshDeploymentInfo();
+                
                 // Determine target tab based on deployment mode
-                if (deployType === 'multi') {
+                if (deployType === 'multi') {{
                     // Multi-node mode: navigate to hosts tab
                     const hostsButton = document.querySelector('button[onclick="openTab(event, \'hosts\')"]');
-                    if (hostsButton) {
+                    if (hostsButton) {{
                         hostsButton.click();
-                    }
-                } else {
+                    }}
+                }} else {{
                     // Single node mode: navigate directly to deploy tab
                     const deployButton = document.querySelector('button[onclick="openTab(event, \'deploy\')"]');
-                    if (deployButton) {
+                    if (deployButton) {{
                         deployButton.click();
-                    }
-                }
-            })
-            .catch(error => {
+                    }}
+                }}
+            }})
+            .catch(error => {{
                 console.error('Form submission failed:', error);
                 alert('Failed to save configuration. Please try again.');
-            });
+            }});
         });
     }
 
@@ -258,22 +261,25 @@ function initializePage() {
             e.preventDefault();
             
             // Submit form data asynchronously
-            fetch(hostsForm.action, {
+            fetch(hostsForm.action, {{
                 method: hostsForm.method,
                 body: new FormData(hostsForm)
-            })
+            }})
             .then(response => response.ok ? response : Promise.reject(response))
-            .then(() => {
+            .then(() => {{
+                // 调用刷新部署信息函数
+                refreshDeploymentInfo();
+                
                 // Navigate to deploy tab after saving hosts configuration
                 const deployButton = document.querySelector('button[onclick="openTab(event, \'deploy\')"]');
-                if (deployButton) {
+                if (deployButton) {{
                     deployButton.click();
-                }
-            })
-            .catch(error => {
+                }}
+            }})
+            .catch(error => {{
                 console.error('Form submission failed:', error);
                 alert('Failed to save hosts configuration. Please try again.');
-            });
+            }});
         });
     }
 
@@ -341,13 +347,131 @@ function openDetailsTab(evt, tabName) {
     evt.currentTarget.classList.add("active");
 }
 
-// 添加刷新部署信息的函数
+// Improved function to refresh deployment information
 function refreshDeploymentInfo() {
-    // 这里模拟从服务器获取最新部署信息的逻辑
-    // 在实际应用中，应该使用fetch调用API获取最新数据
     console.log('Refreshing deployment information...');
     
-    // 重新加载页面或更新DOM元素
-    // 对于本示例，我们简单地重新初始化页面
-    initializePage();
+    // Fetch latest deployment parameters from server
+    fetch('/get_deployment_params')
+        .then(response => response.json())
+        .then(data => {
+            const params = data.params;
+            const hosts = data.hosts;
+            
+            // Update deployment mode display
+            const deployModeElement = document.querySelector('.dashboard-card.info-card .info-grid .info-item:nth-child(1) .info-value span');
+            if (deployModeElement) {
+                if (params.DEPLOY_TYPE === 'single') {
+                    deployModeElement.textContent = 'Single Node';
+                    deployModeElement.className = 'badge badge-blue';
+                } else {
+                    deployModeElement.textContent = 'Multi Node';
+                    deployModeElement.className = 'badge badge-green';
+                }
+            }
+            
+            // Update coordinator host information
+            const coordinatorElement = document.querySelector('.dashboard-card.info-card .info-grid .info-item:nth-child(2) .info-value');
+            if (coordinatorElement) {
+                if (params.DEPLOY_TYPE === 'single') {
+                    // Single mode: always use configuration from params
+                    coordinatorElement.innerHTML = '<strong>' + (params.COORDINATOR_HOSTNAME || 'Not configured') + '</strong> (' + (params.COORDINATOR_IP || 'Not configured') + ')';
+                } else {
+                    // Multi mode: use hosts configuration but check consistency with params
+                    if (hosts.coordinator && hosts.coordinator.length >= 2) {
+                        const hostname = hosts.coordinator[1];
+                        const ip = hosts.coordinator[0];
+                        let html = '<strong>' + hostname + '</strong> (' + ip + ')';
+                        
+                        // Check for consistency
+                        if (hostname !== (params.COORDINATOR_HOSTNAME || '') || ip !== (params.COORDINATOR_IP || '')) {
+                            html += ' <span class="warning-icon" title="Coordinator configuration mismatch detected!">⚠️</span>';
+                        }
+                        
+                        coordinatorElement.innerHTML = html;
+                    } else {
+                        coordinatorElement.innerHTML = 'Not configured';
+                    }
+                }
+            }
+            
+            // Update mirror status display
+            const mirrorStatusElement = document.querySelector('.dashboard-card.info-card .info-grid .info-item:nth-child(3) .info-value');
+            if (mirrorStatusElement) {
+                if (params.WITH_MIRROR === 'true') {
+                    const primaryCount = data.data_dirs ? data.data_dirs.length : 0;
+                    const mirrorCount = data.mirror_dirs ? data.mirror_dirs.length : 0;
+                    
+                    let html = '<span class="badge badge-purple">Enabled</span>' +
+                        '<span class="mirror-count-info">' +
+                        ' (Primary: ' + primaryCount +
+                        ', Mirror: ' + mirrorCount + ')';
+                        
+                    // Check for count consistency
+                    if (primaryCount !== mirrorCount) {
+                        html += ' <span class="warning-icon" title="Primary and mirror count mismatch detected!">⚠️</span>';
+                    }
+                    
+                    html += '</span>';
+                    mirrorStatusElement.innerHTML = html;
+                } else {
+                    mirrorStatusElement.innerHTML = '<span class="badge badge-gray">Disabled</span>';
+                }
+            }
+            
+            // Update detailed configuration sections
+            // Coordinator details
+            const coordPortElement = document.querySelector('#coordinator-details .detail-item:nth-child(1) .detail-value');
+            if (coordPortElement) coordPortElement.textContent = params.COORDINATOR_PORT || 'Not configured';
+            
+            const coordDirElement = document.querySelector('#coordinator-details .detail-item:nth-child(2) .detail-value');
+            if (coordDirElement) coordDirElement.textContent = params.COORDINATOR_DIRECTORY || 'Not configured';
+            
+            // Segment details
+            const segDirElement = document.querySelector('#segment-details .detail-item:nth-child(1) .detail-value');
+            if (segDirElement) segDirElement.textContent = params.DATA_DIRECTORY || 'Not configured';
+            
+            const segPortElement = document.querySelector('#segment-details .detail-item:nth-child(2) .detail-value');
+            if (segPortElement) segPortElement.textContent = params.PORT_BASE || 'Not configured';
+            
+            const segCountElement = document.querySelector('#segment-details .detail-item:nth-child(3) .detail-value');
+            const segCount = data.data_dirs ? data.data_dirs.length : 0;
+            if (segCountElement) segCountElement.textContent = segCount;
+            
+            // Mirror details (if enabled)
+            if (params.WITH_MIRROR === 'true') {
+                const mirrorPortElement = document.querySelector('#mirror-details .detail-item:nth-child(1) .detail-value');
+                if (mirrorPortElement) mirrorPortElement.textContent = params.MIRROR_PORT_BASE || 'Not configured';
+                
+                const mirrorDirElement = document.querySelector('#mirror-details .detail-item:nth-child(2) .detail-value');
+                if (mirrorDirElement) mirrorDirElement.textContent = params.MIRROR_DATA_DIRECTORY || 'Not configured';
+                
+                const mirrorCountElement = document.querySelector('#mirror-details .detail-item:nth-child(3) .detail-value');
+                const mirrorCount = data.mirror_dirs ? data.mirror_dirs.length : 0;
+                if (mirrorCountElement) mirrorCountElement.textContent = mirrorCount;
+            }
+            
+            // Multi-node details (if in multi-node mode)
+            if (params.DEPLOY_TYPE === 'multi') {
+                const segmentHostsElement = document.querySelector('#multi-node-details .detail-item .detail-value');
+                if (segmentHostsElement) segmentHostsElement.textContent = (hosts.segments ? hosts.segments.length : 0) + ' configured';
+                
+                // Update segment hosts list
+                const segmentHostsList = document.querySelector('.segment-hosts-list ul');
+                if (segmentHostsList) {
+                    segmentHostsList.innerHTML = '';
+                    if (hosts.segments && hosts.segments.length > 0) {
+                        hosts.segments.forEach(segment => {
+                            const listItem = document.createElement('li');
+                            listItem.textContent = segment[1] + ' (' + segment[0] + ')';
+                            segmentHostsList.appendChild(listItem);
+                        });
+                    }
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error refreshing deployment information:', error);
+            alert('Failed to refresh deployment information. Please try again.');
+        });
 }

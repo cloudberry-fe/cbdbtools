@@ -241,6 +241,23 @@ def index_with_tab(tab):
     
     return render_template('index.html', params=params, hosts=hosts, active_tab=tab, deployment_info=deployment_info)
 
+# New route to get deployment parameters
+@app.route('/get_deployment_params')
+def get_deployment_params():
+    params = read_parameters()
+    hosts = read_hosts()
+    
+    # Process data directories for mirror information
+    data_dirs = params.get('DATA_DIRECTORY', '').split() if params.get('DATA_DIRECTORY') else []
+    mirror_dirs = params.get('MIRROR_DATA_DIRECTORY', '').split() if params.get('MIRROR_DATA_DIRECTORY') else []
+    
+    return jsonify({
+        'params': params,
+        'hosts': hosts,
+        'data_dirs': data_dirs,
+        'mirror_dirs': mirror_dirs
+    })
+
 if __name__ == '__main__':
     # Ensure templates directory exists
     if not os.path.exists('templates'):

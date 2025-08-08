@@ -572,30 +572,13 @@
                                     <div class="detail-value">{{ hosts.segments|length }} configured</div>
                                 </div>
                             </div>
-
+                        
+                            <!-- 移除重复的Segment Hosts列表 -->
                             {% if hosts.segments %}
                             <div class="segment-hosts-list">
                                 <h5>Segment Hosts:</h5>
                                 <ul>
-                                    <!-- 现有代码保持不变 -->
-                                    
-                                    <!-- 多机模式下显示Segment Hosts信息 -->
-                                    {% if params.get('DEPLOY_TYPE', 'single') == 'multi' %}
-                                    <div class="info-item">
-                                        <div class="info-label">Segment Hosts:</div>
-                                        <div class="info-value">
-                                            {% if hosts.segments and hosts.segments|length > 0 %}
-                                                <ul class="segment-hosts-list">
-                                                    {% for segment in hosts.segments %}
-                                                    <li><strong>{{ segment[1] }}</strong> ({{ segment[0] }})</li>
-                                                    {% endfor %}
-                                                </ul>
-                                            {% else %}
-                                                No segment hosts configured
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                    {% endif %}
+                                    <!-- 清空这里的内容 -->
                                 </ul>
                             </div>
                             {% endif %}

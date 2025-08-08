@@ -734,3 +734,27 @@ h3 {
 .btn-primary:hover {
     background-color: #219653;
 }
+
+.segment-hosts-list {
+    margin-top: 10px;
+}
+
+.segment-hosts-list .segment-count {
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.segment-hosts-list ul {
+    list-style-type: none;
+    padding-left: 0;
+    margin-top: 5px;
+}
+
+.segment-hosts-list li {
+    padding: 3px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.segment-hosts-list li:last-child {
+    border-bottom: none;
+}
