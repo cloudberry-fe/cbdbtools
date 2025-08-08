@@ -288,6 +288,25 @@
             transition: border-color 0.3s;
         }
         
+        .input-group {
+            display: flex;
+            align-items: stretch;
+        }
+        
+        .input-group input {
+            border-radius: 4px 0 0 4px;
+            flex: 1;
+        }
+        
+        .input-group-append {
+            margin-left: -1px;
+        }
+        
+        .input-group .btn {
+            border-radius: 0 4px 4px 0;
+            height: 100%;
+        }
+        
         .form-group input:focus,
         .form-group select:focus,
         .form-group textarea:focus {
@@ -524,7 +543,7 @@
         
         <!-- Configuration Tab -->
         <div id="configuration" class="tabcontent {% if active_tab == 'configuration' or not active_tab %}active{% endif %}">
-            <form method="post" action="/save_params" id="configForm">
+            <form id="configForm" action="/save_params" method="post" enctype="multipart/form-data">
                 <!-- Deployment Mode Selector -->
                 <div class="mode-selector">
                     <h3><i class="fas fa-th-large"></i> Deployment Mode</h3>
@@ -564,8 +583,16 @@
                         
                         <div class="form-group required">
                             <label for="CLOUDBERRY_RPM">RPM Package Path:</label>
-                            <input type="text" id="CLOUDBERRY_RPM" name="CLOUDBERRY_RPM" 
-                                   value="{{ params.get('CLOUDBERRY_RPM', '/tmp/hashdata-lightning-release.rpm') }}" required>
+                            <div class="input-group">
+                                <input type="text" id="CLOUDBERRY_RPM" name="CLOUDBERRY_RPM"
+                                       value="{{ params.get('CLOUDBERRY_RPM', '/tmp/hashdata-lightning-release.rpm') }}" required>
+                                <div class="input-group-append">
+                                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('rpmFileUpload').click()">
+                                        <i class="fas fa-upload"></i> Upload
+                                    </button>
+                                </div>
+                            </div>
+                            <input type="file" id="rpmFileUpload" name="rpmFileUpload" style="display: none;" accept=".rpm">
                             <small class="form-text">Path to the RPM package file</small>
                         </div>
                         
@@ -747,8 +774,16 @@
                             <div class="form-group" id="keyfilePathGroup" 
                                    {% if params.get('SEGMENT_ACCESS_METHOD') != 'keyfile' %}style="display:none;"{% endif %}>
                                 <label for="SEGMENT_ACCESS_KEYFILE">Key File Path:</label>
-                                <input type="text" id="SEGMENT_ACCESS_KEYFILE" name="SEGMENT_ACCESS_KEYFILE" 
-                                       value="{{ params.get('SEGMENT_ACCESS_KEYFILE', '/tmp/keyfiles') }}">
+                                <div class="input-group">
+                                    <input type="text" id="SEGMENT_ACCESS_KEYFILE" name="SEGMENT_ACCESS_KEYFILE"
+                                           value="{{ params.get('SEGMENT_ACCESS_KEYFILE', '/tmp/keyfiles') }}">
+                                    <div class="input-group-append">
+                                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('keyFileUpload').click()">
+                                            <i class="fas fa-upload"></i> Upload
+                                        </button>
+                                    </div>
+                                </div>
+                                <input type="file" id="keyFileUpload" name="keyFileUpload" style="display: none;">
                             </div>
                             
                             <div class="form-group" id="passwordGroup" 
@@ -1034,6 +1069,60 @@
             document.getElementById(tabName).classList.add("active");
             evt.currentTarget.classList.add("active");
         }
+        
+        // Handle RPM file upload
+        document.getElementById('rpmFileUpload').addEventListener('change', function(e) {
+            if (this.files.length > 0) {
+                const file = this.files[0];
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('type', 'rpm');
+
+                fetch('/upload_file', {
+                    method: 'POST',
+                    body: formData
+                }).then(response => response.json())
+                  .then(data => {
+                      if (data.success) {
+                          document.getElementById('CLOUDBERRY_RPM').value = data.file_path;
+                          flashMessage('RPM file uploaded successfully!', 'success');
+                      } else {
+                          flashMessage('Failed to upload RPM file: ' + data.message, 'danger');
+                      }
+                  })
+                  .catch(error => {
+                      console.error('Error uploading RPM file:', error);
+                      flashMessage('Error uploading RPM file. Please try again.', 'danger');
+                  });
+            }
+        });
+
+        // Handle Key file upload
+        document.getElementById('keyFileUpload').addEventListener('change', function(e) {
+            if (this.files.length > 0) {
+                const file = this.files[0];
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('type', 'key');
+
+                fetch('/upload_file', {
+                    method: 'POST',
+                    body: formData
+                }).then(response => response.json())
+                  .then(data => {
+                      if (data.success) {
+                          document.getElementById('SEGMENT_ACCESS_KEYFILE').value = data.file_path;
+                          flashMessage('Key file uploaded successfully!', 'success');
+                      } else {
+                          flashMessage('Failed to upload Key file: ' + data.message, 'danger');
+                      }
+                  })
+                  .catch(error => {
+                      console.error('Error uploading Key file:', error);
+                      flashMessage('Error uploading Key file. Please try again.', 'danger');
+                  });
+            }
+        });
         
         // Set deployment mode
         function setDeploymentMode(mode) {

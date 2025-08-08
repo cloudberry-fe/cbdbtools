@@ -214,10 +214,30 @@ def deployment_logs():
 @app.route('/save_params', methods=['POST'])
 def save_params():
     try:
+        # 获取表单数据
         params = request.form.to_dict()
+
+        # 如果有上传的RPM文件路径，使用上传的路径
+        if 'CLOUDBERRY_RPM' in params and params['CLOUDBERRY_RPM']:
+            # 确保路径存在
+            if os.path.exists(params['CLOUDBERRY_RPM']):
+                print(f'Using uploaded RPM file: {params["CLOUDBERRY_RPM"]}')
+            else:
+                flash(f'Warning: RPM file path does not exist: {params["CLOUDBERRY_RPM"]}')
+
+        # 如果有上传的Key文件路径，使用上传的路径
+        if 'SEGMENT_ACCESS_KEYFILE' in params and params['SEGMENT_ACCESS_KEYFILE']:
+            # 确保路径存在
+            if os.path.exists(params['SEGMENT_ACCESS_KEYFILE']):
+                print(f'Using uploaded Key file: {params["SEGMENT_ACCESS_KEYFILE"]}')
+            else:
+                flash(f'Warning: Key file path does not exist: {params["SEGMENT_ACCESS_KEYFILE"]}')
+
+        # 保存参数
         save_parameters(params)
         flash('Configuration parameters saved successfully!')
-        # Get deployment type to determine redirect target
+
+        # 获取部署类型以确定重定向目标
         deploy_type = params.get('DEPLOY_TYPE', 'single')
         return redirect(url_for('index_with_tab', tab='hosts' if deploy_type == 'multi' else 'deploy'))
     except Exception as e:
@@ -283,6 +303,44 @@ def get_deployment_params():
         'data_dirs': data_dirs,
         'mirror_dirs': mirror_dirs
     })
+
+# 文件上传配置
+UPLOAD_FOLDER = '/tmp/uploads'
+ALLOWED_RPM_EXTENSIONS = {'rpm'}
+ALLOWED_KEY_EXTENSIONS = {'pem', 'key', 'pub'}
+
+# 确保上传目录存在
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# 检查文件扩展名
+def allowed_file(filename, file_type):
+    if file_type == 'rpm':
+        return '.' in filename and \
+               filename.rsplit('.', 1)[1].lower() in ALLOWED_RPM_EXTENSIONS
+    elif file_type == 'key':
+        return '.' in filename and \
+               filename.rsplit('.', 1)[1].lower() in ALLOWED_KEY_EXTENSIONS
+    return False
+
+# 文件上传路由
+@app.route('/upload_file', methods=['POST'])
+def upload_file():
+    if 'file' not in request.files:
+        return jsonify({'success': False, 'message': 'No file part'})
+
+    file = request.files['file']
+    file_type = request.form.get('type', '')
+
+    if file.filename == '':
+        return jsonify({'success': False, 'message': 'No selected file'})
+
+    if file and allowed_file(file.filename, file_type):
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(UPLOAD_FOLDER, filename)
+        file.save(file_path)
+        return jsonify({'success': True, 'file_path': file_path})
+
+    return jsonify({'success': False, 'message': 'Invalid file type'})
 
 if __name__ == '__main__':
     # Ensure templates directory exists
