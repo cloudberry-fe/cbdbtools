@@ -176,7 +176,8 @@ def deployment_status():
         return jsonify({
             'running': DEPLOYMENT_STATUS['running'],
             'log_file': DEPLOYMENT_STATUS['log_file'],
-            'start_time': DEPLOYMENT_STATUS['start_time']
+            'start_time': DEPLOYMENT_STATUS['start_time'],
+            'success': DEPLOYMENT_STATUS['success']  # 返回成功状态
         })
 
 # New route to get deployment logs
@@ -270,7 +271,9 @@ if __name__ == '__main__':
 DEPLOYMENT_STATUS = {
     'running': False,
     'log_file': None,
-    'start_time': None
+    'start_time': None,
+    'pid': None,
+    'success': None  # 新增：跟踪部署是否成功
 }
 
 # Lock for thread safety
@@ -338,12 +341,21 @@ def start_background_deployment(cluster_type='single'):
         
         DEPLOYMENT_STATUS['pid'] = process.pid
         
-        def monitor_process():
+        def monitor_process(process, log_file):
             process.wait()
             with DEPLOYMENT_LOCK:
                 DEPLOYMENT_STATUS['running'] = False
+                # 检查部署是否成功
+                try:
+                    with open(log_file, 'r') as f:
+                        log_content = f.read()
+                        # 根据日志内容判断部署是否成功
+                        # 这里需要根据实际部署脚本的成功/失败标志进行调整
+                        DEPLOYMENT_STATUS['success'] = 'deployment completed successfully' in log_content.lower()
+                except:
+                    DEPLOYMENT_STATUS['success'] = None
         
-        monitor_thread = threading.Thread(target=monitor_process)
+        monitor_thread = threading.Thread(target=monitor_process, args=(process, log_file))
         monitor_thread.daemon = True
         monitor_thread.start()
         
