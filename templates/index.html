@@ -1181,22 +1181,10 @@
                 // 提交表单
                 document.getElementById('deployForm').submit();
                 
-                return true;
-            }
-            return false;
-        }
-
-        // 简化部署状态检查函数
-        function checkDeploymentStatus() {
-            fetch('/deployment_status')
-                .then(response => response.json())
-                .then(data => {
-                    const deployButton = document.getElementById('deployButton');
-                    const deploymentStatus = document.getElementById('deploymentStatus');
-                    
-                    // 只有在部署已开始的情况下才更新UI
-                    if (window.deploymentStarted) {
-                        // 如果有日志文件信息，显示日志文件路径
+                // 获取并显示日志文件路径
+                fetch('/deployment_status')
+                    .then(response => response.json())
+                    .then(data => {
                         if (data.log_file) {
                             // 在状态区域顶部显示日志文件路径
                             let logPathElement = deploymentStatus.querySelector('.log-path-info');
@@ -1208,62 +1196,27 @@
                                     '<small>You can check this file for detailed deployment progress.</small>';
                                 deploymentStatus.insertBefore(logPathElement, deploymentStatus.firstChild);
                             }
-                            
-                            // 刷新日志内容
-                            refreshLogs();
                         }
                         
-                        // 显示部署状态区域
-                        deploymentStatus.classList.remove('hidden');
-                        
-                        // 如果部署仍在运行，继续定期检查
-                        if (data.running) {
-                            deployButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deployment running...';
-                            setTimeout(checkDeploymentStatus, 3000); // 3秒后再次检查
-                        } else {
-                            // 部署完成，重新启用按钮
-                            deployButton.disabled = false;
-                            deployButton.innerHTML = '<i class="fas fa-rocket"></i> Deploy Cluster';
-                        }
-                    }
-                })
-                .catch(error => {
-                    console.error('Error checking deployment status:', error);
-                    // 出错时也重新启用按钮
-                    const deployButton = document.getElementById('deployButton');
-                    deployButton.disabled = false;
-                    deployButton.innerHTML = '<i class="fas fa-rocket"></i> Deploy Cluster';
-                });
+                        // 部署完成，重新启用按钮
+                        deployButton.disabled = false;
+                        deployButton.innerHTML = '<i class="fas fa-rocket"></i> Deploy Cluster';
+                    })
+                    .catch(error => {
+                        console.error('Error getting deployment status:', error);
+                        // 出错时也重新启用按钮
+                        deployButton.disabled = false;
+                        deployButton.innerHTML = '<i class="fas fa-rocket"></i> Deploy Cluster';
+                    });
+                
+                return true;
+            }
+            return false;
         }
 
-        // 简化日志刷新函数
-        function refreshLogs() {
-            // 只有在部署已开始的情况下才尝试刷新日志
-            if (!window.deploymentStarted) {
-                return;
-            }
-            
-            fetch('/deployment_logs')
-                .then(response => response.json())
-                .then(data => {
-                    const logContainer = document.getElementById('deploymentLog');
-                    if (logContainer) {
-                        if (data.logs) {
-                            logContainer.textContent = data.logs;
-                            logContainer.scrollTop = logContainer.scrollHeight;
-                        } else {
-                            logContainer.textContent = 'No log content yet...';
-                        }
-                    }
-                })
-                .catch(error => {
-                    console.error('Error retrieving logs:', error);
-                    const logContainer = document.getElementById('deploymentLog');
-                    if (logContainer) {
-                        logContainer.textContent = 'Failed to retrieve logs. Please refresh the page to try again.';
-                    }
-                });
-        }
+
+
+
         
         // Initialize deployment status check on page load
         document.addEventListener('DOMContentLoaded', function() {
@@ -1305,11 +1258,8 @@
                 }
             }
             
-            // Check deployment status immediately
-            checkDeploymentStatus();
-            
-            // Set up periodic status checking
-            setInterval(checkDeploymentStatus, 5000); // Check every 5 seconds
+            // 移除页面加载时的自动状态检查
+            // 移除定期状态检查
         });
     </script>
 </body>
