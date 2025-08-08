@@ -343,8 +343,13 @@ function openDetailsTab(evt, tabName) {
     }
 
     // Show the selected tab content and mark button as active
-    document.getElementById(tabName).classList.add("active");
-    evt.currentTarget.classList.add("active");
+    const selectedTab = document.getElementById(tabName);
+    if (selectedTab) {
+        selectedTab.classList.add("active");
+        evt.currentTarget.classList.add("active");
+    } else {
+        console.error(`Tab content with id '${tabName}' not found`);
+    }
 }
 
 // Improved function to refresh deployment information

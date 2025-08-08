@@ -525,9 +525,10 @@
                             {% if params.get('WITH_MIRROR', 'false') == 'true' %}
                             <button class="tab-btn" onclick="openDetailsTab(event, 'mirror-details')">Mirror</button>
                             {% endif %}
-                            {% if params.get('DEPLOY_TYPE', 'single') == 'multi' %}
+                            <!-- 删除Multi-Node Tab按钮 -->
+                            <!-- {% if params.get('DEPLOY_TYPE', 'single') == 'multi' %}
                             <button class="tab-btn" onclick="openDetailsTab(event, 'multi-node-details')">Multi-Node</button>
-                            {% endif %}
+                            {% endif %} -->
                         </div>
 
                         <!-- Coordinator Details -->
@@ -583,7 +584,7 @@
                         {% endif %}
 
                         <!-- Multi-Node Details -->
-                        {% if params.get('DEPLOY_TYPE', 'single') == 'multi' %}
+                        <!-- {% if params.get('DEPLOY_TYPE', 'single') == 'multi' %}
                         <div id="multi-node-details" class="details-tabcontent">
                             <div class="details-grid">
                                 <div class="detail-item">
@@ -594,7 +595,7 @@
                         
                             <!-- 移除重复的Segment Hosts列表 -->
                         </div>
-                        {% endif %}
+                        {% endif %} -->
                     </div>
                 </div>
             </div>
