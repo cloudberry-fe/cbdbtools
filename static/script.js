@@ -509,3 +509,30 @@ function refreshDeploymentInfo() {
 // After refreshing deployment info, update deploy button status
 updateDeployButtonStatus();
 }
+
+// 更可靠的选项卡切换函数，不依赖event参数
+function switchTab(tabName) {
+    // 隐藏所有tabcontent
+    const tabContents = document.getElementsByClassName('tabcontent');
+    for (let i = 0; i < tabContents.length; i++) {
+        tabContents[i].classList.remove('active');
+    }
+    
+    // 移除所有tablinks的active类
+    const tabLinks = document.getElementsByClassName('tablinks');
+    for (let i = 0; i < tabLinks.length; i++) {
+        tabLinks[i].classList.remove('active');
+    }
+    
+    // 显示目标选项卡内容
+    const targetContent = document.getElementById(tabName);
+    if (targetContent) {
+        targetContent.classList.add('active');
+    }
+    
+    // 激活对应的选项卡按钮
+    const targetButton = document.querySelector(`button[onclick*="${tabName}"]`);
+    if (targetButton) {
+        targetButton.classList.add('active');
+    }
+}
