@@ -334,22 +334,39 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Function to check warnings and update deploy button status
 function updateDeployButtonStatus() {
-    const deployButton = document.querySelector('.deploy-action-container button');
-    const warningsContainer = document.querySelector('.warnings-card');
+    // 使用更具体的选择器确保找到按钮
+    const deployButton = document.querySelector('.deploy-action-container .btn.btn-primary');
+    // 直接检查警告元素
     const warningItems = document.querySelectorAll('.warning-item');
 
-    if (warningItems.length > 0) {
-        // There are warnings, disable the button
-        deployButton.disabled = true;
-        deployButton.classList.add('disabled');
-        deployButton.title = 'Please resolve all warnings before deploying';
+    if (deployButton) {
+        if (warningItems.length > 0) {
+            // There are warnings, disable the button
+            deployButton.disabled = true;
+            deployButton.classList.add('disabled');
+            deployButton.title = 'Please resolve all warnings before deploying';
+        } else {
+            // No warnings, enable the button
+            deployButton.disabled = false;
+            deployButton.classList.remove('disabled');
+            deployButton.title = 'Start cluster deployment';
+        }
     } else {
-        // No warnings, enable the button
-        deployButton.disabled = false;
-        deployButton.classList.remove('disabled');
-        deployButton.title = 'Start cluster deployment';
+        console.error('Deploy button not found');
     }
 }
+
+// 确保在页面加载后立即检查警告状态
+window.addEventListener('load', function() {
+    // 延迟一点时间，确保警告元素已经渲染
+    setTimeout(updateDeployButtonStatus, 100);
+});
+
+// 同时保留原有的DOMContentLoaded事件监听
+document.addEventListener('DOMContentLoaded', function() {
+    initializePage();
+    updateDeployButtonStatus();
+});
 
 // Improved function to refresh deployment information
 function refreshDeploymentInfo() {
