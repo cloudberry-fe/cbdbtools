@@ -326,34 +326,30 @@ function initializePage() {
 }
 
 // Initialize the page when DOM is fully loaded
-document.addEventListener('DOMContentLoaded', initializePage);
+document.addEventListener('DOMContentLoaded', function() {
+    initializePage();
+    // Check warnings and update deploy button status
+    updateDeployButtonStatus();
+});
 
-// Remove the following function as it's no longer used
-/*
-// Function to open details tabs in deploy section
-function openDetailsTab(evt, tabName) {
-    // Hide all tab contents
-    const tabcontents = document.getElementsByClassName("details-tabcontent");
-    for (let i = 0; i < tabcontents.length; i++) {
-        tabcontents[i].classList.remove("active");
-    }
+// Function to check warnings and update deploy button status
+function updateDeployButtonStatus() {
+    const deployButton = document.querySelector('.deploy-action-container button');
+    const warningsContainer = document.querySelector('.warnings-card');
+    const warningItems = document.querySelectorAll('.warning-item');
 
-    // Remove active class from all tab buttons
-    const tabbuttons = document.getElementsByClassName("tab-btn");
-    for (let i = 0; i < tabbuttons.length; i++) {
-        tabbuttons[i].classList.remove("active");
-    }
-
-    // Show the selected tab content and mark button as active
-    const selectedTab = document.getElementById(tabName);
-    if (selectedTab) {
-        selectedTab.classList.add("active");
-        evt.currentTarget.classList.add("active");
+    if (warningItems.length > 0) {
+        // There are warnings, disable the button
+        deployButton.disabled = true;
+        deployButton.classList.add('disabled');
+        deployButton.title = 'Please resolve all warnings before deploying';
     } else {
-        console.error(`Tab content with id '${tabName}' not found`);
+        // No warnings, enable the button
+        deployButton.disabled = false;
+        deployButton.classList.remove('disabled');
+        deployButton.title = 'Start cluster deployment';
     }
 }
-*/
 
 // Improved function to refresh deployment information
 function refreshDeploymentInfo() {
@@ -482,4 +478,8 @@ function refreshDeploymentInfo() {
             console.error('Error refreshing deployment information:', error);
             alert('Failed to refresh deployment information. Please try again.');
         });
+}
+
+// After refreshing deployment info, update deploy button status
+updateDeployButtonStatus();
 }

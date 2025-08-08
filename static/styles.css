@@ -666,6 +666,12 @@ h3 {
     transition: all 0.3s;
 }
 
+.btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
 .tab-btn.active {
     color: var(--secondary-color);
     border-bottom-color: var(--secondary-color);

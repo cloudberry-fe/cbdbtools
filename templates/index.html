@@ -526,12 +526,12 @@
                             <h4><i class="fas fa-server"></i> Coordinator</h4>
                             <div class="details-grid">
                                 <div class="detail-item">
-                                    <div class="detail-label">Port:</div>
-                                    <div class="detail-value">{{ params.get('COORDINATOR_PORT', 'Not configured') }}</div>
-                                </div>
-                                <div class="detail-item">
                                     <div class="detail-label">Directory:</div>
                                     <div class="detail-value word-break">{{ params.get('COORDINATOR_DIRECTORY', 'Not configured') }}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Port:</div>
+                                    <div class="detail-value">{{ params.get('COORDINATOR_PORT', 'Not configured') }}</div>
                                 </div>
                             </div>
                         </div>
@@ -561,12 +561,12 @@
                             <h4><i class="fas fa-sync-alt"></i> Mirror</h4>
                             <div class="details-grid">
                                 <div class="detail-item">
-                                    <div class="detail-label">Port Base:</div>
-                                    <div class="detail-value">{{ params.get('MIRROR_PORT_BASE', 'Not configured') }}</div>
-                                </div>
-                                <div class="detail-item">
                                     <div class="detail-label">Data Directory:</div>
                                     <div class="detail-value word-break">{{ params.get('MIRROR_DATA_DIRECTORY', 'Not configured') }}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Port Base:</div>
+                                    <div class="detail-value">{{ params.get('MIRROR_PORT_BASE', 'Not configured') }}</div>
                                 </div>
                                 <div class="detail-item">
                                     <div class="detail-label">Mirrors per Host:</div>
