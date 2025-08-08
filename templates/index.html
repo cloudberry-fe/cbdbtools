@@ -795,17 +795,29 @@
                 alert('Please resolve all warnings before deploying the cluster.');
                 return false;
             }
-            
+        
             if (confirm('Are you sure you want to deploy the cluster? This may take several minutes.')) {
                 // Show deployment status area
                 document.getElementById('deploymentStatus').classList.remove('hidden');
-                
-                // Start checking deployment status
-                checkDeploymentStatus();
-                
+        
+                // 发送部署请求到服务器
+                fetch('/start_deployment', {
+                    method: 'POST'
+                })
+                .then(response => response.ok ? response : Promise.reject(response))
+                .then(() => {
+                    console.log('Deployment started successfully');
+                    // Start checking deployment status
+                    checkDeploymentStatus();
+                })
+                .catch(error => {
+                    console.error('Failed to start deployment:', error);
+                    alert('Failed to start deployment. Please try again.');
+                });
+        
                 // Set up periodic status checking
                 setInterval(checkDeploymentStatus, 5000); // Check every 5 seconds
-                
+        
                 return true;
             }
             return false;

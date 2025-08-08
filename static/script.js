@@ -1,14 +1,18 @@
 // Tab switching
 function openTab(evt, tabName) {
-    var i, tabcontent, tablinks;
-    tabcontent = document.getElementsByClassName("tabcontent");
-    for (i = 0; i < tabcontent.length; i++) {
+    // 隐藏所有选项卡内容
+    var tabcontent = document.getElementsByClassName("tabcontent");
+    for (var i = 0; i < tabcontent.length; i++) {
         tabcontent[i].classList.remove("active");
     }
-    tablinks = document.getElementsByClassName("tablinks");
-    for (i = 0; i < tablinks.length; i++) {
+
+    // 移除所有选项卡按钮的active类
+    var tablinks = document.getElementsByClassName("tablinks");
+    for (var i = 0; i < tablinks.length; i++) {
         tablinks[i].classList.remove("active");
     }
+
+    // 显示当前选项卡内容并添加active类
     document.getElementById(tabName).classList.add("active");
     evt.currentTarget.classList.add("active");
 }
