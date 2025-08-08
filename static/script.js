@@ -177,16 +177,23 @@ function refreshLogs() {
 
 // Start deployment with confirmation
 function startDeployment() {
+    // Check for warnings before proceeding
+    const warningItems = document.querySelectorAll('.warning-item');
+    if (warningItems.length > 0) {
+        alert('Please resolve all warnings before deploying the cluster.');
+        return false;
+    }
+    
     if (confirm('Are you sure you want to deploy the cluster? This may take several minutes.')) {
         // Show deployment status area
         document.getElementById('deploymentStatus').classList.remove('hidden');
-
+        
         // Start checking deployment status
         checkDeploymentStatus();
-
+        
         // Set up periodic status checking
         setInterval(checkDeploymentStatus, 5000); // Check every 5 seconds
-
+        
         return true;
     }
     return false;
@@ -334,9 +341,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Function to check warnings and update deploy button status
 function updateDeployButtonStatus() {
-    // 使用更具体的选择器确保找到按钮
-    const deployButton = document.querySelector('.deploy-action-container .btn.btn-primary');
-    // 直接检查警告元素
+    // Use the correct selector to find the button
+    const deployButton = document.getElementById('deployButton');
+    // Check for warning items
     const warningItems = document.querySelectorAll('.warning-item');
 
     if (deployButton) {
@@ -356,16 +363,10 @@ function updateDeployButtonStatus() {
     }
 }
 
-// 确保在页面加载后立即检查警告状态
+// Ensure warnings are checked when the page loads
 window.addEventListener('load', function() {
-    // 延迟一点时间，确保警告元素已经渲染
+    // Delay slightly to ensure warning elements have rendered
     setTimeout(updateDeployButtonStatus, 100);
-});
-
-// 同时保留原有的DOMContentLoaded事件监听
-document.addEventListener('DOMContentLoaded', function() {
-    initializePage();
-    updateDeployButtonStatus();
 });
 
 // Improved function to refresh deployment information
