@@ -582,9 +582,88 @@
             <!-- Deployment Action Button -->
             <div class="deploy-action-container">
                 <p>Click the button below to start the cluster deployment. This process may take several minutes.</p>
-                <button type="button" id="deployButton" class="btn btn-primary" onclick="startDeployment()" disabled>
-                    <i class="fas fa-play"></i> Deploy Cluster
-                </button>
+                // 保留完整的警告检查逻辑
+                function startDeployment() {
+                    // Check for warnings before proceeding
+                    const warningItems = document.querySelectorAll('.warning-item');
+                    if (warningItems.length > 0) {
+                        alert('Please resolve all warnings before deploying the cluster.');
+                        return false;
+                    }
+                
+                    if (confirm('Are you sure you want to deploy the cluster? This may take several minutes.')) {
+                        // Show deployment status area
+                        document.getElementById('deploymentStatus').classList.remove('hidden');
+                    
+                        // 发送部署请求到服务器
+                        fetch('/start_deployment', {
+                            method: 'POST'
+                        })
+                        .then(response => response.ok ? response : Promise.reject(response))
+                        .then(() => {
+                            console.log('Deployment started successfully');
+                            // Start checking deployment status
+                            checkDeploymentStatus();
+                        })
+                        .catch(error => {
+                            console.error('Failed to start deployment:', error);
+                            alert('Failed to start deployment. Please try again.');
+                        });
+                    
+                        // Set up periodic status checking
+                        setInterval(checkDeploymentStatus, 5000); // Check every 5 seconds
+                    
+                        return true;
+                    }
+                    return false;
+                }
+        
+                // Initialize deployment status check on page load
+                document.addEventListener('DOMContentLoaded', function() {
+                    // Handle configuration form submission
+                    const configForm = document.getElementById('configForm');
+                    if (configForm) {
+                        configForm.addEventListener('submit', function(e) {
+                            // Let the form submit normally to the server
+                            // Server will redirect to appropriate tab based on deployment mode
+                        });
+                    }
+                    
+                    // Handle hosts form submission
+                    const hostsForm = document.getElementById('hostsForm');
+                    if (hostsForm) {
+                        hostsForm.addEventListener('submit', function(e) {
+                            // Let the form submit normally to the server
+                            // Server will redirect to deploy tab
+                        });
+                    }
+                    
+                    // Set initial active tab based on URL parameter
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const tabParam = urlParams.get('tab');
+                    if (tabParam) {
+                        // Find the tab button and content
+                        const tabButton = document.querySelector(`.tablinks[onclick*="'${tabParam}'"]`);
+                        const tabContent = document.getElementById(tabParam);
+                        
+                        if (tabButton && tabContent) {
+                            // Remove active class from all tabs
+                            document.querySelectorAll('.tablinks, .tabcontent').forEach(el => {
+                                el.classList.remove('active');
+                            });
+                            
+                            // Add active class to the target tab
+                            tabButton.classList.add('active');
+                            tabContent.classList.add('active');
+                        }
+                    }
+                    
+                    // Check deployment status immediately
+                    checkDeploymentStatus();
+                    
+                    // Set up periodic status checking
+                    setInterval(checkDeploymentStatus, 5000); // Check every 5 seconds
+                });
             </div>
 
             <!-- Deployment Status and Logs -->
