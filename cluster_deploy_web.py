@@ -121,6 +121,13 @@ def index():
         'log_file': None,
         'start_time': None
     }
+    
+    # 获取当前部署状态
+    with DEPLOYMENT_LOCK:
+        deployment_info['running'] = DEPLOYMENT_STATUS['running']
+        deployment_info['log_file'] = DEPLOYMENT_STATUS['log_file']
+        deployment_info['start_time'] = DEPLOYMENT_STATUS['start_time']
+    
     return render_template('index.html', params=params, hosts=hosts, deployment_info=deployment_info)
 
 @app.route('/save', methods=['POST'])
