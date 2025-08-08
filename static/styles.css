@@ -519,12 +519,43 @@ h3 {
 }
 
 /* Dashboard and Cards */
-/* 部署仪表板样式 */
+/* Segment Hosts List Styles */
+.segment-hosts-list {
+    margin-top: 8px;
+    max-height: 150px;
+    overflow-y: auto;
+    border: 1px solid #e1e8ed;
+    border-radius: 4px;
+    padding: 8px;
+    background-color: #f8f9fa;
+}
+
+.segment-hosts-list ul {
+    list-style-type: none;
+    padding-left: 0;
+    margin: 0;
+}
+
+.segment-hosts-list li {
+    padding: 4px 0;
+    border-bottom: 1px solid #e1e8ed;
+}
+
+.segment-hosts-list li:last-child {
+    border-bottom: none;
+}
+
+/* Warning card positioning */
+.warnings-card {
+    order: -1; /* This will make it appear first in the flex container */
+    margin-bottom: 20px;
+}
+
+/* Dashboard container for vertical layout */
 .dashboard-container {
     display: flex;
     flex-direction: column;
     gap: 20px;
-    margin-bottom: 30px;
 }
 
 @media (max-width: 768px) {

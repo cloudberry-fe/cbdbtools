@@ -434,6 +434,25 @@
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- Add Segment Hosts information for Multi-Node mode -->
+                        {% if params.get('DEPLOY_TYPE', 'single') == 'multi' %}
+                        <div class="info-item">
+                            <div class="info-label">Segment Hosts:</div>
+                            <div class="info-value">
+                                <span>{{ hosts.segments|length }} configured</span>
+                                {% if hosts.segments %}
+                                <div class="segment-hosts-list">
+                                    <ul>
+                                        {% for segment in hosts.segments %}
+                                        <li>{{ segment[1] }} ({{ segment[0] }})</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
 
@@ -574,14 +593,6 @@
                             </div>
                         
                             <!-- 移除重复的Segment Hosts列表 -->
-                            {% if hosts.segments %}
-                            <div class="segment-hosts-list">
-                                <h5>Segment Hosts:</h5>
-                                <ul>
-                                    <!-- 清空这里的内容 -->
-                                </ul>
-                            </div>
-                            {% endif %}
                         </div>
                         {% endif %}
                     </div>
