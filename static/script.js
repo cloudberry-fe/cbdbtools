@@ -325,14 +325,14 @@ document.addEventListener('DOMContentLoaded', initializePage);
 // Function to open details tabs in deploy section
 function openDetailsTab(evt, tabName) {
     // Hide all tab contents
-    var tabcontents = document.getElementsByClassName("details-tabcontent");
-    for (var i = 0; i < tabcontents.length; i++) {
+    const tabcontents = document.getElementsByClassName("details-tabcontent");
+    for (let i = 0; i < tabcontents.length; i++) {
         tabcontents[i].classList.remove("active");
     }
 
     // Remove active class from all tab buttons
-    var tabbuttons = document.getElementsByClassName("tab-btn");
-    for (var i = 0; i < tabbuttons.length; i++) {
+    const tabbuttons = document.getElementsByClassName("tab-btn");
+    for (let i = 0; i < tabbuttons.length; i++) {
         tabbuttons[i].classList.remove("active");
     }
 
