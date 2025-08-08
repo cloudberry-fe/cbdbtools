@@ -340,3 +340,14 @@ function openDetailsTab(evt, tabName) {
     document.getElementById(tabName).classList.add("active");
     evt.currentTarget.classList.add("active");
 }
+
+// 添加刷新部署信息的函数
+function refreshDeploymentInfo() {
+    // 这里模拟从服务器获取最新部署信息的逻辑
+    // 在实际应用中，应该使用fetch调用API获取最新数据
+    console.log('Refreshing deployment information...');
+    
+    // 重新加载页面或更新DOM元素
+    // 对于本示例，我们简单地重新初始化页面
+    initializePage();
+}
