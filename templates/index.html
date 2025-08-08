@@ -789,6 +789,13 @@
         
         // Start deployment with confirmation
         function startDeployment() {
+            // Check for warnings before proceeding
+            const warningItems = document.querySelectorAll('.warning-item');
+            if (warningItems.length > 0) {
+                alert('Please resolve all warnings before deploying the cluster.');
+                return false;
+            }
+            
             if (confirm('Are you sure you want to deploy the cluster? This may take several minutes.')) {
                 // Show deployment status area
                 document.getElementById('deploymentStatus').classList.remove('hidden');

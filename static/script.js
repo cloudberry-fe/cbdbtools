@@ -369,6 +369,8 @@ window.addEventListener('load', function() {
     setTimeout(updateDeployButtonStatus, 100);
 });
 
+// Also call this function after refreshing deployment info
+// (We'll modify the refreshDeploymentInfo function to call it at the end)
 // Improved function to refresh deployment information
 function refreshDeploymentInfo() {
     console.log('Refreshing deployment information...');
@@ -491,10 +493,15 @@ function refreshDeploymentInfo() {
                     }
                 }
             }
+            
+            // Update deploy button status after refreshing info
+            updateDeployButtonStatus();
         })
         .catch(error => {
             console.error('Error refreshing deployment information:', error);
             alert('Failed to refresh deployment information. Please try again.');
+            // Update deploy button status even if there's an error
+            updateDeployButtonStatus();
         });
 }
 
