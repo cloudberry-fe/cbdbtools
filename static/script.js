@@ -245,10 +245,10 @@ function initializePage() {
                 // Determine target tab based on deployment mode
                 if (deployType === 'multi') {
                     // Multi-node mode: navigate to hosts tab
-                    openTab(event, 'hosts');
+                    switchTab('hosts');
                 } else {
                     // Single node mode: navigate directly to deploy tab
-                    openTab(event, 'deploy');
+                    switchTab('deploy');
                 }
             })
             .catch(error => {
@@ -271,20 +271,17 @@ function initializePage() {
                 body: new FormData(hostsForm)
             }})
             .then(response => response.ok ? response : Promise.reject(response))
-            .then(() => {{
+            .then(() => {
                 // 调用刷新部署信息函数
                 refreshDeploymentInfo();
                 
                 // Navigate to deploy tab after saving hosts configuration
-                const deployButton = document.querySelector('button[onclick="openTab(event, \'deploy\')"]');
-                if (deployButton) {{
-                    deployButton.click();
-                }}
-            }})
-            .catch(error => {{
+                switchTab('deploy');
+            })
+            .catch(error => {
                 console.error('Form submission failed:', error);
                 alert('Failed to save hosts configuration. Please try again.');
-            }});
+            });
         });
     }
 
@@ -510,7 +507,7 @@ function refreshDeploymentInfo() {
 updateDeployButtonStatus();
 }
 
-// 更可靠的选项卡切换函数，不依赖event参数
+// 不依赖event参数的选项卡切换函数
 function switchTab(tabName) {
     // 隐藏所有tabcontent
     const tabContents = document.getElementsByClassName('tabcontent');
@@ -531,7 +528,15 @@ function switchTab(tabName) {
     }
     
     // 激活对应的选项卡按钮
-    const targetButton = document.querySelector(`button[onclick*="${tabName}"]`);
+    let targetButton;
+    if (tabName === 'configuration') {
+        targetButton = document.querySelector('button[onclick="openTab(event, \'configuration\')"]');
+    } else if (tabName === 'hosts') {
+        targetButton = document.querySelector('button[onclick="openTab(event, \'hosts\')"]');
+    } else if (tabName === 'deploy') {
+        targetButton = document.querySelector('button[onclick="openTab(event, \'deploy\')"]');
+    }
+    
     if (targetButton) {
         targetButton.classList.add('active');
     }
