@@ -335,10 +335,15 @@ function initializePage() {
 // Initialize the page when DOM is fully loaded
 document.addEventListener('DOMContentLoaded', function() {
     initializePage();
-    // Check warnings and update deploy button status
-    updateDeployButtonStatus();
 });
 
+// Initialize the page when DOM is fully loaded
+document.addEventListener('DOMContentLoaded', function() {
+    initializePage();
+});
+
+// Remove the entire updateDeployButtonStatus function
+// Remove all calls to updateDeployButtonStatus()
 // Function to check warnings and update deploy button status
 function updateDeployButtonStatus() {
     // Use the correct selector to find the button
@@ -500,8 +505,6 @@ function refreshDeploymentInfo() {
         .catch(error => {
             console.error('Error refreshing deployment information:', error);
             alert('Failed to refresh deployment information. Please try again.');
-            // Update deploy button status even if there's an error
-            updateDeployButtonStatus();
         });
 }
 
