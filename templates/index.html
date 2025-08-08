@@ -1183,45 +1183,65 @@
                 fetch('/deploy', {
                     method: 'POST',
                     body: new FormData(document.getElementById('deployForm'))
-                }).then(response => {
-                    // 表单提交成功后，等待2秒再获取日志文件路径
-                    setTimeout(() => {
-                        fetch('/deployment_status')
-                            .then(response => response.json())
-                            .then(data => {
-                                // 在状态区域显示日志文件路径
-                                deploymentStatus.innerHTML = '';
-                                let logPathElement = document.createElement('div');
-                                logPathElement.className = 'log-path-info';
-                                logPathElement.style.cssText = 'background-color: #e9ecef; padding: 10px; margin-bottom: 10px; border-radius: 4px;';
-                                
-                                if (data.log_file) {
-                                    logPathElement.innerHTML = `<strong>Deployment log file:</strong> ${data.log_file}<br>` +
-                                        '<small>You can check this file for detailed deployment progress.</small>';
-                                } else {
-                                    logPathElement.innerHTML = `<strong>Deployment log file:</strong> Log file path will be available shortly...<br>` +
-                                        '<small>Please wait a moment and refresh the page if needed.</small>';
-                                }
-                                
-                                deploymentStatus.appendChild(logPathElement);
-                            })
-                            .catch(error => {
-                                console.error('Error getting deployment status:', error);
-                                deploymentStatus.innerHTML = '<div class="text-danger">Error getting deployment status. Please refresh the page.</div>';
-                            });
-                    }, 2000); // 等待2秒
-                }).catch(error => {
-                    console.error('Error submitting deployment form:', error);
-                    deploymentStatus.innerHTML = '<div class="text-danger">Error starting deployment. Please try again.</div>';
-                }).finally(() => {
-                    // 无论成功失败，都重新启用按钮
-                    deployButton.disabled = false;
-                    deployButton.innerHTML = '<i class="fas fa-rocket"></i> Deploy Cluster';
-                });
+                }).then(response => response.json())
+                  .then(data => {
+                      if (data.success) {
+                          // 显示成功消息和日志文件路径
+                          deploymentStatus.innerHTML = '';
+                          let logPathElement = document.createElement('div');
+                          logPathElement.className = 'log-path-info';
+                          logPathElement.style.cssText = 'background-color: #e9ecef; padding: 10px; margin-bottom: 10px; border-radius: 4px;';
+                          
+                          // 获取当前工作目录（假设应用运行在cbdbtools目录下）
+                          const currentDir = window.location.origin.includes('localhost') ? "/Users/ryan/DEV/github/cbdbtools" : "/path/to/cbdbtools";
+                          const fullLogPath = `${currentDir}/${data.log_file}`;
+                          
+                          logPathElement.innerHTML = `<strong>Deployment log file:</strong> ${fullLogPath}<br>` +
+                              '<small>You can check this file for detailed deployment progress.</small>';
+                          deploymentStatus.appendChild(logPathElement);
+                          
+                          // 显示成功消息
+                          flashMessage(data.message, 'success');
+                      } else {
+                          // 显示错误消息
+                          deploymentStatus.innerHTML = `<div class="text-danger">${data.message}</div>`;
+                      }
+                  })
+                  .catch(error => {
+                      console.error('Error submitting deployment form:', error);
+                      deploymentStatus.innerHTML = '<div class="text-danger">Error starting deployment. Please try again.</div>';
+                  })
+                  .finally(() => {
+                      // 无论成功失败，都重新启用按钮
+                      deployButton.disabled = false;
+                      deployButton.innerHTML = '<i class="fas fa-rocket"></i> Deploy Cluster';
+                  });
                 
                 return true;
             }
             return false;
+        }
+
+        // 添加一个简单的消息显示函数
+        function flashMessage(message, type = 'info') {
+            const flashDiv = document.createElement('div');
+            flashDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            flashDiv.role = 'alert';
+            flashDiv.innerHTML = `
+                ${message}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            `;
+            
+            const container = document.querySelector('.container');
+            if (container) {
+                container.prepend(flashDiv);
+                // 3秒后自动关闭
+                setTimeout(() => {
+                    flashDiv.remove();
+                }, 3000);
+            }
         }
 
 

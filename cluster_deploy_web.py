@@ -170,7 +170,20 @@ def deploy():
     success, message = start_background_deployment(deploy_type)
     
     if success:
-        flash(f'Deployment started successfully!')
+        # 从message中提取日志文件名
+        log_file = message.split(': ')[-1] if ': ' in message else ''
+        # 返回JSON响应包含日志文件路径
+        return jsonify({
+            'success': True,
+            'message': message,
+            'log_file': log_file
+        })
+    else:
+        return jsonify({
+            'success': False,
+            'message': message
+        })
+    flash(f'Deployment started successfully!')
         # 移除错误的函数调用
     else:
         flash(f'Failed to start deployment: {message}')
