@@ -1181,46 +1181,36 @@
                 // 提交表单
                 document.getElementById('deployForm').submit();
                 
-                // 等待一段时间后获取并显示日志文件路径
-                setTimeout(() => {
-                    fetch('/deployment_status')
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.log_file) {
-                                // 在状态区域顶部显示日志文件路径
-                                let logPathElement = deploymentStatus.querySelector('.log-path-info');
-                                if (!logPathElement) {
-                                    logPathElement = document.createElement('div');
-                                    logPathElement.className = 'log-path-info';
-                                    logPathElement.style.cssText = 'background-color: #e9ecef; padding: 10px; margin-bottom: 10px; border-radius: 4px;';
-                                    logPathElement.innerHTML = `<strong>Deployment log file:</strong> ${data.log_file}<br>` +
-                                        '<small>You can check this file for detailed deployment progress.</small>';
-                                    deploymentStatus.insertBefore(logPathElement, deploymentStatus.firstChild);
-                                }
-                            } else {
-                                // 如果没有获取到日志文件路径，显示提示信息
-                                let logPathElement = deploymentStatus.querySelector('.log-path-info');
-                                if (!logPathElement) {
-                                    logPathElement = document.createElement('div');
-                                    logPathElement.className = 'log-path-info';
-                                    logPathElement.style.cssText = 'background-color: #e9ecef; padding: 10px; margin-bottom: 10px; border-radius: 4px;';
-                                    logPathElement.innerHTML = `<strong>Deployment log file:</strong> Log file path will be available shortly...<br>` +
-                                        '<small>Please wait a moment and refresh the page if needed.</small>';
-                                    deploymentStatus.insertBefore(logPathElement, deploymentStatus.firstChild);
-                                }
-                            }
-                            
-                            // 部署完成，重新启用按钮
-                            deployButton.disabled = false;
-                            deployButton.innerHTML = '<i class="fas fa-rocket"></i> Deploy Cluster';
-                        })
-                        .catch(error => {
-                            console.error('Error getting deployment status:', error);
-                            // 出错时也重新启用按钮
-                            deployButton.disabled = false;
-                            deployButton.innerHTML = '<i class="fas fa-rocket"></i> Deploy Cluster';
-                        });
-                }, 1000); // 等待1秒后获取日志文件路径
+                // 立即获取并显示日志文件路径
+                fetch('/deployment_status')
+                    .then(response => response.json())
+                    .then(data => {
+                        // 在状态区域顶部显示日志文件路径
+                        let logPathElement = document.createElement('div');
+                        logPathElement.className = 'log-path-info';
+                        logPathElement.style.cssText = 'background-color: #e9ecef; padding: 10px; margin-bottom: 10px; border-radius: 4px;';
+                        
+                        if (data.log_file) {
+                            logPathElement.innerHTML = `<strong>Deployment log file:</strong> ${data.log_file}<br>` +
+                                '<small>You can check this file for detailed deployment progress.</small>';
+                        } else {
+                            logPathElement.innerHTML = `<strong>Deployment log file:</strong> Log file path will be available shortly...<br>` +
+                                '<small>Please wait a moment and refresh the page if needed.</small>';
+                        }
+                        
+                        deploymentStatus.innerHTML = ''; // 清空现有内容
+                        deploymentStatus.appendChild(logPathElement);
+                        
+                        // 部署完成，重新启用按钮
+                        deployButton.disabled = false;
+                        deployButton.innerHTML = '<i class="fas fa-rocket"></i> Deploy Cluster';
+                    })
+                    .catch(error => {
+                        console.error('Error getting deployment status:', error);
+                        // 出错时也重新启用按钮
+                        deployButton.disabled = false;
+                        deployButton.innerHTML = '<i class="fas fa-rocket"></i> Deploy Cluster';
+                    });
                 
                 return true;
             }
@@ -1270,9 +1260,6 @@
                     tabContent.classList.add('active');
                 }
             }
-            
-            // 移除页面加载时的自动状态检查
-            // 移除定期状态检查
         });
     </script>
 </body>
