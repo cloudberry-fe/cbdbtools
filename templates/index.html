@@ -1150,60 +1150,78 @@
             }
         }
         
-        // Check deployment status periodically
-        function checkDeploymentStatus() {
-    fetch('/deployment_status')
-        .then(response => response.json())
-        .then(data => {
-            const deployButton = document.getElementById('deployButton');
-            const deploymentStatus = document.getElementById('deploymentStatus');
-            const completionMessage = deploymentStatus.querySelector('.completion-message');
-
-            // 确保状态区域始终显示
-            deploymentStatus.classList.remove('hidden');
-
-            if (data.running) {
-                deployButton.disabled = true;
-                deployButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deployment running...';
-                deploymentStatus.classList.add('deployment-running');
-                deploymentStatus.classList.remove('deployment-completed');
-                // 移除之前的完成消息
-                if (completionMessage) {
-                    completionMessage.remove();
-                }
-                refreshLogs();
-            } else if (data.log_file) {
-                deployButton.disabled = false;
-                deployButton.innerHTML = '<i class="fas fa-rocket"></i> Deploy Cluster';
-                deploymentStatus.classList.add('deployment-completed');
-                deploymentStatus.classList.remove('deployment-running');
-
-                // 移除之前的完成消息
-                if (completionMessage) {
-                    completionMessage.remove();
-                }
-
-                // 添加完成消息，区分成功和失败
-                const msg = document.createElement('div');
-                msg.className = 'completion-message';
-                if (data.success === true) {
-                    msg.style.cssText = 'color: var(--success-color); font-weight: bold; margin: 10px 0;';
-                    msg.innerHTML = '<i class="fas fa-check-circle"></i> Deployment completed successfully!';
-                } else if (data.success === false) {
-                    msg.style.cssText = 'color: var(--danger-color); font-weight: bold; margin: 10px 0;';
-                    msg.innerHTML = '<i class="fas fa-times-circle"></i> Deployment failed! Please check the log details.';
-                } else {
-                    msg.style.cssText = 'color: var(--warning-color); font-weight: bold; margin: 10px 0;';
-                    msg.innerHTML = '<i class="fas fa-info-circle"></i> Deployment finished. Please check the log details to verify.';
-                }
-                deploymentStatus.insertBefore(msg, deploymentStatus.firstChild.nextSibling);
-                refreshLogs(); // 部署完成后刷新一次日志
+        // Start deployment with confirmation
+        function startDeployment() {
+            // Check for warnings before proceeding
+            const warningItems = document.querySelectorAll('.warning');
+            if (warningItems.length > 0) {
+                alert('Please resolve all warnings before deploying the cluster.');
+                return false;
             }
-        })
-        .catch(error => console.error('Error checking deployment status:', error));
-}
-        
-        // Refresh deployment logs
+
+            if (confirm('Are you sure you want to deploy the cluster? This may take several minutes.')) {
+                // 禁用部署按钮
+                const deployButton = document.getElementById('deployButton');
+                deployButton.disabled = true;
+                deployButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting deployment...';
+                
+                // 显示部署状态区域
+                const deploymentStatus = document.getElementById('deploymentStatus');
+                deploymentStatus.classList.remove('hidden');
+                
+                // 提交表单
+                document.getElementById('deployForm').submit();
+                
+                return true;
+            }
+            return false;
+        }
+
+        // 简化部署状态检查函数
+        function checkDeploymentStatus() {
+            fetch('/deployment_status')
+                .then(response => response.json())
+                .then(data => {
+                    const deployButton = document.getElementById('deployButton');
+                    const deploymentStatus = document.getElementById('deploymentStatus');
+                    
+                    // 如果有日志文件信息，显示日志文件路径
+                    if (data.log_file) {
+                        // 在状态区域顶部显示日志文件路径
+                        let logPathElement = deploymentStatus.querySelector('.log-path-info');
+                        if (!logPathElement) {
+                            logPathElement = document.createElement('div');
+                            logPathElement.className = 'log-path-info';
+                            logPathElement.style.cssText = 'background-color: #e9ecef; padding: 10px; margin-bottom: 10px; border-radius: 4px;';
+                            logPathElement.innerHTML = `<strong>Deployment log file:</strong> ${data.log_file}<br>` +
+                                '<small>You can check this file for detailed deployment progress.</small>';
+                            deploymentStatus.insertBefore(logPathElement, deploymentStatus.firstChild);
+                        }
+                        
+                        // 刷新日志内容
+                        refreshLogs();
+                    }
+                    
+                    // 如果部署仍在运行，继续定期检查
+                    if (data.running) {
+                        deployButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deployment running...';
+                        setTimeout(checkDeploymentStatus, 3000); // 3秒后再次检查
+                    } else {
+                        // 部署完成，重新启用按钮
+                        deployButton.disabled = false;
+                        deployButton.innerHTML = '<i class="fas fa-rocket"></i> Deploy Cluster';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking deployment status:', error);
+                    // 出错时也重新启用按钮
+                    const deployButton = document.getElementById('deployButton');
+                    deployButton.disabled = false;
+                    deployButton.innerHTML = '<i class="fas fa-rocket"></i> Deploy Cluster';
+                });
+        }
+
+        // 简化日志刷新函数
         function refreshLogs() {
             fetch('/deployment_logs')
                 .then(response => response.json())
@@ -1225,30 +1243,6 @@
                         logContainer.textContent = 'Failed to retrieve logs. Please refresh the page to try again.';
                     }
                 });
-        }
-        
-        // Start deployment with confirmation
-        function startDeployment() {
-            // Check for warnings before proceeding
-            const warningItems = document.querySelectorAll('.warning');
-            if (warningItems.length > 0) {
-                alert('Please resolve all warnings before deploying the cluster.');
-                return false;
-            }
-
-            // 立即显示部署状态区域，不等待确认
-            document.getElementById('deploymentStatus').classList.remove('hidden');
-
-            if (confirm('Are you sure you want to deploy the cluster? This may take several minutes.')) {
-                // 开始检查部署状态
-                checkDeploymentStatus();
-
-                // 设置定期状态检查
-                setInterval(checkDeploymentStatus, 5000); // 每5秒检查一次
-
-                return true;
-            }
-            return false;
         }
         
         // Initialize deployment status check on page load

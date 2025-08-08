@@ -163,7 +163,9 @@ def deploy():
     success, message = start_background_deployment(deploy_type)
     
     if success:
-        flash(f'Deployment started successfully! Log file: {DEPLOYMENT_STATUS["log_file"]}')
+        flash(f'Deployment started successfully!')
+        # 启动后立即开始检查状态
+        checkDeploymentStatus()
     else:
         flash(f'Failed to start deployment: {message}')
     
