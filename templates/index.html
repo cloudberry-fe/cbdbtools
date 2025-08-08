@@ -1191,15 +1191,12 @@
                           let logPathElement = document.createElement('div');
                           logPathElement.className = 'log-path-info';
                           logPathElement.style.cssText = 'background-color: #e9ecef; padding: 10px; margin-bottom: 10px; border-radius: 4px;';
-                          
-                          // 获取当前工作目录（假设应用运行在cbdbtools目录下）
-                          const currentDir = window.location.origin.includes('localhost') ? "/Users/ryan/DEV/github/cbdbtools" : "/path/to/cbdbtools";
-                          const fullLogPath = `${currentDir}/${data.log_file}`;
-                          
-                          logPathElement.innerHTML = `<strong>Deployment log file:</strong> ${fullLogPath}<br>` +
+                           
+                          // 直接使用后端返回的完整日志路径
+                          logPathElement.innerHTML = `<strong>Deployment log file:</strong> ${data.log_file}<br>` +
                               '<small>You can check this file for detailed deployment progress.</small>';
                           deploymentStatus.appendChild(logPathElement);
-                          
+                           
                           // 显示成功消息
                           flashMessage(data.message, 'success');
                       } else {
