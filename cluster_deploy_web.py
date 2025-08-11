@@ -7,6 +7,7 @@ from datetime import datetime
 import json
 import time
 import threading
+from werkzeug.utils import secure_filename  # 添加这行导入
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
