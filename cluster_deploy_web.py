@@ -314,38 +314,63 @@ ALLOWED_KEY_EXTENSIONS = {'pem', 'key', 'pub'}
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # 检查文件扩展名
+// 修改allowed_file函数
 def allowed_file(filename, file_type):
     if file_type == 'rpm':
         return '.' in filename and \
                filename.rsplit('.', 1)[1].lower() in ALLOWED_RPM_EXTENSIONS
     elif file_type == 'key':
+        # 更宽松的Key文件验证，允许更多扩展名
+        allowed = ALLOWED_KEY_EXTENSIONS.union({'cer', 'crt'}).union({'txt'})
         return '.' in filename and \
-               filename.rsplit('.', 1)[1].lower() in ALLOWED_KEY_EXTENSIONS
+               filename.rsplit('.', 1)[1].lower() in allowed
     return False
 
 # 文件上传路由
 @app.route('/upload_file', methods=['POST'])
 def upload_file():
-    if 'file' not in request.files:
-        return jsonify({'success': False, 'message': 'No file part'})
+    try:
+        if 'file' not in request.files:
+            return jsonify({'success': False, 'message': 'No file part'})
 
-    file = request.files['file']
-    file_type = request.form.get('type', '')
-    upload_path = request.form.get('upload_path', '/tmp/uploads')
+        file = request.files['file']
+        file_type = request.form.get('type', '')
+        upload_path = request.form.get('upload_path', '/tmp/uploads')
 
-    if file.filename == '':
-        return jsonify({'success': False, 'message': 'No selected file'})
+        if file.filename == '':
+            return jsonify({'success': False, 'message': 'No selected file'})
 
-    if file and allowed_file(file.filename, file_type):
-        # 确保上传目录存在
-        os.makedirs(upload_path, exist_ok=True)
-        
-        filename = secure_filename(file.filename)
-        file_path = os.path.join(upload_path, filename)
-        file.save(file_path)
-        return jsonify({'success': True, 'file_path': file_path})
+        if file and allowed_file(file.filename, file_type):
+            # 确保上传目录存在且有正确权限
+            os.makedirs(upload_path, exist_ok=True)
+            os.chmod(upload_path, 0o755)
+            
+            filename = secure_filename(file.filename)
+            file_path = os.path.join(upload_path, filename)
+            
+            # 保存文件并捕获可能的错误
+            try:
+                file.save(file_path)
+                # 确保文件有正确权限
+                os.chmod(file_path, 0o644)
+                return jsonify({'success': True, 'file_path': file_path})
+            except Exception as e:
+                return jsonify({'success': False, 'message': f'Failed to save file: {str(e)}'})
 
-    return jsonify({'success': False, 'message': 'Invalid file type'})
+        return jsonify({'success': False, 'message': f'Invalid file type for {file_type}. Allowed types: {ALLOWED_KEY_EXTENSIONS if file_type == "key" else ALLOWED_RPM_EXTENSIONS}'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Server error: {str(e)}'})
+
+@app.route('/verify_file')
+def verify_file():
+    file_path = request.args.get('file_path')
+    if not file_path:
+        return jsonify({'exists': False, 'message': 'No file path provided'})
+    
+    try:
+        return jsonify({'exists': os.path.exists(file_path), 'file_path': file_path})
+    except Exception as e:
+        return jsonify({'exists': False, 'message': str(e)})
 
 if __name__ == '__main__':
     # Ensure templates directory exists

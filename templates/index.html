@@ -598,8 +598,8 @@
                                    value="{{ params.get('ADMIN_USER_PASSWORD', 'Hashdata@123') }}" required>
                         </div>
                         
-                        <div class="form-group required">
-                            <label for="UPLOAD_PATH">Upload Directory Path <span class="text-danger">*</span>:</label>
+                        <div class="form-group">
+                            <label for="UPLOAD_PATH">Upload Directory Path:</label>
                             <input type="text" id="UPLOAD_PATH" name="UPLOAD_PATH" value="{{ params.get('UPLOAD_PATH', '/tmp/uploads') }}" required>
                             <small class="form-text text-muted">Directory where uploaded files will be stored. All uploaded RPM and Key files will be saved here.</small>
                         </div>
@@ -1176,7 +1176,8 @@ document.getElementById('keyFileUpload').addEventListener('change', function(e) 
 
         // 显示上传进度
         const progressBar = document.getElementById('keyUploadProgress');
-        progressBar.parentElement.classList.remove('hidden');
+        const progressContainer = progressBar.parentElement;
+        progressContainer.classList.remove('hidden');
         progressBar.value = 0;
         progressBar.style.width = '0%';
 
@@ -1204,32 +1205,34 @@ document.getElementById('keyFileUpload').addEventListener('change', function(e) 
                         keyFilePathInput.dispatchEvent(new Event('change'));
                         flashMessage('Key file uploaded successfully!', 'success');
                         console.log('Key file path updated to:', data.file_path);
+                        // 验证文件是否存在
+                        verifyFileExists(data.file_path);
                     } else {
                         flashMessage('Failed to upload Key file: ' + data.message, 'danger');
                         console.error('Key upload failed:', data.message);
                     }
                 } catch (e) {
-                    flashMessage('Error processing server response', 'danger');
+                    flashMessage('Error processing server response: ' + e.message, 'danger');
                     console.error('Error parsing response:', e);
                 }
             } else {
-                flashMessage('Upload failed with status: ' + xhr.status, 'danger');
-                console.error('Upload failed with status:', xhr.status);
+                flashMessage('Upload failed with status: ' + xhr.status + ' - ' + xhr.statusText, 'danger');
+                console.error('Upload failed with status:', xhr.status, xhr.statusText);
             }
             // 上传完成后隐藏进度条
             setTimeout(() => {
-                progressBar.parentElement.classList.add('hidden');
+                progressContainer.classList.add('hidden');
                 progressBar.value = 0;
                 progressBar.style.width = '0%';
             }, 1000);
         };
 
         xhr.onerror = function() {
-            console.error('Error uploading Key file');
-            flashMessage('Error uploading Key file. Please try again.', 'danger');
+            console.error('Error uploading Key file: Network error');
+            flashMessage('Network error uploading Key file. Please try again.', 'danger');
             // 上传失败后隐藏进度条
             setTimeout(() => {
-                progressBar.parentElement.classList.add('hidden');
+                progressContainer.classList.add('hidden');
                 progressBar.value = 0;
                 progressBar.style.width = '0%';
             }, 1000);
@@ -1238,6 +1241,21 @@ document.getElementById('keyFileUpload').addEventListener('change', function(e) 
         xhr.send(formData);
     }
 });
+
+// 添加文件存在验证函数
+function verifyFileExists(filePath) {
+    fetch('/verify_file?file_path=' + encodeURIComponent(filePath))
+        .then(response => response.json())
+        .then(data => {
+            if (!data.exists) {
+                flashMessage('Warning: Uploaded file was not found on server.', 'warning');
+                console.warn('Uploaded file not found:', filePath);
+            }
+        })
+        .catch(error => {
+            console.error('Error verifying file existence:', error);
+        });
+}
         
         // Set deployment mode
         function setDeploymentMode(mode) {
