@@ -330,9 +330,20 @@ def upload_file():
 
     file = request.files['file']
     file_type = request.form.get('type', '')
+    upload_path = request.form.get('upload_path', '/tmp/uploads')
 
     if file.filename == '':
         return jsonify({'success': False, 'message': 'No selected file'})
+
+    # 确保上传目录存在
+    os.makedirs(upload_path, exist_ok=True)
+
+    # 保存文件
+    filename = secure_filename(file.filename)
+    file_path = os.path.join(upload_path, filename)
+    file.save(file_path)
+
+    return jsonify({'success': True, 'file_path': file_path})
 
     if file and allowed_file(file.filename, file_type):
         filename = secure_filename(file.filename)
@@ -363,11 +374,6 @@ DEPLOYMENT_STATUS = {
 DEPLOYMENT_LOCK = threading.Lock()
 
 # Function to check if there's a running deployment process
-# 在文件顶部添加导入
-import psutil
-import signal
-
-# 修改is_deployment_running函数
 def is_deployment_running():
     with DEPLOYMENT_LOCK:
         if not DEPLOYMENT_STATUS['running']:

@@ -461,6 +461,29 @@
         .hidden {
             display: none !important;
         }
+
+        .progress {
+            height: 20px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-bar {
+            float: left;
+            width: 0%;
+            height: 100%;
+            font-size: 12px;
+            line-height: 20px;
+            color: #ffffff;
+            text-align: center;
+            background-color: #337ab7;
+            -webkit-transition: width 0.6s ease;
+            -o-transition: width 0.6s ease;
+            transition: width 0.6s ease;
+        }
         
         /* Required field indicator */
         .required-info {
@@ -581,19 +604,26 @@
                                    value="{{ params.get('ADMIN_USER_PASSWORD', 'Hashdata@123') }}" required>
                         </div>
                         
+                        <div class="form-group">
+                            <label for="UPLOAD_PATH">Upload Directory Path:</label>
+                            <input type="text" id="UPLOAD_PATH" name="UPLOAD_PATH" value="/tmp/uploads" required>
+                            <small class="form-text text-muted">Directory where uploaded files will be stored</small>
+                        </div>
+
                         <div class="form-group required">
                             <label for="CLOUDBERRY_RPM">RPM Package Path:</label>
                             <div class="input-group">
-                                <input type="text" id="CLOUDBERRY_RPM" name="CLOUDBERRY_RPM"
-                                       value="{{ params.get('CLOUDBERRY_RPM', '/tmp/hashdata-lightning-release.rpm') }}" required>
+                                <input type="text" id="CLOUDBERRY_RPM" name="CLOUDBERRY_RPM" readonly>
                                 <div class="input-group-append">
-                                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('rpmFileUpload').click()">
-                                        <i class="fas fa-upload"></i> Upload
+                                    <button class="btn" type="button" onclick="document.getElementById('rpmFileUpload').click()">
+                                        <i class="fas fa-upload"></i>
                                     </button>
                                 </div>
                             </div>
-                            <input type="file" id="rpmFileUpload" name="rpmFileUpload" style="display: none;" accept=".rpm">
-                            <small class="form-text">Path to the RPM package file</small>
+                            <input type="file" id="rpmFileUpload" style="display: none;" accept=".rpm">
+                            <div class="progress hidden" style="margin-top: 10px;">
+                                <div id="rpmUploadProgress" class="progress-bar" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
                         </div>
                         
                         <div class="form-group required">
@@ -775,15 +805,17 @@
                                    {% if params.get('SEGMENT_ACCESS_METHOD') != 'keyfile' %}style="display:none;"{% endif %}>
                                 <label for="SEGMENT_ACCESS_KEYFILE">Key File Path:</label>
                                 <div class="input-group">
-                                    <input type="text" id="SEGMENT_ACCESS_KEYFILE" name="SEGMENT_ACCESS_KEYFILE"
-                                           value="{{ params.get('SEGMENT_ACCESS_KEYFILE', '/tmp/keyfiles') }}">
+                                    <input type="text" id="SEGMENT_ACCESS_KEYFILE" name="SEGMENT_ACCESS_KEYFILE" readonly>
                                     <div class="input-group-append">
-                                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('keyFileUpload').click()">
-                                            <i class="fas fa-upload"></i> Upload
+                                        <button class="btn" type="button" onclick="document.getElementById('keyFileUpload').click()">
+                                            <i class="fas fa-upload"></i>
                                         </button>
                                     </div>
                                 </div>
-                                <input type="file" id="keyFileUpload" name="keyFileUpload" style="display: none;">
+                                <input type="file" id="keyFileUpload" style="display: none;">
+                                <div class="progress hidden" style="margin-top: 10px;">
+                                    <div id="keyUploadProgress" class="progress-bar" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
                             </div>
                             
                             <div class="form-group" id="passwordGroup" 
@@ -1074,25 +1106,42 @@
         document.getElementById('rpmFileUpload').addEventListener('change', function(e) {
             if (this.files.length > 0) {
                 const file = this.files[0];
+                const uploadPath = document.getElementById('UPLOAD_PATH') ? document.getElementById('UPLOAD_PATH').value : '/tmp';
                 const formData = new FormData();
                 formData.append('file', file);
                 formData.append('type', 'rpm');
+                formData.append('upload_path', uploadPath);
+
+                // 显示上传进度
+                const progressBar = document.getElementById('rpmUploadProgress');
+                progressBar.classList.remove('hidden');
+                progressBar.value = 0;
 
                 fetch('/upload_file', {
                     method: 'POST',
                     body: formData
-                }).then(response => response.json())
+                }).then(response => {
+                    // 检查响应状态
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
                   .then(data => {
                       if (data.success) {
                           document.getElementById('CLOUDBERRY_RPM').value = data.file_path;
-                          flashMessage('RPM file uploaded successfully!', 'success');
+                          flashMessage('RPM package uploaded successfully!', 'success');
                       } else {
-                          flashMessage('Failed to upload RPM file: ' + data.message, 'danger');
+                          flashMessage('Failed to upload RPM package: ' + data.message, 'danger');
                       }
+                      // 隐藏进度条
+                      progressBar.classList.add('hidden');
                   })
                   .catch(error => {
-                      console.error('Error uploading RPM file:', error);
-                      flashMessage('Error uploading RPM file. Please try again.', 'danger');
+                      console.error('Error uploading RPM package:', error);
+                      flashMessage('Error uploading RPM package. Please try again.', 'danger');
+                      // 隐藏进度条
+                      progressBar.classList.add('hidden');
                   });
             }
         });
@@ -1101,14 +1150,27 @@
         document.getElementById('keyFileUpload').addEventListener('change', function(e) {
             if (this.files.length > 0) {
                 const file = this.files[0];
+                const uploadPath = document.getElementById('UPLOAD_PATH') ? document.getElementById('UPLOAD_PATH').value : '/tmp';
                 const formData = new FormData();
                 formData.append('file', file);
                 formData.append('type', 'key');
+                formData.append('upload_path', uploadPath);
+
+                // 显示上传进度
+                const progressBar = document.getElementById('keyUploadProgress');
+                progressBar.classList.remove('hidden');
+                progressBar.value = 0;
 
                 fetch('/upload_file', {
                     method: 'POST',
                     body: formData
-                }).then(response => response.json())
+                }).then(response => {
+                    // 检查响应状态
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
                   .then(data => {
                       if (data.success) {
                           document.getElementById('SEGMENT_ACCESS_KEYFILE').value = data.file_path;
@@ -1116,10 +1178,14 @@
                       } else {
                           flashMessage('Failed to upload Key file: ' + data.message, 'danger');
                       }
+                      // 隐藏进度条
+                      progressBar.classList.add('hidden');
                   })
                   .catch(error => {
                       console.error('Error uploading Key file:', error);
                       flashMessage('Error uploading Key file. Please try again.', 'danger');
+                      // 隐藏进度条
+                      progressBar.classList.add('hidden');
                   });
             }
         });
