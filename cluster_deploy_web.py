@@ -314,7 +314,6 @@ ALLOWED_KEY_EXTENSIONS = {'pem', 'key', 'pub'}
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # 检查文件扩展名
-// 修改allowed_file函数
 def allowed_file(filename, file_type):
     if file_type == 'rpm':
         return '.' in filename and \
