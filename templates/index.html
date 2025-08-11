@@ -598,16 +598,16 @@
                                    value="{{ params.get('ADMIN_USER_PASSWORD', 'Hashdata@123') }}" required>
                         </div>
                         
-                        <div class="form-group">
-                            <label for="UPLOAD_PATH">Upload Directory Path:</label>
-                            <input type="text" id="UPLOAD_PATH" name="UPLOAD_PATH" value="/tmp/uploads" required>
-                            <small class="form-text text-muted">Directory where uploaded files will be stored</small>
+                        <div class="form-group required">
+                            <label for="UPLOAD_PATH">Upload Directory Path <span class="text-danger">*</span>:</label>
+                            <input type="text" id="UPLOAD_PATH" name="UPLOAD_PATH" value="{{ params.get('UPLOAD_PATH', '/tmp/uploads') }}" required>
+                            <small class="form-text text-muted">Directory where uploaded files will be stored. All uploaded RPM and Key files will be saved here.</small>
                         </div>
 
                         <div class="form-group required">
                             <label for="CLOUDBERRY_RPM">RPM Package Path:</label>
                             <div class="input-group">
-                                <input type="text" id="CLOUDBERRY_RPM" name="CLOUDBERRY_RPM">
+                                <input type="text" id="CLOUDBERRY_RPM" name="CLOUDBERRY_RPM" value="{{ params.get('CLOUDBERRY_RPM', '') }}">
                                 <div class="input-group-append">
                                     <button class="btn" type="button" onclick="document.getElementById('rpmFileUpload').click()">
                                         <i class="fas fa-upload"></i>
@@ -799,7 +799,7 @@
                                    {% if params.get('SEGMENT_ACCESS_METHOD') != 'keyfile' %}style="display:none;"{% endif %}>
                                 <label for="SEGMENT_ACCESS_KEYFILE">Key File Path:</label>
                                 <div class="input-group">
-                                    <input type="text" id="SEGMENT_ACCESS_KEYFILE" name="SEGMENT_ACCESS_KEYFILE">
+                                    <input type="text" id="SEGMENT_ACCESS_KEYFILE" name="SEGMENT_ACCESS_KEYFILE" value="{{ params.get('SEGMENT_ACCESS_KEYFILE', '') }}">
                                     <div class="input-group-append">
                                         <button class="btn" type="button" onclick="document.getElementById('keyFileUpload').click()">
                                             <i class="fas fa-upload"></i>
@@ -1198,16 +1198,23 @@ document.getElementById('keyFileUpload').addEventListener('change', function(e) 
                 try {
                     const data = JSON.parse(xhr.responseText);
                     if (data.success) {
-                        document.getElementById('SEGMENT_ACCESS_KEYFILE').value = data.file_path;
+                        const keyFilePathInput = document.getElementById('SEGMENT_ACCESS_KEYFILE');
+                        keyFilePathInput.value = data.file_path;
+                        // 触发change事件确保值被正确识别
+                        keyFilePathInput.dispatchEvent(new Event('change'));
                         flashMessage('Key file uploaded successfully!', 'success');
+                        console.log('Key file path updated to:', data.file_path);
                     } else {
                         flashMessage('Failed to upload Key file: ' + data.message, 'danger');
+                        console.error('Key upload failed:', data.message);
                     }
                 } catch (e) {
                     flashMessage('Error processing server response', 'danger');
+                    console.error('Error parsing response:', e);
                 }
             } else {
                 flashMessage('Upload failed with status: ' + xhr.status, 'danger');
+                console.error('Upload failed with status:', xhr.status);
             }
             // 上传完成后隐藏进度条
             setTimeout(() => {
@@ -1263,6 +1270,17 @@ document.getElementById('keyFileUpload').addEventListener('change', function(e) 
                     document.getElementById('hosts').classList.remove('active');
                     hostsTabButton.classList.remove('active');
                 }
+            }
+            
+            // 单节点模式下隐藏Key File Path相关元素
+            if (mode === 'single') {
+                document.getElementById('keyfilePathGroup').style.display = 'none';
+                document.getElementById('passwordGroup').style.display = 'none';
+            } else {
+                // 多节点模式下根据访问方式显示相应元素
+                const method = document.getElementById('SEGMENT_ACCESS_METHOD').value;
+                document.getElementById('keyfilePathGroup').style.display = method === 'keyfile' ? 'block' : 'none';
+                document.getElementById('passwordGroup').style.display = method === 'keyfile' ? 'none' : 'block';
             }
             
             // Check if Mirror Data Directories should be shown
