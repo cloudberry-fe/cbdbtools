@@ -336,19 +336,12 @@ def upload_file():
     if file.filename == '':
         return jsonify({'success': False, 'message': 'No selected file'})
 
-    # 确保上传目录存在
-    os.makedirs(upload_path, exist_ok=True)
-
-    # 保存文件
-    filename = secure_filename(file.filename)
-    file_path = os.path.join(upload_path, filename)
-    file.save(file_path)
-
-    return jsonify({'success': True, 'file_path': file_path})
-
     if file and allowed_file(file.filename, file_type):
+        # 确保上传目录存在
+        os.makedirs(upload_path, exist_ok=True)
+        
         filename = secure_filename(file.filename)
-        file_path = os.path.join(UPLOAD_FOLDER, filename)
+        file_path = os.path.join(upload_path, filename)
         file.save(file_path)
         return jsonify({'success': True, 'file_path': file_path})
 

@@ -464,26 +464,19 @@
 
         .progress {
             height: 20px;
-            margin-bottom: 20px;
-            overflow: hidden;
             background-color: #f5f5f5;
             border-radius: 4px;
-            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
-            display: block; /* 确保进度条默认是显示的 */
+            overflow: hidden;
+            margin-top: 10px;
         }
 
         .progress-bar {
-            float: left;
-            width: 0%;
             height: 100%;
-            font-size: 12px;
-            line-height: 20px;
-            color: #ffffff;
+            background-color: #4CAF50;
             text-align: center;
-            background-color: #337ab7;
-            -webkit-transition: width 0.6s ease;
-            -o-transition: width 0.6s ease;
-            transition: width 0.6s ease;
+            line-height: 20px;
+            color: white;
+            transition: width 0.3s ease;
         }
         
         /* Required field indicator */
@@ -1104,114 +1097,140 @@
         }
         
         // Handle RPM file upload
-        document.getElementById('rpmFileUpload').addEventListener('change', function(e) {
-            if (this.files.length > 0) {
-                const file = this.files[0];
-                const uploadPath = document.getElementById('UPLOAD_PATH') ? document.getElementById('UPLOAD_PATH').value : '/tmp';
-                const formData = new FormData();
-                formData.append('file', file);
-                formData.append('type', 'rpm');
-                formData.append('upload_path', uploadPath);
+document.getElementById('rpmFileUpload').addEventListener('change', function(e) {
+    if (this.files.length > 0) {
+        const file = this.files[0];
+        const uploadPath = document.getElementById('UPLOAD_PATH').value;
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('type', 'rpm');
+        formData.append('upload_path', uploadPath);
 
-                // 显示上传进度
-                const progressBar = document.getElementById('rpmUploadProgress');
-                progressBar.parentElement.classList.remove('hidden');
-                progressBar.value = 0;
+        // 显示上传进度
+        const progressBar = document.getElementById('rpmUploadProgress');
+        progressBar.parentElement.classList.remove('hidden');
+        progressBar.value = 0;
+        progressBar.style.width = '0%';
 
-                fetch('/upload_file', {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                }).then(response => {
-                    // 检查响应状态
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
-                  .then(data => {
-                      if (data.success) {
-                          document.getElementById('CLOUDBERRY_RPM').value = data.file_path;
-                          flashMessage('RPM package uploaded successfully!', 'success');
-                      } else {
-                          flashMessage('Failed to upload RPM package: ' + data.message, 'danger');
-                      }
-                      // 上传完成后隐藏进度条
-                      setTimeout(() => {
-                          progressBar.parentElement.classList.add('hidden');
-                          progressBar.value = 0;
-                          progressBar.style.width = '0%';
-                      }, 1000);
-                  })
-                  .catch(error => {
-                      console.error('Error uploading RPM package:', error);
-                      flashMessage('Error uploading RPM package. Please try again.', 'danger');
-                      // 上传失败后隐藏进度条
-                      setTimeout(() => {
-                          progressBar.parentElement.classList.add('hidden');
-                          progressBar.value = 0;
-                          progressBar.style.width = '0%';
-                      }, 1000);
-                  });
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/upload_file', true);
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+
+        // 监听上传进度
+        xhr.upload.onprogress = function(e) {
+            if (e.lengthComputable) {
+                const percent = (e.loaded / e.total) * 100;
+                progressBar.value = percent;
+                progressBar.style.width = percent + '%';
             }
-        });
+        };
+
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                try {
+                    const data = JSON.parse(xhr.responseText);
+                    if (data.success) {
+                        document.getElementById('CLOUDBERRY_RPM').value = data.file_path;
+                        flashMessage('RPM package uploaded successfully!', 'success');
+                    } else {
+                        flashMessage('Failed to upload RPM package: ' + data.message, 'danger');
+                    }
+                } catch (e) {
+                    flashMessage('Error processing server response', 'danger');
+                }
+            } else {
+                flashMessage('Upload failed with status: ' + xhr.status, 'danger');
+            }
+            // 上传完成后隐藏进度条
+            setTimeout(() => {
+                progressBar.parentElement.classList.add('hidden');
+                progressBar.value = 0;
+                progressBar.style.width = '0%';
+            }, 1000);
+        };
+
+        xhr.onerror = function() {
+            console.error('Error uploading RPM package');
+            flashMessage('Error uploading RPM package. Please try again.', 'danger');
+            // 上传失败后隐藏进度条
+            setTimeout(() => {
+                progressBar.parentElement.classList.add('hidden');
+                progressBar.value = 0;
+                progressBar.style.width = '0%';
+            }, 1000);
+        };
+
+        xhr.send(formData);
+    }
+});
 
         // Handle Key file upload
-        document.getElementById('keyFileUpload').addEventListener('change', function(e) {
-            if (this.files.length > 0) {
-                const file = this.files[0];
-                const uploadPath = document.getElementById('UPLOAD_PATH') ? document.getElementById('UPLOAD_PATH').value : '/tmp';
-                const formData = new FormData();
-                formData.append('file', file);
-                formData.append('type', 'key');
-                formData.append('upload_path', uploadPath);
+document.getElementById('keyFileUpload').addEventListener('change', function(e) {
+    if (this.files.length > 0) {
+        const file = this.files[0];
+        const uploadPath = document.getElementById('UPLOAD_PATH').value;
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('type', 'key');
+        formData.append('upload_path', uploadPath);
 
-                // 显示上传进度
-                const progressBar = document.getElementById('keyUploadProgress');
-                progressBar.parentElement.classList.remove('hidden');
-                progressBar.value = 0;
+        // 显示上传进度
+        const progressBar = document.getElementById('keyUploadProgress');
+        progressBar.parentElement.classList.remove('hidden');
+        progressBar.value = 0;
+        progressBar.style.width = '0%';
 
-                fetch('/upload_file', {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                }).then(response => {
-                    // 检查响应状态
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
-                  .then(data => {
-                      if (data.success) {
-                          document.getElementById('SEGMENT_ACCESS_KEYFILE').value = data.file_path;
-                          flashMessage('Key file uploaded successfully!', 'success');
-                      } else {
-                          flashMessage('Failed to upload Key file: ' + data.message, 'danger');
-                      }
-                      // 上传完成后隐藏进度条
-                      setTimeout(() => {
-                          progressBar.parentElement.classList.add('hidden');
-                          progressBar.value = 0;
-                          progressBar.style.width = '0%';
-                      }, 1000);
-                  })
-                  .catch(error => {
-                      console.error('Error uploading Key file:', error);
-                      flashMessage('Error uploading Key file. Please try again.', 'danger');
-                      // 上传失败后隐藏进度条
-                      setTimeout(() => {
-                          progressBar.parentElement.classList.add('hidden');
-                          progressBar.value = 0;
-                          progressBar.style.width = '0%';
-                      }, 1000);
-                  });
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/upload_file', true);
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+
+        // 监听上传进度
+        xhr.upload.onprogress = function(e) {
+            if (e.lengthComputable) {
+                const percent = (e.loaded / e.total) * 100;
+                progressBar.value = percent;
+                progressBar.style.width = percent + '%';
             }
-        });
+        };
+
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                try {
+                    const data = JSON.parse(xhr.responseText);
+                    if (data.success) {
+                        document.getElementById('SEGMENT_ACCESS_KEYFILE').value = data.file_path;
+                        flashMessage('Key file uploaded successfully!', 'success');
+                    } else {
+                        flashMessage('Failed to upload Key file: ' + data.message, 'danger');
+                    }
+                } catch (e) {
+                    flashMessage('Error processing server response', 'danger');
+                }
+            } else {
+                flashMessage('Upload failed with status: ' + xhr.status, 'danger');
+            }
+            // 上传完成后隐藏进度条
+            setTimeout(() => {
+                progressBar.parentElement.classList.add('hidden');
+                progressBar.value = 0;
+                progressBar.style.width = '0%';
+            }, 1000);
+        };
+
+        xhr.onerror = function() {
+            console.error('Error uploading Key file');
+            flashMessage('Error uploading Key file. Please try again.', 'danger');
+            // 上传失败后隐藏进度条
+            setTimeout(() => {
+                progressBar.parentElement.classList.add('hidden');
+                progressBar.value = 0;
+                progressBar.style.width = '0%';
+            }, 1000);
+        };
+
+        xhr.send(formData);
+    }
+});
         
         // Set deployment mode
         function setDeploymentMode(mode) {
