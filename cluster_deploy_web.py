@@ -308,7 +308,6 @@ def get_deployment_params():
 # 文件上传配置
 UPLOAD_FOLDER = '/tmp/uploads'
 ALLOWED_RPM_EXTENSIONS = {'rpm'}
-ALLOWED_KEY_EXTENSIONS = {'pem', 'key', 'pub'}
 
 # 确保上传目录存在
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -319,10 +318,8 @@ def allowed_file(filename, file_type):
         return '.' in filename and \
                filename.rsplit('.', 1)[1].lower() in ALLOWED_RPM_EXTENSIONS
     elif file_type == 'key':
-        # 更宽松的Key文件验证，允许更多扩展名
-        allowed = ALLOWED_KEY_EXTENSIONS.union({'cer', 'crt'}).union({'txt'})
-        return '.' in filename and \
-               filename.rsplit('.', 1)[1].lower() in allowed
+        # 移除key文件的扩展名验证，允许任何格式的文件
+        return True
     return False
 
 # 文件上传路由
@@ -356,7 +353,7 @@ def upload_file():
             except Exception as e:
                 return jsonify({'success': False, 'message': f'Failed to save file: {str(e)}'})
 
-        return jsonify({'success': False, 'message': f'Invalid file type for {file_type}. Allowed types: {ALLOWED_KEY_EXTENSIONS if file_type == "key" else ALLOWED_RPM_EXTENSIONS}'})
+        return jsonify({'success': False, 'message': f'Invalid file type for {file_type}. {"Allowed types: " + str(ALLOWED_RPM_EXTENSIONS) if file_type == "rpm" else "No restrictions for key files"}'})
     except Exception as e:
         return jsonify({'success': False, 'message': f'Server error: {str(e)}'})
 
