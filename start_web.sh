@@ -83,11 +83,11 @@ fi
 source venv/bin/activate
 
 # Upgrade pip to latest version
-pip install -i https://mirrors.aliyun.com/pypi/simple  --upgrade pip
+pip3 install -i https://mirrors.aliyun.com/pypi/simple  --upgrade pip
 
 # Install required packages in the virtual environment
 echo "Installing required packages..."
-pip install -i https://mirrors.aliyun.com/pypi/simple flask gunicorn psutil
+pip3 install -i https://mirrors.aliyun.com/pypi/simple flask gunicorn psutil
 
 # Verify Flask installation
 if ! python -c "import flask" &> /dev/null; then
