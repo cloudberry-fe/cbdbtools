@@ -498,6 +498,10 @@ if [ "$cluster_type" = "multi" ]; then
   #Step 8: Setup env on segment nodes.
   log_time "Step 8: Setup env on segment nodes."
   
+  if [ "${SEGMENT_ACCESS_METHOD}" = "keyfile" ]; then
+    chmod 600 ${SEGMENT_ACCESS_KEYFILE}
+  fi
+
   echo "sed -n '/##Segment hosts/,/#Hashdata hosts end/p' segmenthosts.conf|awk '/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/ {print \$2}' > ${working_dir}/segment_hosts.txt"
   sed -n '/##Segment hosts/,/#Hashdata hosts end/p' segmenthosts.conf|awk '/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/ {print $2}' > ${working_dir}/segment_hosts.txt
   
