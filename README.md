@@ -2,16 +2,24 @@
 
 CBDBTools is a suite of scripts designed to automate the deployment and initialization of HashData Lightning clusters. It also supports Greenplum and Cloudberry-based MPP databases, with both single-node and multi-node cluster setups.
 
+The tool provides two deployment methods:
+1. **Command-line deployment** - Traditional approach using shell scripts
+2. **Web UI deployment** - Modern approach using a web-based interface
+
 ---
 
 ## Table of Contents
 
 - [Repository Structure](#repository-structure)
 - [Prerequisites](#prerequisites)
-- [Usage](#usage)
-  - [1. Configure Parameters](#1-configure-parameters)
-  - [2. Define Hosts](#2-define-hosts)
-  - [3. Start Deployment](#3-start-deployment)
+- [Deployment Methods](#deployment-methods)
+  - [Command-line Deployment](#command-line-deployment)
+    - [1. Configure Parameters](#1-configure-parameters)
+    - [2. Define Hosts](#2-define-hosts)
+    - [3. Start Deployment](#3-start-deployment)
+  - [Web UI Deployment](#web-ui-deployment)
+    - [Starting the Web UI](#starting-the-web-ui)
+    - [Using the Web UI](#using-the-web-ui)
 - [Features](#features)
 - [Scripts Overview](#scripts-overview)
 - [Utility Scripts](#utility-scripts)
@@ -36,7 +44,11 @@ CBDBTools is a suite of scripts designed to automate the deployment and initiali
 ├── run.sh                       # Entry point script to start deployment
 ├── segmenthosts.conf            # Host/IP configuration for coordinator and segments
 ├── README.md                    # Project documentation
-└── (other utility or log files may be generated at runtime)
+├── cluster_deploy_web.py        # Web UI application for cluster deployment
+├── start_web.sh                 # Script to start the Web UI
+├── wsgi.py                      # WSGI entry point for the web application
+└── templates/
+    └── index.html               # Web UI template
 ```
 
 **Key files:**
@@ -47,6 +59,9 @@ CBDBTools is a suite of scripts designed to automate the deployment and initiali
 - `multissh.sh` / `multiscp.sh`: Utilities for parallel SSH and SCP operations.
 - `segmenthosts.conf`: List of all cluster nodes and their roles.
 - `run.sh`: Main entry point for launching the deployment workflow.
+- `cluster_deploy_web.py`: Flask web application providing a UI for cluster deployment.
+- `start_web.sh`: Script to start the web UI application.
+- `templates/index.html`: HTML template for the web UI.
 
 > **Note:** Additional scripts, logs, or temporary files may be created during deployment or troubleshooting.
 
@@ -65,6 +80,7 @@ CBDBTools is a suite of scripts designed to automate the deployment and initiali
 3. **Dependencies:**  
    - `sshpass` (automatically installed via `yum`; if installation fails, the tool will attempt to build from source using `sshpass-1.10.tar.gz`)
    - `gcc` and `make` (required for building `sshpass` from source if needed)
+   - `python3` and `pip` (required for Web UI deployment)
 
 4. **Environment:**  
    - The tool must be executed on the **coordinator** server.
@@ -75,19 +91,23 @@ CBDBTools is a suite of scripts designed to automate the deployment and initiali
 
 ---
 
-## Usage
+## Deployment Methods
 
-### For Single-Node Deployment
+CBDBTools supports two deployment methods: command-line and Web UI. Both methods use the same underlying scripts but provide different user interfaces.
+
+### Command-line Deployment
+
+Traditional deployment method using shell scripts directly.
+
+#### For Single-Node Deployment
 
 Only `deploycluster_parameter.sh` needs to be configured.
 
-### For Multi-Node Deployment
+#### For Multi-Node Deployment
 
 Both `deploycluster_parameter.sh` and `segmenthosts.conf` must be configured.
 
----
-
-### 1. Configure Parameters
+#### 1. Configure Parameters
 
 Edit the `deploycluster_parameter.sh` file to set the required environment variables.  
 The following parameters are **mandatory** and must be reviewed and set for your installation:
@@ -118,7 +138,7 @@ With these settings (and defaults for the rest), you can create a single-node cl
 sh run.sh
 ```
 
-#### Additional Parameters for Multi-Node Deployment
+##### Additional Parameters for Multi-Node Deployment
 
 When `DEPLOY_TYPE` is set to `multi`, review and configure the following:
 
@@ -135,7 +155,7 @@ export SEGMENT_ACCESS_PASSWORD="XXXXXXXX"
 - `SEGMENT_ACCESS_KEYFILE`: Path to the SSH keyfile (if using `keyfile`)
 - `SEGMENT_ACCESS_PASSWORD`: Root password (if using `password`)
 
-#### Optional Parameters
+##### Optional Parameters
 
 ```
 ## Set to 'true' to configure OS parameters only
@@ -152,7 +172,7 @@ export WITH_STANDBY="false"
 - `WITH_MIRROR`: Set to `true` to enable mirror segments.
 - `WITH_STANDBY`: Set to `true` to enable a standby server.
 
-#### Advanced Cluster Parameters
+##### Advanced Cluster Parameters
 
 Adjust these as needed for your environment (see database product manuals for details):
 
@@ -175,9 +195,7 @@ export MIRROR_PORT_BASE="7000"
 export MIRROR_DATA_DIRECTORY="/data0/database/mirror /data0/database/mirror"
 ```
 
----
-
-### 2. Define Hosts
+#### 2. Define Hosts
 
 Update the `segmenthosts.conf` file with the IP addresses and hostnames of your coordinator and segment nodes.
 
@@ -199,13 +217,10 @@ Update the `segmenthosts.conf` file with the IP addresses and hostnames of your 
 #Hashdata hosts end
 ```
 
-- Use `##Coordinator hosts` and `##Segment hosts` to separate coordinator and segment nodes.
 - Replace the IP addresses and hostnames with those appropriate for your environment.
 - This format must be followed for the deployment scripts to correctly parse the file.
 
----
-
-### 3. Start Deployment
+#### 3. Start Deployment
 
 After configuring the necessary files, start the deployment process:
 
@@ -219,6 +234,57 @@ sh run.sh
 - `multi`: Forces multi-node deployment
 - `--help`: Shows usage information
 
+### Web UI Deployment
+
+Modern deployment method using a web-based interface that simplifies the configuration and deployment process.
+
+#### Starting the Web UI
+
+To start the Web UI, run the `start_web.sh` script:
+
+```bash
+sh start_web.sh
+```
+
+This script will:
+1. Turn off firewalls
+2. Install required packages (python3, pip)
+3. Create and activate a Python virtual environment
+4. Install Flask and other required Python packages
+5. Start the web application using Gunicorn on port 5000
+
+After starting, you can access the Web UI by opening a browser and navigating to `http://<server-ip>:5000`.
+
+#### Using the Web UI
+
+The Web UI provides a user-friendly interface for configuring and deploying your CBDB cluster:
+
+1. **Configuration Tab**
+   - Select deployment mode (Single Node or Multi Node)
+   - Configure mandatory options (Admin User, Password, RPM path, etc.)
+   - Set cluster initialization parameters (Coordinator port, directories, etc.)
+   - Configure mirror settings if needed
+   - Set multi-node specific parameters (Segment access method, key files, etc.)
+   - Upload RPM and key files directly through the UI
+   - Save configuration with the "Save Configuration" button
+
+2. **Hosts Tab** (Multi Node mode only)
+   - Configure coordinator host IP and hostname
+   - Add/remove segment hosts with their IPs and hostnames
+   - Save host configuration with the "Save Hosts" button
+
+3. **Deploy Tab**
+   - Review all deployment configuration details
+   - See warnings about data directories being deleted and recreated
+   - Check configuration consistency between tabs
+   - Start deployment with the "Deploy Cluster" button
+
+The Web UI provides several advantages over command-line deployment:
+- Visual configuration interface reduces the chance of configuration errors
+- File upload functionality for RPM and key files
+- Configuration validation and consistency checks
+- Clear warnings about destructive operations (like data directory recreation)
+
 ---
 
 ## Features
@@ -231,6 +297,9 @@ sh run.sh
 - Flexible deployment options (single/multi-node, with/without mirrors)
 - Robust SSH key management for passwordless access
 - Auto-detection and configuration of OS-specific parameters
+- Web-based user interface for simplified deployment
+- Real-time deployment monitoring and logging
+- Configuration validation and consistency checks
 
 ---
 
@@ -266,6 +335,15 @@ sh run.sh
 
 - **segmenthosts.conf**  
   Defines the coordinator and segment hosts for the cluster.
+
+- **cluster_deploy_web.py**  
+  Flask web application providing a UI for cluster deployment.
+
+- **start_web.sh**  
+  Script to start the web UI application.
+
+- **wsgi.py**  
+  WSGI entry point for the web application.
 
 ---
 
@@ -373,6 +451,8 @@ sh multiscp.sh [options] source_file destination_path
 - All operations are logged with timestamps for troubleshooting.
 - Supports automatic failover to source compilation for `sshpass` if package installation fails.
 - Implements safeguards against common deployment issues.
+- Web UI provides visual feedback and real-time deployment monitoring.
+- Data directories will be deleted and recreated during deployment, with clear warnings in the UI.
 
 ---
 
@@ -395,6 +475,11 @@ sh multiscp.sh [options] source_file destination_path
    - Check resource allocation.
    - Review segment configuration.
 
+4. **Web UI Issues:**
+   - Ensure port 5000 is accessible through any firewalls.
+   - Check that the web application is running (`ps aux | grep gunicorn`).
+   - Review web application logs for errors.
+
 ---
 
 ## Support
@@ -405,3 +490,4 @@ For issues or questions:
 2. Contact the repository maintainer.
 
 ---
+        
