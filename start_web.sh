@@ -90,7 +90,7 @@ echo "Installing required packages..."
 pip3 install -i https://mirrors.aliyun.com/pypi/simple flask gunicorn psutil
 
 # Verify Flask installation
-if ! python -c "import flask" &> /dev/null; then
+if ! python3 -c "import flask" &> /dev/null; then
     echo "Error: Flask installation failed"
     exit 1
 fi
