@@ -71,12 +71,21 @@ fi
 log_time "Step 3: Install required packages..."
 yum install -y python3 python3-pip openssl-devel openssl
 
+# Check if virtual environment exists, if not create it
+if [ ! -d "venv" ]; then
+    echo "Creating virtual environment..."
+    python3 -m venv venv
+fi
+
+# Activate virtual environment
+source venv/bin/activate
+
 # Upgrade pip to latest version
-pip3 install -i https://mirrors.aliyun.com/pypi/simple  --upgrade pip
+pip install -i https://mirrors.aliyun.com/pypi/simple --upgrade pip
 
 # Install required packages in the virtual environment
 echo "Installing required packages..."
-pip3 install -i https://mirrors.aliyun.com/pypi/simple flask gunicorn psutil
+pip install -i https://mirrors.aliyun.com/pypi/simple flask gunicorn psutil
 
 # Verify Flask installation
 if ! python3 -c "import flask" &> /dev/null; then
