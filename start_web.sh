@@ -40,7 +40,6 @@ if [ -f /etc/os-release ]; then
             curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.huaweicloud.com/repository/conf/CentOS-7-anon.repo
             yum clean all
             yum makecache
-            yum install -y libcgroup-tools
             
             # You can add specific commands for Operation A here, for example, setting up the environment on the coordinator node
             # sh init_env.sh single
@@ -52,7 +51,6 @@ if [ -f /etc/os-release ]; then
             curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.huaweicloud.com/repository/conf/CentOS-8-anon.repo
             yum clean all
             yum makecache
-            yum install -y libcgroup-tools
             # You can add specific commands for Operation B here
             ;;
         9)
@@ -71,7 +69,7 @@ fi
 
 # Install required packages
 log_time "Step 3: Install required packages..."
-yum install -y python3 python3-pip openssl-devel openssl
+yum install -y python3 python3-pip
 
 # Check if virtual environment exists, if not create it
 if [ ! -d "venv" ]; then
