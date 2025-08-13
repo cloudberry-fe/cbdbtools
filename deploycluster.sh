@@ -94,6 +94,7 @@ function update_deploy_parameter() {
     fi
     
     # Ensure we append to a new line
+    # Only check once inside the function to avoid multiple blank lines
     if [ -s "${param_file}" ] && [ "$(tail -c 1 "${param_file}")" != $'\n' ]; then
         echo >> "${param_file}"
     fi
@@ -103,11 +104,7 @@ function update_deploy_parameter() {
     log_time "Added ${param_name}=${param_value} to ${param_file}"
 }
 
-# Update parameters after detection
-if [ -s "./${VARS_FILE}" ] && [ "$(tail -c 1 "./${VARS_FILE}")" != $'\n' ]; then
-  echo >> "./${VARS_FILE}"
-fi
-
+# Update parameters - removed duplicate newline check to prevent extra blank lines
 update_deploy_parameter "DB_TYPE" "$DB_TYPE"
 update_deploy_parameter "DB_VERSION" "$DB_VERSION"
 update_deploy_parameter "LEGACY_VERSION" "$LEGACY_VERSION"
