@@ -83,14 +83,19 @@ function update_deploy_parameter() {
     
     # Check if parameter exists in the file
     if grep -q "^export ${param_name}=" "${param_file}"; then
-        # Delete existing parameter
-        sed -i '' "/^export ${param_name}=.*/d" "${param_file}"
+        # Delete existing parameter - CentOS/Linux syntax
+        sed -i "/^export ${param_name}=.*/d" "${param_file}"
         if [ $? -eq 0 ]; then
             log_time "Deleted existing ${param_name} from ${param_file}"
         else
             log_time "Error deleting ${param_name} from ${param_file}"
             return 1
         fi
+    fi
+    
+    # Ensure we append to a new line
+    if [ -s "${param_file}" ] && [ "$(tail -c 1 "${param_file}")" != $'\n' ]; then
+        echo >> "${param_file}"
     fi
     
     # Add new parameter setting
