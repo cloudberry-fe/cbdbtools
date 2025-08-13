@@ -228,11 +228,17 @@ def save_params():
 
         # 如果有上传的Key文件路径，使用上传的路径
         if 'SEGMENT_ACCESS_KEYFILE' in params and params['SEGMENT_ACCESS_KEYFILE']:
-            # 确保路径存在
-            if os.path.exists(params['SEGMENT_ACCESS_KEYFILE']):
-                print(f'Using uploaded Key file: {params["SEGMENT_ACCESS_KEYFILE"]}')
+            # 只在多机模式且Segment Access Method为KeyFile时检查keyfile
+            deploy_type = params.get('DEPLOY_TYPE', 'single')
+            segment_access_method = params.get('SEGMENT_ACCESS_METHOD', '')
+            if deploy_type == 'multi' and segment_access_method == 'keyfile':
+                # 确保路径存在
+                if os.path.exists(params['SEGMENT_ACCESS_KEYFILE']):
+                    print(f'Using uploaded Key file: {params["SEGMENT_ACCESS_KEYFILE"]}')
+                else:
+                    flash(f'Warning: Key file path does not exist: {params["SEGMENT_ACCESS_KEYFILE"]}')
             else:
-                flash(f'Warning: Key file path does not exist: {params["SEGMENT_ACCESS_KEYFILE"]}')
+                print(f'Skipping key file check for {deploy_type} deployment with {segment_access_method} access')
 
         # 保存参数
         save_parameters(params)
