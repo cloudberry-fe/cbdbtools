@@ -244,6 +244,30 @@ cat /usr/share/zoneinfo/Asia/Macau > /usr/share/zoneinfo/Asia/Shanghai
 
 yum install -y epel-release
 
+log_time "Install necessary tools: sshpass."
+
+# Check if sshpass is already installed
+if ! command -v sshpass &> /dev/null; then
+    echo "sshpass could not be found, installing..."
+    yum install -y sshpass
+    if [ $? -ne 0 ]; then
+        echo "Try to build from source code."
+        yum install -y tar gcc make
+        tar -zxvf sshpass-1.10.tar.gz
+        cd sshpass-1.10
+        ./configure
+        make
+        make install
+        if [ $? -ne 0 ]; then
+            echo "Failed to install sshpass from source code."
+        exit 1
+        fi
+    fi
+    echo "sshpass installed successfully."
+else
+    echo "sshpass is already installed."
+fi
+
 log_time "Install necessary dependencies."
 yum install -y apr apr-util bash bzip2 curl iproute krb5-devel libcurl libevent libuuid libuv libxml2 libyaml libzstd openldap openssh openssh-clients openssh-server openssl openssl-libs perl python3 python3-psycopg2 python3-psutil python3-pyyaml python3-setuptools python3-devel python39 readline rsync sed tar which zip zlib 
 yum install -y git passwd wget net-tools nmon libicu
@@ -476,29 +500,6 @@ if [ "$cluster_type" = "multi" ]; then
   
   if [ "${SEGMENT_ACCESS_METHOD}" = "keyfile" ]; then
     chmod 600 ${SEGMENT_ACCESS_KEYFILE}
-  else
-    log_time "Install necessary tools: sshpass."
-    # Check if sshpass is already installed
-    if ! command -v sshpass &> /dev/null; then
-      echo "sshpass could not be found, installing..."
-      yum install -y sshpass
-      if [ $? -ne 0 ]; then
-        echo "Try to build from source code."
-        yum install -y tar gcc make
-        tar -zxvf sshpass-1.10.tar.gz
-        cd sshpass-1.10
-        ./configure
-        make
-        make install
-        if [ $? -ne 0 ]; then
-          echo "Failed to install sshpass from source code."
-          exit 1
-        fi
-      fi
-      echo "sshpass installed successfully."
-    else
-      echo "sshpass is already installed."
-    fi
   fi
 
   echo "sed -n '/##Segment hosts/,/#Hashdata hosts end/p' segmenthosts.conf|awk '/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/ {print \$2}' > ${working_dir}/segment_hosts.txt"
