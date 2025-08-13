@@ -71,6 +71,7 @@ The tool provides two deployment methods:
 
 1. **Operating System:**  
    - CentOS/RHEL 7, 8, or 9
+   - The tool will check and install required packages with `YUM`, will try to update alternative yum repo for Centos7/8 automatically, save your yum repo settings if necessary. For Cento 9, make sure yum/dnf repos are configured correctly. 
 
 2. **Supported Database Versions:**  
    - HashData Lightning  
