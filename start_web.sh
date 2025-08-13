@@ -28,6 +28,13 @@ if [ -f /etc/os-release ]; then
     # Source the /etc/os-release file to get the system information
     source /etc/os-release
 
+    # Checking for Oracle Linux
+    IS_ORACLE_LINUX=0
+    if [[ "$ID" == "ol" || "$NAME" == *"Oracle Linux"* ]]; then
+        IS_ORACLE_LINUX=1
+        echo "This is Oracle Linux"
+    fi
+
     # Extract the first digit of the VERSION_ID
     first_digit=$(echo "$VERSION_ID" | cut -c1)
 
@@ -47,10 +54,12 @@ if [ -f /etc/os-release ]; then
         8)
             # Operation B
             echo "This is a operating system with version ID starting with 8."
-            rm -rf /etc/yum.repos.d/*
-            curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.huaweicloud.com/repository/conf/CentOS-8-anon.repo
-            yum clean all
-            yum makecache
+            if [ $IS_ORACLE_LINUX -ne 1 ]; then
+              rm -rf /etc/yum.repos.d/*
+              curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.huaweicloud.com/repository/conf/CentOS-8-anon.repo
+              yum clean all
+              yum makecache
+            fi
             # You can add specific commands for Operation B here
             ;;
         9)
@@ -69,7 +78,7 @@ fi
 
 # Install required packages
 log_time "Step 3: Install required packages..."
-yum install -y python3 python3-pip openssl-devel openssl --allowerasing
+yum install -y python3 python3-pip openssl-devel openssl
 
 # Check if virtual environment exists, if not create it
 if [ ! -d "venv" ]; then
