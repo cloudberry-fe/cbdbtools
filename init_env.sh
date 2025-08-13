@@ -252,7 +252,7 @@ if ! command -v sshpass &> /dev/null; then
     yum install -y sshpass
     if [ $? -ne 0 ]; then
         echo "Try to build from source code."
-        yum install -y tar gcc make
+        yum install -y tar gcc make --allowerasing
         tar -zxvf sshpass-1.10.tar.gz
         cd sshpass-1.10
         ./configure
