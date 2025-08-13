@@ -436,36 +436,37 @@ if [ "${INIT_ENV_ONLY}" != "true" ]; then
     wget ${CLOUDBERRY_RPM_URL} -O ${CLOUDBERRY_RPM}
   fi
   
-  # 清理之前安装包检查变量中是否包含"greenplum"字样  
+##  # 清理之前安装包检查变量中是否包含"greenplum"字样  
+##  
+##  # 确保CLOUDBERRY_RPM变量已设置
+##  if [ -z "${CLOUDBERRY_RPM}" ]; then
+##      echo "NO CLOUDBERRY_RPM could be found or downloaded, please check the deploycluster_parameter.sh file."
+##      exit 1
+##  fi
+##  
+##  # 判断RPM包名称是否包含greenplum或cloudberry或hashdata
+##  if [[ "${CLOUDBERRY_RPM}" =~ greenplum ]]; then
+##      keyword="greenplum"
+##      soft_link="/usr/local/greenplum-db"
+##  elif [[ "${CLOUDBERRY_RPM}" =~ cloudberry ]]; then
+##      keyword="cloudberry"
+##      soft_link="/usr/local/cloudberry-db"
+##  elif [[ "${CLOUDBERRY_RPM}" =~ hashdata ]]; then
+##      keyword="hashdata"
+##      soft_link="/usr/local/hashdata-lightning"
+##  elif [[ "${CLOUDBERRY_RPM}" =~ synxdb ]]; then
+##      keyword="synxdb"
+##      soft_link="/usr/local/synxdb4"
+##  else
+##      keyword="none"
+##      soft_link="none"
+##  fi
+##
+##  log_time "Currently deploy ${keyword} database."
+  keyword=$DB_TYPE
+  soft_link=$CLOUDBERRY_BINARY_PATH
   
-  # 确保CLOUDBERRY_RPM变量已设置
-  if [ -z "${CLOUDBERRY_RPM}" ]; then
-      echo "NO CLOUDBERRY_RPM could be found or downloaded, please check the deploycluster_parameter.sh file."
-      exit 1
-  fi
-  
-  # 判断RPM包名称是否包含greenplum或cloudberry或hashdata
-  if [[ "${CLOUDBERRY_RPM}" =~ greenplum ]]; then
-      keyword="greenplum"
-      soft_link="/usr/local/greenplum-db"
-  elif [[ "${CLOUDBERRY_RPM}" =~ cloudberry ]]; then
-      keyword="cloudberry"
-      soft_link="/usr/local/cloudberry-db"
-  elif [[ "${CLOUDBERRY_RPM}" =~ hashdata ]]; then
-      keyword="hashdata"
-      soft_link="/usr/local/hashdata-lightning"
-  elif [[ "${CLOUDBERRY_RPM}" =~ synxdb ]]; then
-      keyword="synxdb"
-      soft_link="/usr/local/synxdb4"
-  else
-      keyword="none"
-      soft_link="none"
-  fi
-
-  log_time "Currently deploy ${keyword} database."
-  
-  # 根据关键字处理安装和权限
-  if [ "${keyword}" != "none" ]; then
+  if [ "${keyword}" != "unknown" ]; then
       # 检查/usr/local下是否存在包含关键字的目录
     if find /usr/local -maxdepth 1 -type d -name "*${keyword}*" -print -quit | grep -q .; then
           echo "Previous installation found, will try to remove and reinstall."

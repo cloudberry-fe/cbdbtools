@@ -4,7 +4,7 @@ source ./${VARS_FILE}
 
 ## Database type and version detection
 # Default values
-export DB_TYPE="cloudberry"
+export DB_TYPE="unknown"
 export DB_VERSION="unknown"
 export LEGACY_VERSION="false"
 export CLOUDBERRY_BINARY_PATH="/usr/local/cloudberry-db"
@@ -44,6 +44,11 @@ if [ -n "$CLOUDBERRY_RPM" ]; then
         export DB_VERSION="2"
         export CLOUDBERRY_BINARY_PATH="/usr/local/synxdb"
         export CLUSTER_ENV="synxdb_path.sh"
+    elif [[ "$CLOUDBERRY_RPM" == *"cloudberry"* ]]; then
+        export DB_TYPE="cloudberry"
+        export DB_VERSION="1"
+        export CLOUDBERRY_BINARY_PATH="/usr/local/cloudberry-db"
+        export CLUSTER_ENV="greenplum_path.sh"
     fi
     
     log_time "Database type: $DB_TYPE"
@@ -56,6 +61,35 @@ else
     log_time "CLOUDBERRY_BINARY_PATH: $CLOUDBERRY_BINARY_PATH"
     log_time "Cluster environment file: $CLUSTER_ENV"
 fi
+
+## Update parameters in deploycluster_parameter.sh
+# Function to update or add parameters in deploycluster_parameter.sh
+# Parameters:
+#   $1 - Parameter name
+#   $2 - Parameter value
+function update_deploy_parameter() {
+    local param_name="$1"
+    local param_value="$2"
+    local param_file="./${VARS_FILE}"
+    
+    # Check if parameter exists in the file
+    if grep -q "^export $param_name=" "$param_file"; then
+        # Update existing parameter
+        sed -i '' "s|^export $param_name=.*|export $param_name=\"$param_value\"|" "$param_file"
+        log_time "Updated $param_name to $param_value in $param_file"
+    else
+        # Add new parameter
+        echo "export $param_name=\"$param_value\"" >> "$param_file"
+        log_time "Added $param_name=$param_value to $param_file"
+    fi
+}
+
+# Update parameters after detection
+update_deploy_parameter "DB_TYPE" "$DB_TYPE"
+update_deploy_parameter "DB_VERSION" "$DB_VERSION"
+update_deploy_parameter "LEGACY_VERSION" "$LEGACY_VERSION"
+update_deploy_parameter "CLOUDBERRY_BINARY_PATH" "$CLOUDBERRY_BINARY_PATH"
+update_deploy_parameter "CLUSTER_ENV" "$CLUSTER_ENV"
 
 if [ "${1}" == "single" ] || [ "${1}" == "multi" ]; then  
   cluster_type="${1}"  
