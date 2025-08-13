@@ -2,11 +2,10 @@
 export ADMIN_USER="gpadmin"
 export ADMIN_USER_PASSWORD="Hashdata@123"
 export CLOUDBERRY_RPM="/tmp/hashdata-lightning-release.rpm"
-export CLOUDBERRY_BINARY_PATH="/usr/local/cloudberry-db"
 export COORDINATOR_HOSTNAME="mdw"
 export COORDINATOR_IP="192.168.193.21"
 # Set to 'multi' for multi-node deployment
-export DEPLOY_TYPE="single"      
+export DEPLOY_TYPE="single"
 
 ## Set to 'true' if you want to set up OS parameters only (no database installation or cluster initialization)
 export INIT_ENV_ONLY="false"
@@ -38,6 +37,28 @@ export SEGMENT_ACCESS_METHOD="keyfile"
 export SEGMENT_ACCESS_USER="root"
 export SEGMENT_ACCESS_KEYFILE="/tmp/keyfiles"
 export SEGMENT_ACCESS_PASSWORD="XXXXXXXX"
+
+## Dynamically set CLOUDBERRY_BINARY_PATH based on RPM filename
+# Default path: /usr/local/cloudberry-db
+export CLOUDBERRY_BINARY_PATH="/usr/local/cloudberry-db"
+
+if [ -n "$CLOUDBERRY_RPM" ]; then
+  echo "Setting CLOUDBERRY_BINARY_PATH based on RPM filename: $CLOUDBERRY_RPM"
+  # Check if filename contains specific keywords
+  # Priority: greenplum > hashdata-lightning-2 > synxdb4 > synxdb
+  if [[ "$CLOUDBERRY_RPM" == *"greenplum"* ]]; then
+    export CLOUDBERRY_BINARY_PATH="/usr/local/greenplum-db"
+  elif [[ "$CLOUDBERRY_RPM" == *"hashdata-lightning-2"* ]]; then
+    export CLOUDBERRY_BINARY_PATH="/usr/local/hashdata-lightning"
+  elif [[ "$CLOUDBERRY_RPM" == *"synxdb4"* ]]; then
+    export CLOUDBERRY_BINARY_PATH="/usr/local/synxdb4"
+  elif [[ "$CLOUDBERRY_RPM" == *"synxdb"* ]]; then
+    export CLOUDBERRY_BINARY_PATH="/usr/local/synxdb"
+  fi
+  echo "CLOUDBERRY_BINARY_PATH set to: $CLOUDBERRY_BINARY_PATH"
+else
+  echo "CLOUDBERRY_RPM not specified, using default CLOUDBERRY_BINARY_PATH: $CLOUDBERRY_BINARY_PATH"
+fi
 
 # Utility function for logging with timestamps
 function log_time() {
