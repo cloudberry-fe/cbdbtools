@@ -14,7 +14,7 @@ sed s/^SELINUX=.*$/SELINUX=disabled/ -i /etc/selinux/config
 setenforce 0
 
 # Kill any existing gunicorn processes
-echo "Killing any existing gunicorn processes..."
+log_time "Killing any existing gunicorn processes..."
 pkill -f gunicorn || true
 
 
@@ -22,7 +22,7 @@ pkill -f gunicorn || true
 log_time "Step 1: Installing Software Dependencies..."
 
 # Check if the /etc/os-release file exists
-echo "Check os-release version and make proper settings for YUM sources"
+log_time "Check os-release version and make proper settings for YUM sources"
 
 if [ -f /etc/os-release ]; then
     # Source the /etc/os-release file to get the system information
@@ -52,28 +52,30 @@ if [ -f /etc/os-release ]; then
             # sh init_env.sh single
             ;;
         8)
-            # Operation B
+            # Operation in 8
             echo "This is a operating system with version ID starting with 8."
             if [ $IS_ORACLE_LINUX -ne 1 ]; then
               rm -rf /etc/yum.repos.d/*
               curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.huaweicloud.com/repository/conf/CentOS-8-anon.repo
               yum clean all
               yum makecache
+            else
+              log_time "Skip set yum repo for Oracle Linux."
             fi
             # You can add specific commands for Operation B here
             ;;
         9)
-            # Operation C
+            # Operation in 9
             echo "This is a operating system with version ID starting with 9. Executing Operation C."
             # You can add specific commands for Operation C here, such as starting the database cluster deployment
             # bash run.sh multi
             ;;
         *)
-            echo "Unsupported OS version ID starting with: $first_digit"
+            log_time "Unsupported OS version ID starting with: $first_digit"
             ;;
     esac
 else
-    echo "/etc/os-release file not found. Unable to determine the operating system version."
+    log_time "/etc/os-release file not found. Unable to determine the operating system version."
 fi
 
 # Install required packages
@@ -82,7 +84,7 @@ yum install -y python3 python3-pip openssl-devel openssl
 
 # Check if virtual environment exists, if not create it
 if [ ! -d "venv" ]; then
-    echo "Creating virtual environment..."
+    log_time "Creating virtual environment..."
     python3 -m venv venv
 fi
 
@@ -93,15 +95,15 @@ source venv/bin/activate
 pip install -i https://mirrors.aliyun.com/pypi/simple --upgrade pip
 
 # Install required packages in the virtual environment
-echo "Installing required packages..."
+log_time "Installing required packages..."
 pip install -i https://mirrors.aliyun.com/pypi/simple flask gunicorn psutil
 
 # Verify Flask installation
 if ! python3 -c "import flask" &> /dev/null; then
-    echo "Error: Flask installation failed"
+    log_time "Error: Flask installation failed"
     exit 1
 fi
 
 # Start the web application using Gunicorn
-echo "Starting web application with Gunicorn..."
+log_time "Starting web application with Gunicorn..."
 exec gunicorn --bind 0.0.0.0:5000 --workers 4 --timeout 600 wsgi:app
