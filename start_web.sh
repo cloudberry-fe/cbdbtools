@@ -69,7 +69,7 @@ fi
 
 # Install required packages
 log_time "Step 3: Install required packages..."
-yum install -y python3 python3-pip openssl-devel openssl
+yum install -y python3 python3-pip openssl-devel openssl --allowerasing
 
 # Check if virtual environment exists, if not create it
 if [ ! -d "venv" ]; then
