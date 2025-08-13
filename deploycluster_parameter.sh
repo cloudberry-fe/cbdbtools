@@ -1,7 +1,8 @@
 ## Mandatory options
 export ADMIN_USER="gpadmin"
 export ADMIN_USER_PASSWORD="Hashdata@123"
-export CLOUDBERRY_RPM="/tmp/hashdata-lightning-release.rpm"
+export CLOUDBERRY_RPM="/tmp/cloudberry-db-release.rpm"
+export CLOUDBERRY_BINARY_PATH="/usr/local/cloudberry-db"
 export COORDINATOR_HOSTNAME="mdw"
 export COORDINATOR_IP="192.168.193.21"
 # Set to 'multi' for multi-node deployment
@@ -37,34 +38,6 @@ export SEGMENT_ACCESS_METHOD="keyfile"
 export SEGMENT_ACCESS_USER="root"
 export SEGMENT_ACCESS_KEYFILE="/tmp/keyfiles"
 export SEGMENT_ACCESS_PASSWORD="XXXXXXXX"
-
-## Dynamically set CLOUDBERRY_BINARY_PATH based on RPM filename
-# Default path: /usr/local/cloudberry-db
-export CLOUDBERRY_BINARY_PATH="/usr/local/cloudberry-db"
-
-if [ -n "$CLOUDBERRY_RPM" ]; then
-    echo "Setting CLOUDBERRY_BINARY_PATH based on RPM filename: $CLOUDBERRY_RPM"
-    
-    # Declare associative array for RPM keyword to path mapping
-    declare -A rpm_paths=(
-        ["greenplum"]="/usr/local/greenplum-db"
-        ["hashdata-lightning-2"]="/usr/local/hashdata-lightning"
-        ["synxdb4"]="/usr/local/synxdb4"
-        ["synxdb"]="/usr/local/synxdb"
-    )
-    
-    # Iterate through the array to find matching keyword
-    for keyword in "${!rpm_paths[@]}"; do
-        if [[ "$CLOUDBERRY_RPM" == *"$keyword"* ]]; then
-            export CLOUDBERRY_BINARY_PATH="${rpm_paths[$keyword]}" 
-            break
-        fi
-    done
-    
-    echo "CLOUDBERRY_BINARY_PATH set to: $CLOUDBERRY_BINARY_PATH"
-else
-    echo "CLOUDBERRY_RPM not specified, using default CLOUDBERRY_BINARY_PATH: $CLOUDBERRY_BINARY_PATH"
-fi
 
 # Utility function for logging with timestamps
 function log_time() {
