@@ -19,15 +19,6 @@ else
   cluster_type="${DEPLOY_TYPE}"
 fi  
 
-if [[ "${CLOUDBERRY_RPM}" =~ synxdb ]]; then
-  cluster_env="cluster_env.sh"
-else
-  cluster_env="greenplum_path.sh"
-fi
-
-echo "CLOUDBERRY_RPM:$CLOUDBERRY_RPM"
-echo "cluster_env:$cluster_env"
-
 change_hostname() {
     local new_hostname="$1"
     
@@ -389,10 +380,10 @@ if ! id "$ADMIN_USER" &>/dev/null; then
   chown -R ${ADMIN_USER}:${ADMIN_USER} /home/${ADMIN_USER}
 else 
   # Combine all patterns to be cleaned, using regex OR condition to match multiple keywords
-  if grep -qE 'COORDINATOR_DATA_DIRECTORY|MASTER_DATA_DIRECTORY|greenplum_path.sh|cluster_env.sh' /home/${ADMIN_USER}/.bashrc; then
+  if grep -qE 'COORDINATOR_DATA_DIRECTORY|MASTER_DATA_DIRECTORY|greenplum_path.sh|cluster_env.sh|synxdb_path.sh' /home/${ADMIN_USER}/.bashrc; then
     echo "Found environment variable settings to clean up, removing them..."
     # Use extended regex to match all target patterns and delete lines (macOS compatible syntax)
-    sed -i -E '/COORDINATOR_DATA_DIRECTORY|MASTER_DATA_DIRECTORY|greenplum_path.sh|cluster_env.sh/d' /home/${ADMIN_USER}/.bashrc
+    sed -i -E '/COORDINATOR_DATA_DIRECTORY|MASTER_DATA_DIRECTORY|greenplum_path.sh|cluster_env.sh|synxdb_path.sh/d' /home/${ADMIN_USER}/.bashrc
   fi
 fi
 

@@ -4,61 +4,6 @@ VARS_FILE="deploycluster_parameter.sh"
 
 source ./${VARS_FILE}
 
-## Database type and version detection
-# Default values
-export DB_TYPE="cloudberry"
-export DB_VERSION="unknown"
-export LEGACY_VERSION="false"
-export CLOUDBERRY_BINARY_PATH="/usr/local/cloudberry-db"
-cluster_env="greenplum_path.sh"
-
-if [ -n "$CLOUDBERRY_RPM" ]; then
-    log_time "Detecting database type and version from RPM filename: $CLOUDBERRY_RPM"
-    
-    # Determine database type and set binary path
-    if [[ "$CLOUDBERRY_RPM" == *"greenplum"* ]]; then
-        export DB_TYPE="greenplum"
-        export CLOUDBERRY_BINARY_PATH="/usr/local/greenplum-db"
-        cluster_env="greenplum_path.sh"
-        
-        # Extract Greenplum version
-        version=$(echo ${CLOUDBERRY_RPM} | grep -oP 'greenplum-db-\K[0-9.]+')
-        export DB_VERSION="$version"
-        log_time "Greenplum version detected: $version"
-        
-        # Check if legacy version (major version < 7)
-        major_version=$(echo $version | cut -d. -f1)
-        if [ $major_version -lt 7 ]; then
-            export LEGACY_VERSION="true"
-            log_time "Detected legacy Greenplum version (major version < 7)"
-        fi
-    elif [[ "$CLOUDBERRY_RPM" == *"hashdata-lightning-2"* ]]; then
-        export DB_TYPE="hashdata-lightning"
-        export CLOUDBERRY_BINARY_PATH="/usr/local/hashdata-lightning"
-        cluster_env="greenplum_path.sh"
-    elif [[ "$CLOUDBERRY_RPM" == *"synxdb4"* ]]; then
-        export DB_TYPE="synxdb"
-        export DB_VERSION="4"
-        export CLOUDBERRY_BINARY_PATH="/usr/local/synxdb4"
-        cluster_env="cluster_env.sh"
-    elif [[ "$CLOUDBERRY_RPM" == *"synxdb"* ]]; then
-        export DB_TYPE="synxdb"
-        export DB_VERSION="2"
-        export CLOUDBERRY_BINARY_PATH="/usr/local/synxdb"
-        cluster_env="synxdb_path.sh"
-    fi
-    
-    log_time "Database type: $DB_TYPE"
-    log_time "Database version: $DB_VERSION"
-    log_time "CLOUDBERRY_BINARY_PATH set to: $CLOUDBERRY_BINARY_PATH"
-    log_time "Cluster environment file: $cluster_env"
-else
-    log_time "CLOUDBERRY_RPM not specified, using default settings"
-    log_time "Database type: $DB_TYPE"
-    log_time "CLOUDBERRY_BINARY_PATH: $CLOUDBERRY_BINARY_PATH"
-    log_time "Cluster environment file: $cluster_env"
-fi
-
 if [ "${1}" == "single" ] || [ "${1}" == "multi" ]; then  
   cluster_type="${1}"  
 else  
@@ -111,14 +56,14 @@ chown -R ${ADMIN_USER}:${ADMIN_USER} ${CLOUDBERRY_BINARY_PATH} ${INIT_CONFIGFILE
 
 COORDINATOR_DATA_DIRECTORY="${COORDINATOR_DIRECTORY}/${SEG_PREFIX}-1"
 
-su ${ADMIN_USER} -l -c "source ${CLOUDBERRY_BINARY_PATH}/${cluster_env};gpinitsystem -a -c ${INIT_CONFIGFILE} -h ${MACHINE_LIST_FILE}"
+su ${ADMIN_USER} -l -c "source ${CLOUDBERRY_BINARY_PATH}/${CLUSTER_ENV};gpinitsystem -a -c ${INIT_CONFIGFILE} -h ${MACHINE_LIST_FILE}"
 
-su ${ADMIN_USER} -l -c "export COORDINATOR_DATA_DIRECTORY="${COORDINATOR_DATA_DIRECTORY}";source ${CLOUDBERRY_BINARY_PATH}/${cluster_env};psql -d ${DATABASE_NAME} -c \"alter user ${ADMIN_USER} password 'Hashdata@123'\""
+su ${ADMIN_USER} -l -c "export COORDINATOR_DATA_DIRECTORY="${COORDINATOR_DATA_DIRECTORY}";source ${CLOUDBERRY_BINARY_PATH}/${CLUSTER_ENV};psql -d ${DATABASE_NAME} -c \"alter user ${ADMIN_USER} password 'Hashdata@123'\""
 echo "host all all 0.0.0.0/0 trust" >> ${COORDINATOR_DATA_DIRECTORY}/pg_hba.conf
 
 echo "Setting up environment variables for ${ADMIN_USER}..."
 
-echo "source ${CLOUDBERRY_BINARY_PATH}/${cluster_env}" >> /home/${ADMIN_USER}/.bashrc
+echo "source ${CLOUDBERRY_BINARY_PATH}/${CLUSTER_ENV}" >> /home/${ADMIN_USER}/.bashrc
 
 if [ "$LEGACY_VERSION" = "true" ]; then
   sed -i '/MASTER_DATA_DIRECTORY/d' /home/${ADMIN_USER}/.bashrc
@@ -130,5 +75,5 @@ fi
 
 echo "Finished setting up environment variables for ${ADMIN_USER}..."
 
-su ${ADMIN_USER} -l -c "source ${CLOUDBERRY_BINARY_PATH}/${cluster_env};gpstop -u"
+su ${ADMIN_USER} -l -c "source ${CLOUDBERRY_BINARY_PATH}/${CLUSTER_ENV};gpstop -u"
 log_time "Finished init cluster..."
