@@ -43,21 +43,27 @@ export SEGMENT_ACCESS_PASSWORD="XXXXXXXX"
 export CLOUDBERRY_BINARY_PATH="/usr/local/cloudberry-db"
 
 if [ -n "$CLOUDBERRY_RPM" ]; then
-  echo "Setting CLOUDBERRY_BINARY_PATH based on RPM filename: $CLOUDBERRY_RPM"
-  # Check if filename contains specific keywords
-  # Priority: greenplum > hashdata-lightning-2 > synxdb4 > synxdb
-  if [[ "$CLOUDBERRY_RPM" == *"greenplum"* ]]; then
-    export CLOUDBERRY_BINARY_PATH="/usr/local/greenplum-db"
-  elif [[ "$CLOUDBERRY_RPM" == *"hashdata-lightning-2"* ]]; then
-    export CLOUDBERRY_BINARY_PATH="/usr/local/hashdata-lightning"
-  elif [[ "$CLOUDBERRY_RPM" == *"synxdb4"* ]]; then
-    export CLOUDBERRY_BINARY_PATH="/usr/local/synxdb4"
-  elif [[ "$CLOUDBERRY_RPM" == *"synxdb"* ]]; then
-    export CLOUDBERRY_BINARY_PATH="/usr/local/synxdb"
-  fi
-  echo "CLOUDBERRY_BINARY_PATH set to: $CLOUDBERRY_BINARY_PATH"
+    echo "Setting CLOUDBERRY_BINARY_PATH based on RPM filename: $CLOUDBERRY_RPM"
+    
+    # Declare associative array for RPM keyword to path mapping
+    declare -A rpm_paths=(
+        ["greenplum"]="/usr/local/greenplum-db"
+        ["hashdata-lightning-2"]="/usr/local/hashdata-lightning"
+        ["synxdb4"]="/usr/local/synxdb4"
+        ["synxdb"]="/usr/local/synxdb"
+    )
+    
+    # Iterate through the array to find matching keyword
+    for keyword in "${!rpm_paths[@]}"; do
+        if [[ "$CLOUDBERRY_RPM" == *"$keyword"* ]]; then
+            export CLOUDBERRY_BINARY_PATH="${rpm_paths[$keyword]}"
+            break
+        fi
+    done
+    
+    echo "CLOUDBERRY_BINARY_PATH set to: $CLOUDBERRY_BINARY_PATH"
 else
-  echo "CLOUDBERRY_RPM not specified, using default CLOUDBERRY_BINARY_PATH: $CLOUDBERRY_BINARY_PATH"
+    echo "CLOUDBERRY_RPM not specified, using default CLOUDBERRY_BINARY_PATH: $CLOUDBERRY_BINARY_PATH"
 fi
 
 # Utility function for logging with timestamps
