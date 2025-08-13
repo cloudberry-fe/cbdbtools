@@ -93,18 +93,16 @@ function update_deploy_parameter() {
         fi
     fi
     
-    # Ensure we append to a new line
-    # Only check once inside the function to avoid multiple blank lines
-    if [ -s "${param_file}" ] && [ "$(tail -c 1 "${param_file}")" != $'\n' ]; then
-        echo >> "${param_file}"
-    fi
-    
-    # Add new parameter setting
-    echo "export ${param_name}=\"${param_value}\"" >> "${param_file}"
+    # Add new parameter setting without adding extra newlines
+    # Use printf to avoid adding implicit newlines
+    printf "export %s=\"%s\"\n" "${param_name}" "${param_value}" >> "${param_file}"
     log_time "Added ${param_name}=${param_value} to ${param_file}"
 }
 
-# Update parameters - removed duplicate newline check to prevent extra blank lines
+# Update parameters
+sed -i '/^export -f log_time$/q' "./${VARS_FILE}"
+printf "\n" >> "./${VARS_FILE}"
+
 update_deploy_parameter "DB_TYPE" "$DB_TYPE"
 update_deploy_parameter "DB_VERSION" "$DB_VERSION"
 update_deploy_parameter "LEGACY_VERSION" "$LEGACY_VERSION"
