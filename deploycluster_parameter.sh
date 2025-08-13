@@ -56,7 +56,7 @@ if [ -n "$CLOUDBERRY_RPM" ]; then
     # Iterate through the array to find matching keyword
     for keyword in "${!rpm_paths[@]}"; do
         if [[ "$CLOUDBERRY_RPM" == *"$keyword"* ]]; then
-            export CLOUDBERRY_BINARY_PATH="${rpm_paths[$keyword]}"
+            export CLOUDBERRY_BINARY_PATH="${rpm_paths[$keyword]}" 
             break
         fi
     done
