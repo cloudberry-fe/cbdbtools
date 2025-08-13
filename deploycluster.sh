@@ -64,6 +64,7 @@ else
 fi
 
 
+
 ## Update parameters in deploycluster_parameter.sh
 # Function to update or add parameters in deploycluster_parameter.sh
 # Parameters:
@@ -82,25 +83,26 @@ function update_deploy_parameter() {
     
     # Check if parameter exists in the file
     if grep -q "^export ${param_name}=" "${param_file}"; then
-        # Update existing parameter - Fixed sed command for macOS
-        sed -i '' "s/^export ${param_name}=.*/export ${param_name}=\"${param_value}\"/" "${param_file}"
+        # Delete existing parameter
+        sed -i '' "/^export ${param_name}=.*/d" "${param_file}"
         if [ $? -eq 0 ]; then
-            log_time "Updated ${param_name} to ${param_value} in ${param_file}"
+            log_time "Deleted existing ${param_name} from ${param_file}"
         else
-            log_time "Error updating ${param_name} in ${param_file}"
+            log_time "Error deleting ${param_name} from ${param_file}"
+            return 1
         fi
-    else
-        # Add new parameter
-        # Ensure we append to a new line
-        if [ -s "${param_file}" ] && [ "$(tail -c 1 "${param_file}")" != $'\n' ]; then
-            echo >> "${param_file}"
-        fi
-        echo "export ${param_name}=\"${param_value}\"" >> "${param_file}"
-        log_time "Added ${param_name}=${param_value} to ${param_file}"
     fi
+    
+    # Add new parameter setting
+    echo "export ${param_name}=\"${param_value}\"" >> "${param_file}"
+    log_time "Added ${param_name}=${param_value} to ${param_file}"
 }
 
 # Update parameters after detection
+if [ -s "./${VARS_FILE}" ] && [ "$(tail -c 1 "./${VARS_FILE}")" != $'\n' ]; then
+  echo >> "./${VARS_FILE}"
+fi
+
 update_deploy_parameter "DB_TYPE" "$DB_TYPE"
 update_deploy_parameter "DB_VERSION" "$DB_VERSION"
 update_deploy_parameter "LEGACY_VERSION" "$LEGACY_VERSION"
