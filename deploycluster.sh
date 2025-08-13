@@ -32,6 +32,7 @@ if [ -n "$CLOUDBERRY_RPM" ]; then
         fi
     elif [[ "$CLOUDBERRY_RPM" == *"hashdata-lightning-2"* ]]; then
         export DB_TYPE="hashdata-lightning"
+        export DB_VERSION="2"
         export CLOUDBERRY_BINARY_PATH="/usr/local/hashdata-lightning"
         export CLUSTER_ENV="greenplum_path.sh"
     elif [[ "$CLOUDBERRY_RPM" == *"synxdb4"* ]]; then
@@ -62,6 +63,7 @@ else
     log_time "Cluster environment file: $CLUSTER_ENV"
 fi
 
+
 ## Update parameters in deploycluster_parameter.sh
 # Function to update or add parameters in deploycluster_parameter.sh
 # Parameters:
@@ -79,8 +81,11 @@ function update_deploy_parameter() {
         log_time "Updated $param_name to $param_value in $param_file"
     else
         # Add new parameter
-        echo "export $param_name=\"$param_value\"" >> "$param_file"
-        log_time "Added $param_name=$param_value to $param_file"
+        if [ -s "${param_file}" ] && [ "$(tail -c 1 "${param_file}")" != $'\n' ]; then
+            echo >> "${param_file}"
+        fi
+        echo "export ${param_name}=\"${param_value}\"" >> "${param_file}"
+        log_time "Added ${param_name}=${param_value} to ${param_file}"
     fi
 }
 
