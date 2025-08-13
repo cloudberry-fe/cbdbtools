@@ -74,13 +74,24 @@ function update_deploy_parameter() {
     local param_value="$2"
     local param_file="./${VARS_FILE}"
     
+    # Ensure parameter file exists
+    if [ ! -f "${param_file}" ]; then
+        log_time "Error: Parameter file ${param_file} not found"
+        return 1
+    fi
+    
     # Check if parameter exists in the file
-    if grep -q "^export $param_name=" "$param_file"; then
-        # Update existing parameter
-        sed -i '' "s|^export $param_name=.*|export $param_name=\"$param_value\"|" "$param_file"
-        log_time "Updated $param_name to $param_value in $param_file"
+    if grep -q "^export ${param_name}=" "${param_file}"; then
+        # Update existing parameter - Fixed sed command for macOS
+        sed -i '' "s/^export ${param_name}=.*/export ${param_name}=\"${param_value}\"/" "${param_file}"
+        if [ $? -eq 0 ]; then
+            log_time "Updated ${param_name} to ${param_value} in ${param_file}"
+        else
+            log_time "Error updating ${param_name} in ${param_file}"
+        fi
     else
         # Add new parameter
+        # Ensure we append to a new line
         if [ -s "${param_file}" ] && [ "$(tail -c 1 "${param_file}")" != $'\n' ]; then
             echo >> "${param_file}"
         fi
