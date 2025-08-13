@@ -4,32 +4,60 @@ VARS_FILE="deploycluster_parameter.sh"
 
 source ./${VARS_FILE}
 
-## Dynamically set CLOUDBERRY_BINARY_PATH based on RPM filename
-# Default path: /usr/local/cloudberry-db
-if [ -n "$CLOUDBERRY_RPM" ]; then
-    log_time "Setting CLOUDBERRY_BINARY_PATH based on RPM filename: $CLOUDBERRY_RPM"
-    
-    # Declare associative array for RPM keyword to path mapping
-    declare -A rpm_paths=(
-        ["greenplum"]="/usr/local/greenplum-db"
-        ["hashdata-lightning-2"]="/usr/local/hashdata-lightning"
-        ["synxdb4"]="/usr/local/synxdb4"
-        ["synxdb"]="/usr/local/synxdb"
-    )
-    
-    # Iterate through the array to find matching keyword
-    for keyword in "${!rpm_paths[@]}"; do
-        if [[ "$CLOUDBERRY_RPM" == *"$keyword"* ]]; then
-            export CLOUDBERRY_BINARY_PATH="${rpm_paths[$keyword]}" 
-            break
-        fi
-    done
-    
-    log_time "CLOUDBERRY_BINARY_PATH set to: $CLOUDBERRY_BINARY_PATH"
-else
-    log_time "CLOUDBERRY_RPM not specified, using default CLOUDBERRY_BINARY_PATH: $CLOUDBERRY_BINARY_PATH"
-fi
+## Database type and version detection
+# Default values
+export DB_TYPE="cloudberry"
+export DB_VERSION="unknown"
+export LEGACY_VERSION="false"
+export CLOUDBERRY_BINARY_PATH="/usr/local/cloudberry-db"
+cluster_env="greenplum_path.sh"
 
+if [ -n "$CLOUDBERRY_RPM" ]; then
+    log_time "Detecting database type and version from RPM filename: $CLOUDBERRY_RPM"
+    
+    # Determine database type and set binary path
+    if [[ "$CLOUDBERRY_RPM" == *"greenplum"* ]]; then
+        export DB_TYPE="greenplum"
+        export CLOUDBERRY_BINARY_PATH="/usr/local/greenplum-db"
+        cluster_env="greenplum_path.sh"
+        
+        # Extract Greenplum version
+        version=$(echo ${CLOUDBERRY_RPM} | grep -oP 'greenplum-db-\K[0-9.]+')
+        export DB_VERSION="$version"
+        log_time "Greenplum version detected: $version"
+        
+        # Check if legacy version (major version < 7)
+        major_version=$(echo $version | cut -d. -f1)
+        if [ $major_version -lt 7 ]; then
+            export LEGACY_VERSION="true"
+            log_time "Detected legacy Greenplum version (major version < 7)"
+        fi
+    elif [[ "$CLOUDBERRY_RPM" == *"hashdata-lightning-2"* ]]; then
+        export DB_TYPE="hashdata-lightning"
+        export CLOUDBERRY_BINARY_PATH="/usr/local/hashdata-lightning"
+        cluster_env="greenplum_path.sh"
+    elif [[ "$CLOUDBERRY_RPM" == *"synxdb4"* ]]; then
+        export DB_TYPE="synxdb"
+        export DB_VERSION="4"
+        export CLOUDBERRY_BINARY_PATH="/usr/local/synxdb4"
+        cluster_env="cluster_env.sh"
+    elif [[ "$CLOUDBERRY_RPM" == *"synxdb"* ]]; then
+        export DB_TYPE="synxdb"
+        export DB_VERSION="2"
+        export CLOUDBERRY_BINARY_PATH="/usr/local/synxdb"
+        cluster_env="synxdb_path.sh"
+    fi
+    
+    log_time "Database type: $DB_TYPE"
+    log_time "Database version: $DB_VERSION"
+    log_time "CLOUDBERRY_BINARY_PATH set to: $CLOUDBERRY_BINARY_PATH"
+    log_time "Cluster environment file: $cluster_env"
+else
+    log_time "CLOUDBERRY_RPM not specified, using default settings"
+    log_time "Database type: $DB_TYPE"
+    log_time "CLOUDBERRY_BINARY_PATH: $CLOUDBERRY_BINARY_PATH"
+    log_time "Cluster environment file: $cluster_env"
+fi
 
 if [ "${1}" == "single" ] || [ "${1}" == "multi" ]; then  
   cluster_type="${1}"  
@@ -41,26 +69,6 @@ if [ "$cluster_type" = "multi" ]; then
   COORDINATOR_HOSTNAME=$(sed -n '/##Coordinator hosts/,/##Segment hosts/p' segmenthosts.conf|sed '1d;$d'|awk '{print $2}')
 fi
 
-LEGACY_VERSION="false"
-
-if [[ "${CLOUDBERRY_RPM}" =~ greenplum ]]; then
-  # Extract the version number, compatible with filenames that do not contain open-source-
-  version=$(echo ${CLOUDBERRY_RPM} | grep -oP 'greenplum-db-\K[0-9.]+')
-  echo "Greenplum version is $version"
-  # Get the major version number
-  major_version=$(echo $version | cut -d. -f1)
-  # Determine if the major version number is less than 7
-  if [ $major_version -lt 7 ]; then
-    LEGACY_VERSION="true"
-    echo "Greenplum version is lower than 7"
-  fi
-fi
-
-if [[ "${CLOUDBERRY_RPM}" =~ synxdb ]]; then
-  cluster_env="cluster_env.sh"
-else
-  cluster_env="greenplum_path.sh"
-fi
 
 echo "LEGACY_VERSION=${LEGACY_VERSION}"
 
