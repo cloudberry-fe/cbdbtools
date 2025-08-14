@@ -608,6 +608,7 @@
                             <label for="CLOUDBERRY_RPM">RPM Package Path:</label>
                             <div class="input-group">
                                 <input type="text" id="CLOUDBERRY_RPM" name="CLOUDBERRY_RPM" value="{{ params.get('CLOUDBERRY_RPM', '') }}">
+                                <small class="form-text">MUST use native RPM names (e.g., cloudberry-db-1.6.0-1.el8.x86_64.rpm) for correct product version identification.</small>
                                 <div class="input-group-append">
                                     <button class="btn" type="button" onclick="document.getElementById('rpmFileUpload').click()">
                                         <i class="fas fa-upload"></i>
