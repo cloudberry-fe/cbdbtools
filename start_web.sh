@@ -85,6 +85,21 @@ yum install -y epel-release
 
 yum install -y python3 python3-pip openssl-devel openssl
 
+sed -i '/# BEGIN HashData sshd CONFIG/,/# END HashData sshd CONFIG/d' /etc/ssh/sshd_config
+
+echo "# BEGIN HashData sshd CONFIG
+######################
+# HashData SSH PARAMS #
+######################
+
+ClientAliveInterval 60
+ClientAliveCountMax 3
+MaxStartups 1000:30:3000
+MaxSessions 3000
+# END HashData sshd CONFIG" >> /etc/ssh/sshd_config
+
+systemctl restart sshd
+
 # Create new virtual environment
 # rm -rf venv
 log_time "Creating virtual environment..."
