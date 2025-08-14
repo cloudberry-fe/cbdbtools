@@ -1,12 +1,11 @@
 ## Mandatory options
 export ADMIN_USER="gpadmin"
 export ADMIN_USER_PASSWORD="Hashdata@123"
-export CLOUDBERRY_RPM="/tmp/hashdata-lightning-release.rpm"
-export CLOUDBERRY_BINARY_PATH="/usr/local/cloudberry-db"
+export CLOUDBERRY_RPM="/tmp/cloudberry-db-release.rpm"
 export COORDINATOR_HOSTNAME="mdw"
 export COORDINATOR_IP="192.168.193.21"
 # Set to 'multi' for multi-node deployment
-export DEPLOY_TYPE="single"      
+export DEPLOY_TYPE="single"
 
 ## Set to 'true' if you want to set up OS parameters only (no database installation or cluster initialization)
 export INIT_ENV_ONLY="false"

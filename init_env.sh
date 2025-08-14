@@ -19,15 +19,6 @@ else
   cluster_type="${DEPLOY_TYPE}"
 fi  
 
-if [[ "${CLOUDBERRY_RPM}" =~ synxdb ]]; then
-  cluster_env="cluster_env.sh"
-else
-  cluster_env="greenplum_path.sh"
-fi
-
-echo "CLOUDBERRY_RPM:$CLOUDBERRY_RPM"
-echo "cluster_env:$cluster_env"
-
 change_hostname() {
     local new_hostname="$1"
     
@@ -197,6 +188,13 @@ if [ -f /etc/os-release ]; then
     # Source the /etc/os-release file to get the system information
     source /etc/os-release
 
+    # Checking for Oracle Linux
+    IS_ORACLE_LINUX=0
+    if [[ "$ID" == "ol" || "$NAME" == *"Oracle Linux"* ]]; then
+        IS_ORACLE_LINUX=1
+        echo "This is Oracle Linux"
+    fi
+
     # Extract the first digit of the VERSION_ID
     first_digit=$(echo "$VERSION_ID" | cut -c1)
 
@@ -215,17 +213,20 @@ if [ -f /etc/os-release ]; then
             # sh init_env.sh single
             ;;
         8)
-            # Operation B
+            # Operation in 8
             echo "This is a operating system with version ID starting with 8."
-            rm -rf /etc/yum.repos.d/*
-            curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.huaweicloud.com/repository/conf/CentOS-8-anon.repo
-            yum clean all
-            yum makecache
-            yum install -y libcgroup-tools
+            if [ $IS_ORACLE_LINUX -ne 1 ]; then
+              rm -rf /etc/yum.repos.d/*
+              curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.huaweicloud.com/repository/conf/CentOS-8-anon.repo
+              yum clean all
+              yum makecache
+            else
+              log_time "Skip set yum repo for Oracle Linux."
+            fi
             # You can add specific commands for Operation B here
             ;;
         9)
-            # Operation C
+            # Operation in 9
             echo "This is a operating system with version ID starting with 9. Executing Operation C."
             # You can add specific commands for Operation C here, such as starting the database cluster deployment
             # bash run.sh multi
@@ -379,10 +380,10 @@ if ! id "$ADMIN_USER" &>/dev/null; then
   chown -R ${ADMIN_USER}:${ADMIN_USER} /home/${ADMIN_USER}
 else 
   # Combine all patterns to be cleaned, using regex OR condition to match multiple keywords
-  if grep -qE 'COORDINATOR_DATA_DIRECTORY|MASTER_DATA_DIRECTORY|greenplum_path.sh|cluster_env.sh' /home/${ADMIN_USER}/.bashrc; then
+  if grep -qE 'COORDINATOR_DATA_DIRECTORY|MASTER_DATA_DIRECTORY|greenplum_path.sh|cluster_env.sh|synxdb_path.sh' /home/${ADMIN_USER}/.bashrc; then
     echo "Found environment variable settings to clean up, removing them..."
     # Use extended regex to match all target patterns and delete lines (macOS compatible syntax)
-    sed -i -E '/COORDINATOR_DATA_DIRECTORY|MASTER_DATA_DIRECTORY|greenplum_path.sh|cluster_env.sh/d' /home/${ADMIN_USER}/.bashrc
+    sed -i -E '/COORDINATOR_DATA_DIRECTORY|MASTER_DATA_DIRECTORY|greenplum_path.sh|cluster_env.sh|synxdb_path.sh/d' /home/${ADMIN_USER}/.bashrc
   fi
 fi
 
@@ -428,63 +429,46 @@ if [ "${INIT_ENV_ONLY}" != "true" ]; then
   
   #Step 7: Installing database software
   log_time "Step 7: Installing database software..."
-  
+
   rpmfile=$(ls ${CLOUDBERRY_RPM} 2>/dev/null)
     
   if [ -z "$rpmfile" ]; then
+    log_time "RPM package does not exist, trying to download database software from ${CLOUDBERRY_RPM_URL}..."
+    log_time "Executing command: wget ${CLOUDBERRY_RPM_URL} -O ${CLOUDBERRY_RPM}"
     wget ${CLOUDBERRY_RPM_URL} -O ${CLOUDBERRY_RPM}
-  fi
-  
-  # 清理之前安装包检查变量中是否包含"greenplum"字样  
-  
-  # 确保CLOUDBERRY_RPM变量已设置
-  if [ -z "${CLOUDBERRY_RPM}" ]; then
-      echo "NO CLOUDBERRY_RPM could be found or downloaded, please check the deploycluster_parameter.sh file."
+    # Check if download is successful
+    if [ $? -ne 0 ]; then
+      log_time "Error: Failed to download RPM package from ${CLOUDBERRY_RPM_URL}"
       exit 1
-  fi
-  
-  # 判断RPM包名称是否包含greenplum或cloudberry或hashdata
-  if [[ "${CLOUDBERRY_RPM}" =~ greenplum ]]; then
-      keyword="greenplum"
-      soft_link="/usr/local/greenplum-db"
-  elif [[ "${CLOUDBERRY_RPM}" =~ cloudberry ]]; then
-      keyword="cloudberry"
-      soft_link="/usr/local/cloudberry-db"
-  elif [[ "${CLOUDBERRY_RPM}" =~ hashdata ]]; then
-      keyword="hashdata"
-      soft_link="/usr/local/hashdata-lightning"
-  elif [[ "${CLOUDBERRY_RPM}" =~ synxdb ]]; then
-      keyword="synxdb"
-      soft_link="/usr/local/synxdb4"
-  else
-      keyword="none"
-      soft_link="none"
+    fi
+    log_time "RPM package ${CLOUDBERRY_RPM} downloaded successfully."
   fi
 
-  log_time "Currently deploy ${keyword} database."
+  keyword=$DB_TYPE
+  soft_link=$CLOUDBERRY_BINARY_PATH
   
-  # 根据关键字处理安装和权限
-  if [ "${keyword}" != "none" ]; then
-      # 检查/usr/local下是否存在包含关键字的目录
+  if [ "${keyword}" != "unknown" ]; then
     if find /usr/local -maxdepth 1 -type d -name "*${keyword}*" -print -quit | grep -q .; then
           echo "Previous installation found, will try to remove and reinstall."
-          # 检查软链接是否存在
+          # Check if the soft link exists
           if [ -L "$soft_link" ]; then
-          # 删除软链接
+          # Remove the soft link
             rm -f "$soft_link"
-            echo "软链接 $soft_link 已删除"
+            echo "Soft link $soft_link has been removed."
           else
-            echo "软链接 $soft_link 不存在"
+            echo "Soft link $soft_link does not exist."
           fi
-          echo "操作完成！"
+          echo "Operation completed!"
           rpm -ivh ${CLOUDBERRY_RPM} --force
       else
           echo "No previous installation found, will try to install with YUM."
           yum install -y "${CLOUDBERRY_RPM}"
       fi
-    # 修改目录权限  
+    # Change directory ownership
     chown -R ${ADMIN_USER}:${ADMIN_USER} /usr/local/${keyword}*
+    chown -R ${ADMIN_USER}:${ADMIN_USER} ${soft_link}*
     echo "The directory /usr/local/${keyword}* has been changed to ${ADMIN_USER}:${ADMIN_USER}."
+    echo "The directory ${soft_link}* has been changed to ${ADMIN_USER}:${ADMIN_USER}."
   else
       echo "Unknown database software version, will try to install with YUM."
       yum install -y ${CLOUDBERRY_RPM}

@@ -4,8 +4,6 @@ VARS_FILE="deploycluster_parameter.sh"
 
 source ./${VARS_FILE}
 
-log_time "CBDB tools version is: V1.1"
-
 # New: Check for existing deployment processes
 log_time "Checking for existing deployment processes..."
 

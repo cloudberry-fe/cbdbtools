@@ -71,7 +71,7 @@ The tool provides two deployment methods:
 
 1. **Operating System:**  
    - CentOS/RHEL 7, 8, or 9
-   - The tool will check and install required packages with `YUM`, will try to update alternative yum repo for Centos7/8 automatically, save your yum repo settings if necessary. For Cento 9, make sure yum/dnf repos are configured correctly. 
+   - The tool will check and install required packages with `YUM`, will try to update alternative yum repo for Centos7/8 automatically, save your yum repo settings if necessary. For Centos 9, make sure yum/dnf repos are configured correctly. 
 
 2. **Supported Database Versions:**  
    - HashData Lightning  
@@ -118,7 +118,6 @@ The following parameters are **mandatory** and must be reviewed and set for your
 export ADMIN_USER="gpadmin"
 export ADMIN_USER_PASSWORD="Hashdata@123"
 export CLOUDBERRY_RPM="/tmp/hashdata-lightning-release.rpm"
-export CLOUDBERRY_BINARY_PATH="/usr/local/cloudberry-db"
 export COORDINATOR_HOSTNAME="mdw"
 export COORDINATOR_IP="192.168.193.21"
 export DEPLOY_TYPE="single"
@@ -126,9 +125,12 @@ export DEPLOY_TYPE="single"
 
 - `ADMIN_USER`: OS user for cluster initialization.
 - `ADMIN_USER_PASSWORD`: Password for the OS user.
-- `CLOUDBERRY_RPM`: Path to the database RPM package.
-- `CLOUDBERRY_BINARY_PATH`: Path where the database binary symlink will be created after installation.  
-  - Default: `/usr/local/cloudberry-db` (Cloudberry), `/usr/local/hashdata-lightning` (HashData Lightning), `/usr/local/greenplum-db` (Greenplum)
+- `CLOUDBERRY_RPM`: Path to the database RPM package. 
+  MUST use absolute path for native RPM names (e.g., /root/cloudberry-db-1.6.0-1.el8.x86_64.rpm) for correct product version identification.
+  e.g. Installation paths are different between products, this tool will determine the database binary symlink path from the RPM names, binary symlink paths used by some of the products:
+    `/usr/local/cloudberry-db` (Cloudberry), 
+    `/usr/local/hashdata-lightning` (HashData Lightning), 
+    `/usr/local/greenplum-db` (Greenplum)
 - `COORDINATOR_HOSTNAME`: Hostname for the coordinator server (the tool will set this hostname).
 - `COORDINATOR_IP`: IP address for the coordinator server.
 - `DEPLOY_TYPE`: Set to `single` for single-node or `multi` for multi-node deployment.
@@ -168,10 +170,9 @@ export WITH_STANDBY="false"
 ```
 
 - `INIT_ENV_ONLY`: If `true`, only the OS environment is configured (no database installation or cluster initialization).
-- `CLOUDBERRY_RPM_URL`: URL to download the RPM if not present locally.
+- `CLOUDBERRY_RPM_URL`: URL to download the RPM if not present locally. Please make sure the RPM name from the URL are identicial with the setting in `CLOUDBERRY_RPM`.
 - `INIT_CONFIGFILE`: Path for the generated cluster initialization config.
 - `WITH_MIRROR`: Set to `true` to enable mirror segments.
-- `WITH_STANDBY`: Set to `true` to enable a standby server.
 
 ##### Advanced Cluster Parameters
 
@@ -491,4 +492,3 @@ For issues or questions:
 2. Contact the repository maintainer.
 
 ---
-        
