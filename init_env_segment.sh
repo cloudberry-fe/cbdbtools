@@ -320,9 +320,9 @@ if [ "${INIT_ENV_ONLY}" != "true" ]; then
       fi
       echo "Operation completed!"
       # Try RPM installation first
-      if ! rpm -ivh ${CLOUDBERRY_RPM} --force; then
+      if ! rpm -ivh "${working_dir}/${filename}" --force; then
         echo "RPM installation failed, trying yum install..."
-        yum install -y ${CLOUDBERRY_RPM}
+        yum install -y "${working_dir}/${filename}"
       fi
     else
       echo "No previous installation found, will try to install with YUM."
