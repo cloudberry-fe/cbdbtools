@@ -2,6 +2,12 @@ VARS_FILE="deploycluster_parameter.sh"
 
 source ./${VARS_FILE}
 
+rpmfile=$(ls ${CLOUDBERRY_RPM} 2>/dev/null)
+    
+if [ -z "$rpmfile" ]; then
+  wget ${CLOUDBERRY_RPM_URL} -O ${CLOUDBERRY_RPM}
+fi
+
 ## Database type and version detection
 # Default values
 export DB_TYPE="unknown"

@@ -430,63 +430,31 @@ if [ "${INIT_ENV_ONLY}" != "true" ]; then
   #Step 7: Installing database software
   log_time "Step 7: Installing database software..."
   
-  rpmfile=$(ls ${CLOUDBERRY_RPM} 2>/dev/null)
-    
-  if [ -z "$rpmfile" ]; then
-    wget ${CLOUDBERRY_RPM_URL} -O ${CLOUDBERRY_RPM}
-  fi
-  
-##  # 清理之前安装包检查变量中是否包含"greenplum"字样  
-##  
-##  # 确保CLOUDBERRY_RPM变量已设置
-##  if [ -z "${CLOUDBERRY_RPM}" ]; then
-##      echo "NO CLOUDBERRY_RPM could be found or downloaded, please check the deploycluster_parameter.sh file."
-##      exit 1
-##  fi
-##  
-##  # 判断RPM包名称是否包含greenplum或cloudberry或hashdata
-##  if [[ "${CLOUDBERRY_RPM}" =~ greenplum ]]; then
-##      keyword="greenplum"
-##      soft_link="/usr/local/greenplum-db"
-##  elif [[ "${CLOUDBERRY_RPM}" =~ cloudberry ]]; then
-##      keyword="cloudberry"
-##      soft_link="/usr/local/cloudberry-db"
-##  elif [[ "${CLOUDBERRY_RPM}" =~ hashdata ]]; then
-##      keyword="hashdata"
-##      soft_link="/usr/local/hashdata-lightning"
-##  elif [[ "${CLOUDBERRY_RPM}" =~ synxdb ]]; then
-##      keyword="synxdb"
-##      soft_link="/usr/local/synxdb4"
-##  else
-##      keyword="none"
-##      soft_link="none"
-##  fi
-##
-##  log_time "Currently deploy ${keyword} database."
   keyword=$DB_TYPE
   soft_link=$CLOUDBERRY_BINARY_PATH
   
   if [ "${keyword}" != "unknown" ]; then
-      # 检查/usr/local下是否存在包含关键字的目录
     if find /usr/local -maxdepth 1 -type d -name "*${keyword}*" -print -quit | grep -q .; then
           echo "Previous installation found, will try to remove and reinstall."
-          # 检查软链接是否存在
+          # Check if the soft link exists
           if [ -L "$soft_link" ]; then
-          # 删除软链接
+          # Remove the soft link
             rm -f "$soft_link"
-            echo "软链接 $soft_link 已删除"
+            echo "Soft link $soft_link has been removed."
           else
-            echo "软链接 $soft_link 不存在"
+            echo "Soft link $soft_link does not exist."
           fi
-          echo "操作完成！"
+          echo "Operation completed!"
           rpm -ivh ${CLOUDBERRY_RPM} --force
       else
           echo "No previous installation found, will try to install with YUM."
           yum install -y "${CLOUDBERRY_RPM}"
       fi
-    # 修改目录权限  
+    # Change directory ownership
     chown -R ${ADMIN_USER}:${ADMIN_USER} /usr/local/${keyword}*
+    chown -R ${ADMIN_USER}:${ADMIN_USER} ${soft_link}*
     echo "The directory /usr/local/${keyword}* has been changed to ${ADMIN_USER}:${ADMIN_USER}."
+    echo "The directory ${soft_link}* has been changed to ${ADMIN_USER}:${ADMIN_USER}."
   else
       echo "Unknown database software version, will try to install with YUM."
       yum install -y ${CLOUDBERRY_RPM}

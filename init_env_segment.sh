@@ -292,7 +292,7 @@ change_hostname ${SEGMENT_HOSTNAME}
 
 log_time "Finished env init setting on segment node ${SEGMENT_HOSTNAME}."
 
-# 检查 INIT_ENV_ONLY 环境变量
+# Check if the INIT_ENV_ONLY environment variable is set
 if [ "${INIT_ENV_ONLY}" != "true" ]; then
   #Step 7: Installing database software
   log_time "Step 7: Installing database software."
@@ -302,28 +302,29 @@ if [ "${INIT_ENV_ONLY}" != "true" ]; then
   keyword=$DB_TYPE
   soft_link=$CLOUDBERRY_BINARY_PATH
   
-  # 根据关键字处理安装和权限
+  # Check if the software already installed before
   if [ "${keyword}" != "unknown" ]; then
-    # 检查/usr/local下是否存在包含关键字的目录
     if find /usr/local -maxdepth 1 -type d -name "*${keyword}*" -print -quit | grep -q .; then
       echo "Previous installation found, will try to remove and reinstall."
-      # 检查软链接是否存在
+      # Check if the soft link exists
       if [ -L "$soft_link" ]; then
-        # 删除软链接
+        # Remove the soft link
         rm -f "$soft_link"
-        echo "软链接 $soft_link 已删除"
+        echo "Soft link $soft_link has been removed."
       else
-        echo "软链接 $soft_link 不存在"
+        echo "Soft link $soft_link does not exist."
       fi
-      echo "操作完成！"
+      echo "Operation completed!"
       rpm -ivh ${working_dir}/${filename} --force
     else
       echo "No previous installation found, will try to install with YUM."
       yum install -y "${working_dir}/${filename}"
     fi
-    # 修改目录权限  
+    # Change directory ownership
     chown -R ${ADMIN_USER}:${ADMIN_USER} /usr/local/${keyword}*
+    chown -R ${ADMIN_USER}:${ADMIN_USER} ${soft_link}*
     echo "The directory /usr/local/${keyword}* has been changed to ${ADMIN_USER}:${ADMIN_USER}."
+    echo "The directory ${soft_link}* has been changed to ${ADMIN_USER}:${ADMIN_USER}."
   else
     echo "Unknown database software version, will try to install with YUM."
     yum install -y ${working_dir}/${filename}
