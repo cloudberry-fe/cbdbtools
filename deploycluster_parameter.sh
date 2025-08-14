@@ -2,7 +2,6 @@
 export ADMIN_USER="gpadmin"
 export ADMIN_USER_PASSWORD="Hashdata@123"
 export CLOUDBERRY_RPM="/tmp/cloudberry-db-release.rpm"
-export CLOUDBERRY_BINARY_PATH="/usr/local/cloudberry-db"
 export COORDINATOR_HOSTNAME="mdw"
 export COORDINATOR_IP="192.168.193.21"
 # Set to 'multi' for multi-node deployment

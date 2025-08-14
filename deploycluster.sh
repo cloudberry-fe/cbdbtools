@@ -2,6 +2,8 @@ VARS_FILE="deploycluster_parameter.sh"
 
 source ./${VARS_FILE}
 
+log_time "CBDB tools version is: V1.2"
+
 rpmfile=$(ls ${CLOUDBERRY_RPM} 2>/dev/null)
     
 if [ -z "$rpmfile" ]; then
