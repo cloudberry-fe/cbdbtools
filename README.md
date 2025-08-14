@@ -97,6 +97,57 @@ The tool provides two deployment methods:
 
 CBDBTools supports two deployment methods: command-line and Web UI. Both methods use the same underlying scripts but provide different user interfaces.
 
+### Web UI Deployment
+
+Modern deployment method using a web-based interface that simplifies the configuration and deployment process.
+
+#### Starting the Web UI
+
+To start the Web UI, run the `start_web.sh` script:
+
+```bash
+sh start_web.sh
+```
+
+This script will:
+1. Turn off firewalls
+2. Install required packages (python3, pip)
+3. Create and activate a Python virtual environment
+4. Install Flask and other required Python packages
+5. Start the web application using Gunicorn on port 5000
+
+After starting, you can access the Web UI by opening a browser and navigating to `http://<server-ip>:5000`.
+
+#### Using the Web UI
+
+The Web UI provides a user-friendly interface for configuring and deploying your CBDB cluster:
+
+1. **Configuration Tab**
+   - Select deployment mode (Single Node or Multi Node)
+   - Configure mandatory options (Admin User, Password, RPM path, etc.)
+   - Set cluster initialization parameters (Coordinator port, directories, etc.)
+   - Configure mirror settings if needed
+   - Set multi-node specific parameters (Segment access method, key files, etc.)
+   - Upload RPM and key files directly through the UI
+   - Save configuration with the "Save Configuration" button
+
+2. **Hosts Tab** (Multi Node mode only)
+   - Configure coordinator host IP and hostname
+   - Add/remove segment hosts with their IPs and hostnames
+   - Save host configuration with the "Save Hosts" button
+
+3. **Deploy Tab**
+   - Review all deployment configuration details
+   - See warnings about data directories being deleted and recreated
+   - Check configuration consistency between tabs
+   - Start deployment with the "Deploy Cluster" button
+
+The Web UI provides several advantages over command-line deployment:
+- Visual configuration interface reduces the chance of configuration errors
+- File upload functionality for RPM and key files
+- Configuration validation and consistency checks
+- Clear warnings about destructive operations (like data directory recreation)
+
 ### Command-line Deployment
 
 Traditional deployment method using shell scripts directly.
@@ -236,57 +287,6 @@ sh run.sh
 - `single`: Forces single-node deployment
 - `multi`: Forces multi-node deployment
 - `--help`: Shows usage information
-
-### Web UI Deployment
-
-Modern deployment method using a web-based interface that simplifies the configuration and deployment process.
-
-#### Starting the Web UI
-
-To start the Web UI, run the `start_web.sh` script:
-
-```bash
-sh start_web.sh
-```
-
-This script will:
-1. Turn off firewalls
-2. Install required packages (python3, pip)
-3. Create and activate a Python virtual environment
-4. Install Flask and other required Python packages
-5. Start the web application using Gunicorn on port 5000
-
-After starting, you can access the Web UI by opening a browser and navigating to `http://<server-ip>:5000`.
-
-#### Using the Web UI
-
-The Web UI provides a user-friendly interface for configuring and deploying your CBDB cluster:
-
-1. **Configuration Tab**
-   - Select deployment mode (Single Node or Multi Node)
-   - Configure mandatory options (Admin User, Password, RPM path, etc.)
-   - Set cluster initialization parameters (Coordinator port, directories, etc.)
-   - Configure mirror settings if needed
-   - Set multi-node specific parameters (Segment access method, key files, etc.)
-   - Upload RPM and key files directly through the UI
-   - Save configuration with the "Save Configuration" button
-
-2. **Hosts Tab** (Multi Node mode only)
-   - Configure coordinator host IP and hostname
-   - Add/remove segment hosts with their IPs and hostnames
-   - Save host configuration with the "Save Hosts" button
-
-3. **Deploy Tab**
-   - Review all deployment configuration details
-   - See warnings about data directories being deleted and recreated
-   - Check configuration consistency between tabs
-   - Start deployment with the "Deploy Cluster" button
-
-The Web UI provides several advantages over command-line deployment:
-- Visual configuration interface reduces the chance of configuration errors
-- File upload functionality for RPM and key files
-- Configuration validation and consistency checks
-- Clear warnings about destructive operations (like data directory recreation)
 
 ---
 
