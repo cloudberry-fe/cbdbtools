@@ -296,26 +296,9 @@ log_time "Finished env init setting on segment node ${SEGMENT_HOSTNAME}."
 if [ "${INIT_ENV_ONLY}" != "true" ]; then
   #Step 7: Installing database software
   log_time "Step 7: Installing database software."
-  ## # 确保CLOUDBERRY_RPM变量已设置
-  ## filename=$(basename "$CLOUDBERRY_RPM")
-  ## # 判断RPM包名称是否包含greenplum或cloudberry
-  ## if [[ "${CLOUDBERRY_RPM}" =~ greenplum ]]; then
-  ##   keyword="greenplum"
-  ##   soft_link="/usr/local/greenplum-db"
-  ## elif [[ "${CLOUDBERRY_RPM}" =~ cloudberry ]]; then
-  ##   keyword="cloudberry"
-  ##   soft_link="/usr/local/cloudberry-db"
-  ## elif [[ "${CLOUDBERRY_RPM}" =~ hashdata ]]; then
-  ##   keyword="hashdata"
-  ##   soft_link="/usr/local/hashdata-lightning"
-  ## elif [[ "${CLOUDBERRY_RPM}" =~ synxdb ]]; then
-  ##   keyword="synxdb"
-  ##   soft_link="/usr/local/synxdb4"
-  ## else
-  ##   keyword="none"
-  ##   soft_link="none"
-  ## fi
   
+  filename=$(basename "$CLOUDBERRY_RPM")
+
   keyword=$DB_TYPE
   soft_link=$CLOUDBERRY_BINARY_PATH
   
