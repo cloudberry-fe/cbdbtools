@@ -1,8 +1,8 @@
 #!/bin/bash
 
-function log_time() {
-  printf "[%s] %b\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
-}
+VARS_FILE="deploycluster_parameter.sh"
+
+source ./${VARS_FILE}
 
 # Turn off firewalls
 log_time "Step 1: Turn off firewalls..."
