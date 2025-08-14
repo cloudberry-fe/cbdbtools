@@ -13,6 +13,7 @@ export CLOUDBERRY_RPM_URL="http://downloadlink.com/cloudberry.rpm"
 export INIT_CONFIGFILE="/tmp/gpinitsystem_config"
 export WITH_MIRROR="false"
 export WITH_STANDBY="false"
+export MAUNAL_YUM_REPO="false"
 
 # Parameters used for cluster initialization
 export COORDINATOR_PORT="5432"

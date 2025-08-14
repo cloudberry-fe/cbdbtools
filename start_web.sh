@@ -1,8 +1,8 @@
 #!/bin/bash
 
-function log_time() {
-  printf "[%s] %b\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
-}
+VARS_FILE="deploycluster_parameter.sh"
+
+source ./${VARS_FILE}
 
 # Turn off firewalls
 log_time "Step 1: Turn off firewalls..."
@@ -21,72 +21,92 @@ pkill -f gunicorn || true
 #Step 1: Installing Software Dependencies
 log_time "Step 1: Installing Software Dependencies..."
 
-# Check if the /etc/os-release file exists
-log_time "Check os-release version and make proper settings for YUM sources"
-
-if [ -f /etc/os-release ]; then
-    # Source the /etc/os-release file to get the system information
-    source /etc/os-release
-
-    # Checking for Oracle Linux
-    IS_ORACLE_LINUX=0
-    if [[ "$ID" == "ol" || "$NAME" == *"Oracle Linux"* ]]; then
-        IS_ORACLE_LINUX=1
-        echo "This is Oracle Linux"
-    fi
-
-    # Extract the first digit of the VERSION_ID
-    first_digit=$(echo "$VERSION_ID" | cut -c1)
-
-    # Execute different operations based on the first digit of the VERSION_ID
-    case "$first_digit" in
-        7)
-            # Operation in 7
-            echo "This is a operating system with version ID starting with 7."
-            rm -rf /etc/yum.repos.d/*
-            curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.huaweicloud.com/repository/conf/CentOS-7-anon.repo
-            yum clean all
-            yum makecache
-            
-            # You can add specific commands for Operation A here, for example, setting up the environment on the coordinator node
-            # sh init_env.sh single
-            ;;
-        8)
-            # Operation in 8
-            echo "This is a operating system with version ID starting with 8."
-            if [ $IS_ORACLE_LINUX -ne 1 ]; then
+if [ "${MAUNAL_YUM_REPO}" != "true" ]; then
+  log_time "Check os-release version and make proper settings for YUM sources"
+  # Check if the /etc/os-release file exists
+  if [ -f /etc/os-release ]; then
+      # Source the /etc/os-release file to get the system information
+      source /etc/os-release
+  
+      # Checking for Oracle Linux
+      IS_ORACLE_LINUX=0
+      if [[ "$ID" == "ol" || "$NAME" == *"Oracle Linux"* ]]; then
+          IS_ORACLE_LINUX=1
+          echo "This is Oracle Linux"
+      fi
+  
+      # Extract the first digit of the VERSION_ID
+      first_digit=$(echo "$VERSION_ID" | cut -c1)
+  
+      # Execute different operations based on the first digit of the VERSION_ID
+      case "$first_digit" in
+          7)
+              # Operation in 7
+              echo "This is a operating system with version ID starting with 7."
               rm -rf /etc/yum.repos.d/*
-              curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.huaweicloud.com/repository/conf/CentOS-8-anon.repo
+              curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.huaweicloud.com/repository/conf/CentOS-7-anon.repo
               yum clean all
               yum makecache
-            else
-              log_time "Skip set yum repo for Oracle Linux."
-            fi
-            # You can add specific commands for Operation B here
-            ;;
-        9)
-            # Operation in 9
-            echo "This is a operating system with version ID starting with 9. Executing Operation C."
-            # You can add specific commands for Operation C here, such as starting the database cluster deployment
-            # bash run.sh multi
-            ;;
-        *)
-            log_time "Unsupported OS version ID starting with: $first_digit"
-            ;;
-    esac
+              
+              # You can add specific commands for Operation A here, for example, setting up the environment on the coordinator node
+              # sh init_env.sh single
+              ;;
+          8)
+              # Operation in 8
+              echo "This is a operating system with version ID starting with 8."
+              if [ $IS_ORACLE_LINUX -ne 1 ]; then
+                rm -rf /etc/yum.repos.d/*
+                curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.huaweicloud.com/repository/conf/CentOS-8-anon.repo
+                yum clean all
+                yum makecache
+              else
+                log_time "Skip set yum repo for Oracle Linux."
+              fi
+              # You can add specific commands for Operation B here
+              ;;
+          9)
+              # Operation in 9
+              echo "This is a operating system with version ID starting with 9. Executing Operation C."
+              # You can add specific commands for Operation C here, such as starting the database cluster deployment
+              # bash run.sh multi
+              ;;
+          *)
+              log_time "Unsupported OS version ID starting with: $first_digit"
+              ;;
+      esac
+  else
+      log_time "/etc/os-release file not found. Unable to determine the operating system version."
+  fi
 else
-    log_time "/etc/os-release file not found. Unable to determine the operating system version."
+  log_time "Please make sure YUM repo are correctly configured for all hosts manually."
 fi
 
 # Install required packages
 log_time "Step 3: Install required packages..."
+
+yum install -y epel-release
+
 yum install -y python3 python3-pip openssl-devel openssl
 
-# Check if virtual environment exists, if not create it
-if [ ! -d "venv" ]; then
-    log_time "Creating virtual environment..."
-    python3 -m venv venv
-fi
+sed -i '/# BEGIN HashData sshd CONFIG/,/# END HashData sshd CONFIG/d' /etc/ssh/sshd_config
+
+echo "# BEGIN HashData sshd CONFIG
+######################
+# HashData SSH PARAMS #
+######################
+
+ClientAliveInterval 60
+ClientAliveCountMax 3
+MaxStartups 1000:30:3000
+MaxSessions 3000
+# END HashData sshd CONFIG" >> /etc/ssh/sshd_config
+
+systemctl restart sshd
+
+# Create new virtual environment
+# rm -rf venv
+log_time "Creating virtual environment..."
+python3 -m venv venv
 
 # Activate virtual environment
 source venv/bin/activate
