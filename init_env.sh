@@ -429,7 +429,21 @@ if [ "${INIT_ENV_ONLY}" != "true" ]; then
   
   #Step 7: Installing database software
   log_time "Step 7: Installing database software..."
-  
+
+  rpmfile=$(ls ${CLOUDBERRY_RPM} 2>/dev/null)
+    
+  if [ -z "$rpmfile" ]; then
+    log_time "RPM package does not exist, trying to download database software from ${CLOUDBERRY_RPM_URL}..."
+    log_time "Executing command: wget ${CLOUDBERRY_RPM_URL} -O ${CLOUDBERRY_RPM}"
+    wget ${CLOUDBERRY_RPM_URL} -O ${CLOUDBERRY_RPM}
+    # Check if download is successful
+    if [ $? -ne 0 ]; then
+      log_time "Error: Failed to download RPM package from ${CLOUDBERRY_RPM_URL}"
+      exit 1
+    fi
+    log_time "RPM package ${CLOUDBERRY_RPM} downloaded successfully."
+  fi
+
   keyword=$DB_TYPE
   soft_link=$CLOUDBERRY_BINARY_PATH
   

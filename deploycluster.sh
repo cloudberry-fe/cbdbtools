@@ -4,12 +4,6 @@ source ./${VARS_FILE}
 
 log_time "CBDB tools version is: V1.2"
 
-rpmfile=$(ls ${CLOUDBERRY_RPM} 2>/dev/null)
-    
-if [ -z "$rpmfile" ]; then
-  wget ${CLOUDBERRY_RPM_URL} -O ${CLOUDBERRY_RPM}
-fi
-
 ## Database type and version detection
 # Default values
 export DB_TYPE="unknown"
