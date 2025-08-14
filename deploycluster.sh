@@ -36,13 +36,19 @@ if [ -n "$CLOUDBERRY_RPM" ]; then
         export CLOUDBERRY_BINARY_PATH="/usr/local/hashdata-lightning"
         export CLUSTER_ENV="greenplum_path.sh"
     elif [[ "$CLOUDBERRY_RPM" == *"synxdb4"* ]]; then
-        export DB_TYPE="synxdb"
+        export DB_TYPE="synxdb4"
         export DB_VERSION="4"
         export CLOUDBERRY_BINARY_PATH="/usr/local/synxdb4"
         export CLUSTER_ENV="cluster_env.sh"
-    elif [[ "$CLOUDBERRY_RPM" == *"synxdb"* ]]; then
-        export DB_TYPE="synxdb"
+    elif [[ "$CLOUDBERRY_RPM" == *"synxdb-2"* ]]; then
+        export DB_TYPE="synxdb-2"
         export DB_VERSION="2"
+        export CLOUDBERRY_BINARY_PATH="/usr/local/synxdb"
+        export CLUSTER_ENV="synxdb_path.sh"
+        export LEGACY_VERSION="true"
+    elif [[ "$CLOUDBERRY_RPM" == *"synxdb-1"* ]]; then
+        export DB_TYPE="synxdb-1"
+        export DB_VERSION="1"
         export CLOUDBERRY_BINARY_PATH="/usr/local/synxdb"
         export CLUSTER_ENV="synxdb_path.sh"
         export LEGACY_VERSION="true"
