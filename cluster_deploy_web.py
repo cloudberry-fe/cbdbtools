@@ -66,17 +66,13 @@ def read_hosts():
             coord_match = re.search(r'##Coordinator hosts\n([\d.]+)\s+([\w-]+)', content)
             if coord_match:
                 hosts['coordinator'] = [coord_match.group(1), coord_match.group(2)]
+            
             # Extract segment hosts
-            segment_matches = re.findall(r'##Segment hosts\n([\d.]+)\s+([\w-]+)\n([\d.]+)\s+([\w-]+)', content)
-            if segment_matches:
-                for match in segment_matches:
-                    hosts['segments'].append([match[0], match[1]])
-                    hosts['segments'].append([match[2], match[3]])
-            else:
-                # Try to match single segment host
-                single_segment = re.search(r'##Segment hosts\n([\d.]+)\s+([\w-]+)', content)
-                if single_segment:
-                    hosts['segments'].append([single_segment.group(1), single_segment.group(2)])
+            segment_section = re.search(r'##Segment hosts\n((?:[\d.]+)\s+([\w-]+)\n?)+', content)
+            if segment_section:
+                segment_lines = re.findall(r'([\d.]+)\s+([\w-]+)', segment_section.group(0))
+                for ip, hostname in segment_lines:
+                    hosts['segments'].append([ip, hostname])
     return hosts
 
 # Save host configuration
