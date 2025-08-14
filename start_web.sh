@@ -80,6 +80,9 @@ fi
 
 # Install required packages
 log_time "Step 3: Install required packages..."
+
+yum install -y epel-release
+
 yum install -y python3 python3-pip openssl-devel openssl
 
 # Check if virtual environment exists, if not create it
