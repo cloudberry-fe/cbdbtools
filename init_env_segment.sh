@@ -303,7 +303,7 @@ if [ "${INIT_ENV_ONLY}" != "true" ]; then
   
   filename=$(basename "$CLOUDBERRY_RPM")
 
-  keyword=$DB_TYPE
+  keyword=$DB_KEYWORD
   soft_link=$CLOUDBERRY_BINARY_PATH
   
   # Check if the software already installed before
