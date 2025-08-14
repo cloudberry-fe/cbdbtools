@@ -45,6 +45,7 @@ if [ -n "$CLOUDBERRY_RPM" ]; then
         export DB_VERSION="2"
         export CLOUDBERRY_BINARY_PATH="/usr/local/synxdb"
         export CLUSTER_ENV="synxdb_path.sh"
+        export LEGACY_VERSION="true"
     elif [[ "$CLOUDBERRY_RPM" == *"cloudberry"* ]]; then
         export DB_TYPE="cloudberry"
         export DB_VERSION="1"
