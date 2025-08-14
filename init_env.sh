@@ -464,7 +464,11 @@ if [ "${INIT_ENV_ONLY}" != "true" ]; then
             echo "Soft link $soft_link does not exist."
           fi
           echo "Operation completed!"
-          rpm -ivh ${CLOUDBERRY_RPM} --force
+          # Try RPM installation first
+          if ! rpm -ivh ${CLOUDBERRY_RPM} --force; then
+              echo "RPM installation failed, trying yum install..."
+              yum install -y ${CLOUDBERRY_RPM}
+          fi
       else
           echo "No previous installation found, will try to install with YUM."
           yum install -y "${CLOUDBERRY_RPM}"
