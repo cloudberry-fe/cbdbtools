@@ -31,10 +31,16 @@ if [ -n "$CLOUDBERRY_RPM" ]; then
             log_time "Detected legacy Greenplum version (major version < 7)"
         fi
     elif [[ "$CLOUDBERRY_RPM" == *"hashdata-lightning-2"* ]]; then
-        export DB_TYPE="hashdata-lightning"
+        export DB_TYPE="hashdata-lightning-2"
         export DB_VERSION="2"
         export CLOUDBERRY_BINARY_PATH="/usr/local/hashdata-lightning"
         export CLUSTER_ENV="greenplum_path.sh"
+    elif [[ "$CLOUDBERRY_RPM" == *"hashdata-lightning-1"* ]]; then
+        export DB_TYPE="cloudberry"
+        export DB_VERSION="1"
+        export CLOUDBERRY_BINARY_PATH="/usr/local/cloudberry-db"
+        export CLUSTER_ENV="greenplum_path.sh"
+        export LEGACY_VERSION="false"
     elif [[ "$CLOUDBERRY_RPM" == *"synxdb4"* ]]; then
         export DB_TYPE="synxdb4"
         export DB_VERSION="4"
