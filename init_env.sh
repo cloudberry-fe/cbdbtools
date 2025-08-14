@@ -449,7 +449,7 @@ if [ "${INIT_ENV_ONLY}" != "true" ]; then
     log_time "RPM package ${CLOUDBERRY_RPM} downloaded successfully."
   fi
 
-  keyword=$DB_TYPE
+  keyword=$DB_KEYWORD
   soft_link=$CLOUDBERRY_BINARY_PATH
   
   if [ "${keyword}" != "unknown" ]; then
