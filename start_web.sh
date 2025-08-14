@@ -85,11 +85,10 @@ yum install -y epel-release
 
 yum install -y python3 python3-pip openssl-devel openssl
 
-# Check if virtual environment exists, if not create it
-if [ ! -d "venv" ]; then
-    log_time "Creating virtual environment..."
-    python3 -m venv venv
-fi
+# Create new virtual environment
+rm -rf venv
+log_time "Creating virtual environment..."
+python3 -m venv venv
 
 # Activate virtual environment
 source venv/bin/activate
