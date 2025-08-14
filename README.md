@@ -70,8 +70,9 @@ The tool provides two deployment methods:
 ## Prerequisites
 
 1. **Operating System:**  
-   - CentOS/RHEL 7, 8, or 9
-   - The tool will check and install required packages with `YUM`, will try to update alternative yum repo for Centos7/8 automatically, save your yum repo settings if necessary. For Centos 9, make sure yum/dnf repos are configured correctly. 
+   - CentOS/RHEL 7, 8, or 9 with YUM repo configured correctly.
+   - The tool will try to update alternative YUM repo for Centos7/8 automatically by default, save your yum repo settings if necessary. 
+   - If you don't want YUM repo to be updated automatically, set MAUNAL_YUM_REPO="true" in `deploycluster_parameter.sh`.
 
 2. **Supported Database Versions:**  
    - HashData Lightning  
