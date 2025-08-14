@@ -2,7 +2,7 @@ VARS_FILE="deploycluster_parameter.sh"
 
 source ./${VARS_FILE}
 
-log_time "CBDB tools version is: V1.0"
+log_time "CBDB tools version is: V1.0_dev20250814"
 
 ## Database type and version detection
 # Default values
@@ -34,35 +34,35 @@ if [ -n "$CLOUDBERRY_RPM" ]; then
         fi
     elif [[ "$CLOUDBERRY_RPM" == *"hashdata-lightning-2"* ]]; then
         export DB_TYPE="hashdata-lightning-2"
-        export DB_VERSION="2"
+        export DB_VERSION=$(echo ${CLOUDBERRY_RPM} | grep -oP 'hashdata-lightning-\K[0-9.]+')
         export CLOUDBERRY_BINARY_PATH="/usr/local/hashdata-lightning"
         export CLUSTER_ENV="greenplum_path.sh"
     elif [[ "$CLOUDBERRY_RPM" == *"hashdata-lightning-1"* ]]; then
         export DB_TYPE="cloudberry"
-        export DB_VERSION="1"
+        export DB_VERSION=$(echo ${CLOUDBERRY_RPM} | grep -oP 'hashdata-lightning-\K[0-9.]+')
         export CLOUDBERRY_BINARY_PATH="/usr/local/cloudberry-db"
         export CLUSTER_ENV="greenplum_path.sh"
         export LEGACY_VERSION="false"
     elif [[ "$CLOUDBERRY_RPM" == *"synxdb4"* ]]; then
         export DB_TYPE="synxdb4"
-        export DB_VERSION="4"
+        export DB_VERSION=$(echo ${CLOUDBERRY_RPM} | grep -oP 'synxdb4-\K[0-9.]+')
         export CLOUDBERRY_BINARY_PATH="/usr/local/synxdb4"
         export CLUSTER_ENV="cluster_env.sh"
     elif [[ "$CLOUDBERRY_RPM" == *"synxdb-2"* ]]; then
         export DB_TYPE="synxdb-2"
-        export DB_VERSION="2"
+        export DB_VERSION=$(echo ${CLOUDBERRY_RPM} | grep -oP 'synxdb-\K[0-9.]+')
         export CLOUDBERRY_BINARY_PATH="/usr/local/synxdb"
         export CLUSTER_ENV="synxdb_path.sh"
         export LEGACY_VERSION="true"
     elif [[ "$CLOUDBERRY_RPM" == *"synxdb-1"* ]]; then
         export DB_TYPE="synxdb-1"
-        export DB_VERSION="1"
+        export DB_VERSION=$(echo ${CLOUDBERRY_RPM} | grep -oP 'synxdb-\K[0-9.]+')
         export CLOUDBERRY_BINARY_PATH="/usr/local/synxdb"
         export CLUSTER_ENV="synxdb_path.sh"
         export LEGACY_VERSION="true"
     elif [[ "$CLOUDBERRY_RPM" == *"cloudberry"* ]]; then
         export DB_TYPE="cloudberry"
-        export DB_VERSION="1"
+        export DB_VERSION=$(echo ${CLOUDBERRY_RPM} | grep -oP 'cloudberry-db-\K[0-9.]+')
         export CLOUDBERRY_BINARY_PATH="/usr/local/cloudberry-db"
         export CLUSTER_ENV="greenplum_path.sh"
     fi
