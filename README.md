@@ -1,32 +1,44 @@
 # CBDBTools
 
-CBDBTools is a suite of scripts designed to automate the deployment and initialization of HashData Lightning clusters. It also supports Greenplum and Cloudberry-based MPP databases, with both single-node and multi-node cluster setups.
+CBDBTools is a suite of scripts designed to automate the deployment and initialization of Cloudberry clusters. It also supports Greenplum and Cloudberry-based MPP databases, such as HashData Lightning and SynxDB.
 
 The tool provides two deployment methods:
-1. **Command-line deployment** - Traditional approach using shell scripts
-2. **Web UI deployment** - Modern approach using a web-based interface
+1. **Web UI deployment** - Modern approach using a web-based interface
+2. **Command-line deployment** - Traditional approach using shell scripts
+
 
 ---
 
 ## Table of Contents
 
-- [Repository Structure](#repository-structure)
-- [Prerequisites](#prerequisites)
-- [Deployment Methods](#deployment-methods)
-  - [Command-line Deployment](#command-line-deployment)
-    - [1. Configure Parameters](#1-configure-parameters)
-    - [2. Define Hosts](#2-define-hosts)
-    - [3. Start Deployment](#3-start-deployment)
-  - [Web UI Deployment](#web-ui-deployment)
-    - [Starting the Web UI](#starting-the-web-ui)
-    - [Using the Web UI](#using-the-web-ui)
-- [Features](#features)
-- [Scripts Overview](#scripts-overview)
-- [Utility Scripts](#utility-scripts)
-- [Examples](#examples)
-- [Notes](#notes)
-- [Troubleshooting](#troubleshooting)
-- [Support](#support)
+- [CBDBTools](#cbdbtools)
+  - [Table of Contents](#table-of-contents)
+  - [Repository Structure](#repository-structure)
+  - [Prerequisites](#prerequisites)
+  - [Deployment Methods](#deployment-methods)
+    - [Web UI Deployment](#web-ui-deployment)
+      - [Starting the Web UI](#starting-the-web-ui)
+      - [Using the Web UI](#using-the-web-ui)
+    - [Command-line Deployment](#command-line-deployment)
+      - [For Single-Node Deployment](#for-single-node-deployment)
+      - [For Multi-Node Deployment](#for-multi-node-deployment)
+      - [1. Configure Parameters](#1-configure-parameters)
+        - [Additional Parameters for Multi-Node Deployment](#additional-parameters-for-multi-node-deployment)
+        - [Optional Parameters](#optional-parameters)
+        - [Advanced Cluster Parameters](#advanced-cluster-parameters)
+      - [2. Define Hosts](#2-define-hosts)
+      - [3. Start Deployment](#3-start-deployment)
+  - [Features](#features)
+  - [Scripts Overview](#scripts-overview)
+  - [Utility Scripts](#utility-scripts)
+    - [multissh.sh](#multisshsh)
+    - [multiscp.sh](#multiscpsh)
+  - [Examples](#examples)
+    - [multissh.sh Examples](#multisshsh-examples)
+    - [multiscp.sh Examples](#multiscpsh-examples)
+  - [Notes](#notes)
+  - [Troubleshooting](#troubleshooting)
+  - [Support](#support)
 
 ---
 
