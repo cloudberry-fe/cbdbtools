@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response
 import os
 import re
 import subprocess
@@ -7,10 +7,17 @@ from datetime import datetime
 import json
 import time
 import threading
+import psutil
 from werkzeug.utils import secure_filename  # 添加这行导入
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static')
 app.secret_key = 'supersecretkey'
+
+# 确保static目录存在
+if not os.path.exists('static'):
+    os.makedirs('static')
+if not os.path.exists('static/js'):
+    os.makedirs('static/js')
 
 # Configuration file paths
 PARAM_FILE = 'deploycluster_parameter.sh'
@@ -66,13 +73,17 @@ def read_hosts():
             coord_match = re.search(r'##Coordinator hosts\n([\d.]+)\s+([\w-]+)', content)
             if coord_match:
                 hosts['coordinator'] = [coord_match.group(1), coord_match.group(2)]
-            
             # Extract segment hosts
-            segment_section = re.search(r'##Segment hosts\n((?:[\d.]+)\s+([\w-]+)\n?)+', content)
-            if segment_section:
-                segment_lines = re.findall(r'([\d.]+)\s+([\w-]+)', segment_section.group(0))
-                for ip, hostname in segment_lines:
-                    hosts['segments'].append([ip, hostname])
+            segment_matches = re.findall(r'##Segment hosts\n([\d.]+)\s+([\w-]+)\n([\d.]+)\s+([\w-]+)', content)
+            if segment_matches:
+                for match in segment_matches:
+                    hosts['segments'].append([match[0], match[1]])
+                    hosts['segments'].append([match[2], match[3]])
+            else:
+                # Try to match single segment host
+                single_segment = re.search(r'##Segment hosts\n([\d.]+)\s+([\w-]+)', content)
+                if single_segment:
+                    hosts['segments'].append([single_segment.group(1), single_segment.group(2)])
     return hosts
 
 # Save host configuration
@@ -183,30 +194,156 @@ def deploy():
             'message': message
         })
 
-    if deployment_success:
-        flash(f'Deployment started successfully!')
-        # 移除错误的函数调用
-    else:
-        flash(f'Failed to start deployment: {message}')
-    
-    return redirect(url_for('index_with_tab', tab='deploy'))
-
 # New route to get deployment status
 @app.route('/deployment_status')
 def deployment_status():
     with DEPLOYMENT_LOCK:
-        return jsonify({
+        status = {
             'running': DEPLOYMENT_STATUS['running'],
             'log_file': DEPLOYMENT_STATUS['log_file'],
             'start_time': DEPLOYMENT_STATUS['start_time'],
-            'success': DEPLOYMENT_STATUS['success']  # 返回成功状态
+            'success': DEPLOYMENT_STATUS.get('success', None)
+        }
+    return jsonify(status)
+
+@app.route('/get_log_content')
+def get_latest_log_file():
+    """获取最新的日志文件"""
+    log_files = [f for f in os.listdir('.') if f.startswith('deploy_cluster_') and f.endswith('.log')]
+    if not log_files:
+        return None
+    return max(log_files, key=lambda f: os.path.getctime(f))
+
+def get_log_content():
+    last_position = request.args.get('last_position', '0')
+    try:
+        last_position = int(last_position)
+    except ValueError:
+        last_position = 0
+    
+    log_file = None
+    with DEPLOYMENT_LOCK:
+        # 如果当前没有正在运行的部署，尝试获取最新的日志文件
+        if not DEPLOYMENT_STATUS['running']:
+            latest_log = get_latest_log_file()
+            if latest_log:
+                log_file = os.path.abspath(latest_log)
+        else:
+            log_file = DEPLOYMENT_STATUS.get('log_file')
+
+        # ✅ 统一调用 is_deployment_running()
+        is_running = is_deployment_running()
+        DEPLOYMENT_STATUS['running'] = is_running
+    
+    if not log_file or not os.path.exists(log_file):
+        return jsonify({
+            'content': 'Waiting for deployment to start...',
+            'position': last_position,
+            'eof': not is_running
+        })
+    
+    try:
+        with open(log_file, 'r') as f:
+            f.seek(0, os.SEEK_END)
+            file_size = f.tell()
+            
+            if last_position > file_size:
+                last_position = 0
+            
+            f.seek(last_position)
+            content = f.read()
+            new_position = f.tell()
+            
+            app.logger.debug(f"Log read: position={last_position}, new_position={new_position}, content_length={len(content)}, is_running={is_running}")
+            
+            if not content and is_running:
+                content = 'Waiting for new output...\n'
+            
+            return jsonify({
+                'content': content,
+                'position': new_position,
+                'eof': not is_running,
+                'file_size': file_size,
+                'is_running': is_running
+            })
+    except Exception as e:
+        app.logger.error(f"Error reading log file: {str(e)}")
+        return jsonify({
+            'error': f'Error reading log file: {str(e)}',
+            'position': last_position,
+            'eof': not is_running
         })
 
-# New route to get deployment logs
-@app.route('/deployment_logs')
-def deployment_logs():
-    log_content = get_deployment_log()
-    return jsonify({'logs': log_content})
+# New route for SSE log streaming
+@app.route('/stream_logs')
+def stream_logs():
+    def generate():
+        position = 0
+        current_log_file = None
+
+        while True:
+            log_file = None
+            is_running = is_deployment_running()
+            with DEPLOYMENT_LOCK:
+                # 优先使用当前部署的 log_file
+                log_file = DEPLOYMENT_STATUS.get('log_file')
+            
+                # 如果没有正在运行的部署，也没有记录 log_file，再 fallback 到最新日志
+                if not log_file and not DEPLOYMENT_STATUS['running']:
+                    latest_log = get_latest_log_file()
+                    log_file = os.path.abspath(latest_log) if latest_log else None
+
+            if log_file != current_log_file:
+                position = 0
+                current_log_file = log_file
+                app.logger.info(f"Switching to log file: {log_file}")
+
+            # 没有日志文件
+            if not log_file or not os.path.exists(log_file):
+                yield 'data: {"content": "", "is_running": false}\n\n'
+                break
+
+            try:
+                with open(log_file, 'r', encoding='utf-8', errors='replace') as f:
+                    f.seek(0, os.SEEK_END)
+                    file_size = f.tell()
+
+                    if position > file_size:
+                        position = 0
+
+                    if file_size > position:
+                        f.seek(position)
+                        content = f.read()
+                        position = f.tell()
+                        if content:
+                            yield f'data: {{"content": {json.dumps(content)}, "is_running": {str(is_running).lower()}, "position": {position}, "file_size": {file_size}}}\n\n'
+                            continue
+
+                if is_running:
+                    # 部署中，继续等待新日志
+                    yield f'data: {{"content": "", "is_running": true, "position": {position}, "file_size": {file_size}}}\n\n'
+                    time.sleep(0.5)
+                else:
+                    # ✅ 额外确认：只有出现完成标志才真正结束
+                    with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
+                        content_all = f.read()
+
+                    if "Finished deploy cluster" in content_all:
+                        yield f'data: {{"content": "", "is_running": false, "position": {position}, "file_size": {file_size}}}\n\n'
+                        break
+                    else:
+                        # 没有完成标志 → 继续保持连接，避免误判
+                        yield f'data: {{"content": "", "is_running": true, "position": {position}, "file_size": {file_size}}}\n\n'
+                        time.sleep(0.5)
+
+            except Exception as e:
+                app.logger.error(f"Error reading log file: {e}")
+                yield f'data: {{"content": "", "error": "Error reading log file", "is_running": {str(is_running).lower()}}}\n\n'
+                if not is_running:
+                    break
+                time.sleep(1)
+
+    return Response(generate(), mimetype='text/event-stream')
 
 @app.route('/save_params', methods=['POST'])
 def save_params():
@@ -224,17 +361,11 @@ def save_params():
 
         # 如果有上传的Key文件路径，使用上传的路径
         if 'SEGMENT_ACCESS_KEYFILE' in params and params['SEGMENT_ACCESS_KEYFILE']:
-            # 只在多机模式且Segment Access Method为KeyFile时检查keyfile
-            deploy_type = params.get('DEPLOY_TYPE', 'single')
-            segment_access_method = params.get('SEGMENT_ACCESS_METHOD', '')
-            if deploy_type == 'multi' and segment_access_method == 'keyfile':
-                # 确保路径存在
-                if os.path.exists(params['SEGMENT_ACCESS_KEYFILE']):
-                    print(f'Using uploaded Key file: {params["SEGMENT_ACCESS_KEYFILE"]}')
-                else:
-                    flash(f'Warning: Key file path does not exist: {params["SEGMENT_ACCESS_KEYFILE"]}')
+            # 确保路径存在
+            if os.path.exists(params['SEGMENT_ACCESS_KEYFILE']):
+                print(f'Using uploaded Key file: {params["SEGMENT_ACCESS_KEYFILE"]}')
             else:
-                print(f'Skipping key file check for {deploy_type} deployment with {segment_access_method} access')
+                flash(f'Warning: Key file path does not exist: {params["SEGMENT_ACCESS_KEYFILE"]}')
 
         # 保存参数
         save_parameters(params)
@@ -393,12 +524,9 @@ DEPLOYMENT_LOCK = threading.Lock()
 # Function to check if there's a running deployment process
 def is_deployment_running():
     with DEPLOYMENT_LOCK:
-        if not DEPLOYMENT_STATUS['running']:
-            return False
-        
-        # 检查进程是否实际存在
+        log_file = DEPLOYMENT_STATUS.get('log_file')
+
         try:
-            # 获取当前所有python相关进程
             for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
                 try:
                     cmdline = ' '.join(proc.info['cmdline'] or [])
@@ -406,18 +534,48 @@ def is_deployment_running():
                         return True
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
                     continue
-            
-            # 如果找不到进程，检查日志文件是否最近更新
-            if DEPLOYMENT_STATUS['log_file'] and os.path.exists(DEPLOYMENT_STATUS['log_file']):
-                mtime = os.path.getmtime(DEPLOYMENT_STATUS['log_file'])
-                if time.time() - mtime < 30:  # 30秒内更新过认为仍在运行
+    
+            # 1. 检查完成标记（唯一可靠的成功信号）
+            if log_file and os.path.exists(log_file):
+                with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
+                    content = f.read()
+                if "Finished deploy cluster" in content:
+                    DEPLOYMENT_STATUS['running'] = False
+                    DEPLOYMENT_STATUS['success'] = True
+                    return False
+
+            # 2. 检查日志更新时间（主要依据）
+            if log_file and os.path.exists(log_file):
+                mtime = os.path.getmtime(log_file)
+                if time.time() - mtime < 300:  # 5 分钟内更新
+                    DEPLOYMENT_STATUS['running'] = True
                     return True
-            
+
+            # 3. 检查进程（辅助依据）
+            for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+                try:
+                    cmdline = ' '.join(proc.info['cmdline'] or [])
+                    if 'deploycluster.sh' in cmdline or 'run.sh' in cmdline:
+                        return True
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    continue
+
+            # 4. 超过 5 分钟没更新 → 失败
+            if log_file and os.path.exists(log_file):
+                mtime = os.path.getmtime(log_file)
+                if time.time() - mtime >= 300:
+                    DEPLOYMENT_STATUS['running'] = False
+                    DEPLOYMENT_STATUS['success'] = False
+                    return False
+
+            # ✅ 默认兜底：既没有完成标志，也没有日志更新/进程 → 认为不在运行
             DEPLOYMENT_STATUS['running'] = False
             return False
-            
-        except Exception:
+
+        except Exception as e:
+            app.logger.error(f"Error checking deployment status: {e}")
             DEPLOYMENT_STATUS['running'] = False
+            DEPLOYMENT_STATUS['success'] = False
             return False
 
 # 修改start_background_deployment函数，使用绝对路径
@@ -425,54 +583,107 @@ def start_background_deployment(cluster_type='single'):
     global DEPLOYMENT_STATUS
     
     with DEPLOYMENT_LOCK:
+#        _ = is_deployment_running()
         if DEPLOYMENT_STATUS['running']:
             return False, "Deployment is already running. Please wait for it to complete."
         
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        # 使用绝对路径生成日志文件
         log_file = os.path.abspath(f'deploy_cluster_{timestamp}.log')
         
-        DEPLOYMENT_STATUS['running'] = True
-        DEPLOYMENT_STATUS['log_file'] = log_file
-        DEPLOYMENT_STATUS['start_time'] = time.time()
-        DEPLOYMENT_STATUS['pid'] = None  # 新增：保存进程PID
+        # 创建日志文件并设置权限
+        with open(log_file, 'w') as f:
+            f.write(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Starting deployment...\n")
+            f.flush()  # 确保内容被写入
+        os.chmod(log_file, 0o666)
+        
+        DEPLOYMENT_STATUS.update({
+            'running': True,
+            'log_file': log_file,
+            'start_time': time.time(),
+            'pid': None,
+            'success': None  # 重置成功状态
+        })
     
     try:
-        # 使用Popen启动进程并获取PID
+        # 使用当前工作目录启动进程
         process = subprocess.Popen(
             ['sh', 'run.sh', cluster_type],
-            stdout=open(log_file, 'w'),
+            stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            preexec_fn=os.setsid
+            bufsize=1,
+            universal_newlines=True,
+            cwd=os.getcwd()
         )
         
-        DEPLOYMENT_STATUS['pid'] = process.pid
+        if not process:
+            raise Exception("Failed to start deployment process")
+            
+        # 更新进程PID
+        with DEPLOYMENT_LOCK:
+            DEPLOYMENT_STATUS['pid'] = process.pid
+            app.logger.info(f"Started deployment process with PID: {process.pid}")
         
-        def monitor_process(process, log_file):
-            process.wait()
-            with DEPLOYMENT_LOCK:
-                DEPLOYMENT_STATUS['running'] = False
-                # 检查部署是否成功
+        def read_output(proc, log_path):
+            app.logger.info(f"Starting to read output for process {proc.pid}")
+            try:
+                while True:
+                    line = proc.stdout.readline()
+                    if not line and proc.poll() is not None:
+                        app.logger.info(f"Process {proc.pid} has ended, no more output")
+                        break
+                    if line:
+                        try:
+                            with open(log_path, 'a', encoding='utf-8', errors='ignore') as log:
+                                timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                                log.write(f"[{timestamp}] {line}")
+                                log.flush()
+                                app.logger.debug(f"Wrote line to log: {line.strip()}")
+                        except Exception as e:
+                            app.logger.error(f"Error writing to log file: {str(e)}")
+
+                # 写入退出码（仅日志记录，不改变状态）
                 try:
-                    with open(log_file, 'r') as f:
-                        log_content = f.read()
-                        # 根据日志内容判断部署是否成功
-                        # 更新判断条件以匹配实际日志输出
-                        DEPLOYMENT_STATUS['success'] = ('deployment completed successfully' in log_content.lower() or 
-                                                       'finished deploy cluster' in log_content.lower())
-                except:
-                    DEPLOYMENT_STATUS['success'] = None
+                    with open(log_path, 'a', encoding='utf-8', errors='ignore') as log:
+                        exit_code = proc.returncode
+                        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                        log.write(f"\n[{timestamp}] Process exited with code: {exit_code}\n")
+                        log.flush()
+                        app.logger.info(f"Process {proc.pid} exited with code {exit_code}")
+                except Exception as e:
+                    app.logger.error(f"Error writing final status: {str(e)}")
+
+            except Exception as e:
+                app.logger.error(f"Error in read_output: {str(e)}")
         
-        monitor_thread = threading.Thread(target=monitor_process, args=(process, log_file))
-        monitor_thread.daemon = True
-        monitor_thread.start()
+        # 在新线程中读取输出
+        output_thread = threading.Thread(
+            target=read_output,
+            args=(process, log_file),
+            daemon=True
+        )
         
+        # 启动输出读取线程
+        output_thread.start()
+        
+        # 返回成功信息
         return True, f"Deployment started successfully. Log file: {log_file}"
-    
+        
     except Exception as e:
+        error_msg = f"Failed to start deployment: {str(e)}"
+        app.logger.error(error_msg)
+        
+        # 更新状态为非运行
         with DEPLOYMENT_LOCK:
             DEPLOYMENT_STATUS['running'] = False
-        return False, str(e)
+        
+        # 记录错误到日志文件
+        try:
+            with open(log_file, 'a') as f:
+                f.write(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ERROR: {error_msg}\n")
+        except:
+            pass
+        
+        return False, error_msg
 
 # Function to get deployment log content
 def get_deployment_log(log_file=None, lines=100):

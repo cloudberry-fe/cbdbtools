@@ -17,26 +17,26 @@
             --border-color: #bdc3c7;
             --shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        
+
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
-        
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f5f7fa;
             color: #333;
             line-height: 1.6;
         }
-        
+
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
         }
-        
+
         header {
             background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
             color: white;
@@ -45,25 +45,25 @@
             margin-bottom: 2rem;
             box-shadow: var(--shadow);
         }
-        
+
         h1, h2, h3, h4 {
             margin-bottom: 1rem;
         }
-        
+
         h1 {
             font-size: 2rem;
             display: flex;
             align-items: center;
             gap: 10px;
         }
-        
+
         h2 {
             font-size: 1.5rem;
             padding-bottom: 0.5rem;
             border-bottom: 2px solid var(--border-color);
             margin-bottom: 1.5rem;
         }
-        
+
         h3 {
             font-size: 1.2rem;
             display: flex;
@@ -71,12 +71,12 @@
             gap: 8px;
             margin-bottom: 1rem;
         }
-        
+
         /* Flash Messages */
         .flash-messages {
             margin-bottom: 1rem;
         }
-        
+
         .flash-message {
             padding: 12px 20px;
             border-radius: 4px;
@@ -85,47 +85,19 @@
             align-items: center;
             gap: 10px;
         }
-        
+
         .flash-message.success {
             background-color: #d4edda;
             color: #155724;
             border: 1px solid #c3e6cb;
         }
-        
+
         .flash-message.error {
             background-color: #f8d7da;
             color: #721c24;
             border: 1px solid #f5c6cb;
         }
-        
-        /* Warning message styles */
-        .warning {
-            background-color: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 4px;
-            padding: 15px;
-            margin: 15px 0;
-            color: #856404;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .warning strong {
-            color: #664d03;
-        }
-        
-        .warning p {
-            margin: 5px 0;
-        }
-        
-        .warning p:first-child {
-            font-weight: bold;
-            margin-top: 0;
-        }
-        
-        .warning p:last-child {
-            margin-bottom: 0;
-        }
-        
+
         /* Deployment Status and Logs */
         .deployment-status {
             margin: 20px 0;
@@ -135,7 +107,7 @@
             background-color: #f9f9f9;
             animation: fadeIn 0.5s;
         }
-        
+
         .deployment-status h4 {
             color: var(--primary-color);
             margin-bottom: 10px;
@@ -143,7 +115,7 @@
             align-items: center;
             gap: 8px;
         }
-        
+
         .log-container {
             background-color: #1e1e1e;
             color: #00ff00;
@@ -158,35 +130,35 @@
             white-space: pre-wrap;
             word-break: break-all;
         }
-        
+
         .log-container::-webkit-scrollbar {
             width: 8px;
         }
-        
+
         .log-container::-webkit-scrollbar-track {
             background: #333;
         }
-        
+
         .log-container::-webkit-scrollbar-thumb {
             background: #666;
             border-radius: 4px;
         }
-        
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        
+
         .deployment-completed {
             border-color: var(--success-color);
             background-color: rgba(46, 204, 113, 0.1);
         }
-        
+
         .deployment-running {
             border-color: var(--secondary-color);
             background-color: rgba(52, 152, 219, 0.1);
         }
-        
+
         /* Tab Navigation */
         .tab {
             display: flex;
@@ -197,7 +169,7 @@
             box-shadow: var(--shadow);
             overflow: hidden;
         }
-        
+
         .tab button {
             background-color: inherit;
             border: none;
@@ -211,16 +183,16 @@
             align-items: center;
             gap: 8px;
         }
-        
+
         .tab button:hover {
             background-color: #f1f1f1;
         }
-        
+
         .tab button.active {
             background-color: var(--secondary-color);
             color: white;
         }
-        
+
         /* Tab Content */
         .tabcontent {
             display: none;
@@ -231,52 +203,52 @@
             box-shadow: var(--shadow);
             animation: fadeEffect 0.5s;
         }
-        
+
         .tabcontent.active {
             display: block;
         }
-        
+
         @keyframes fadeEffect {
             from {opacity: 0;}
             to {opacity: 1;}
         }
-        
+
         /* Form Styles */
         .form-row {
             display: flex;
             flex-wrap: wrap;
             margin: 0 -10px 15px -10px;
         }
-        
+
         .form-col {
             flex: 1;
             min-width: 300px;
             padding: 0 10px;
             box-sizing: border-box;
         }
-        
+
         @media (max-width: 768px) {
             .form-col {
                 min-width: 100%;
             }
         }
-        
+
         .form-group {
             margin-bottom: 20px;
         }
-        
+
         .form-group label {
             display: block;
             margin-bottom: 5px;
             font-weight: 600;
             color: var(--dark-color);
         }
-        
+
         .form-group.required label::after {
             content: " *";
             color: var(--danger-color);
         }
-        
+
         .form-group input,
         .form-group select,
         .form-group textarea {
@@ -287,26 +259,26 @@
             font-size: 14px;
             transition: border-color 0.3s;
         }
-        
+
         .input-group {
             display: flex;
             align-items: stretch;
         }
-        
+
         .input-group input {
             border-radius: 4px 0 0 4px;
             flex: 1;
         }
-        
+
         .input-group-append {
             margin-left: -1px;
         }
-        
+
         .input-group .btn {
             border-radius: 0 4px 4px 0;
             height: 100%;
         }
-        
+
         .form-group input:focus,
         .form-group select:focus,
         .form-group textarea:focus {
@@ -314,14 +286,14 @@
             outline: none;
             box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
         }
-        
+
         .form-text {
             font-size: 12px;
             color: #666;
             margin-top: 5px;
             display: block;
         }
-        
+
         /* Button Styles */
         .btn {
             background-color: var(--secondary-color);
@@ -337,36 +309,36 @@
             gap: 8px;
             transition: background-color 0.3s;
         }
-        
+
         .btn:hover {
             background-color: #2980b9;
         }
-        
+
         .btn-secondary {
             background-color: var(--light-color);
             color: var(--dark-color);
         }
-        
+
         .btn-secondary:hover {
             background-color: #d5dbdb;
         }
-        
+
         .btn-success {
             background-color: var(--success-color);
         }
-        
+
         .btn-success:hover {
             background-color: #219653;
         }
-        
+
         .btn-danger {
             background-color: var(--danger-color);
         }
-        
+
         .btn-danger:hover {
             background-color: #c0392b;
         }
-        
+
         /* Host Group */
         .host-group {
             margin-bottom: 2rem;
@@ -375,7 +347,7 @@
             border-radius: 8px;
             background-color: #f8f9fa;
         }
-        
+
         .segment-host {
             margin-bottom: 1.5rem;
             padding: 1rem;
@@ -383,19 +355,19 @@
             border-radius: 4px;
             background-color: white;
         }
-        
+
         .segment-host-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 1rem;
         }
-        
+
         .segment-host-header h4 {
             margin: 0;
             color: var(--dark-color);
         }
-        
+
         .remove-host {
             background: none;
             border: none;
@@ -410,11 +382,11 @@
             border-radius: 50%;
             transition: background-color 0.3s;
         }
-        
+
         .remove-host:hover {
             background-color: rgba(231, 76, 60, 0.1);
         }
-        
+
         /* Mode Selector */
         .mode-selector {
             display: flex;
@@ -426,7 +398,7 @@
             border-radius: 8px;
             background-color: #f8f9fa;
         }
-        
+
         .mode-option {
             flex: 1;
             min-width: 200px;
@@ -437,26 +409,26 @@
             cursor: pointer;
             transition: all 0.3s;
         }
-        
+
         .mode-option:hover {
             border-color: var(--secondary-color);
         }
-        
+
         .mode-option.selected {
             border-color: var(--secondary-color);
             background-color: rgba(52, 152, 219, 0.1);
         }
-        
+
         .mode-option i {
             font-size: 2rem;
             margin-bottom: 10px;
             color: var(--secondary-color);
         }
-        
+
         .mode-option h4 {
             margin-bottom: 10px;
         }
-        
+
         /* Hidden class */
         .hidden {
             display: none !important;
@@ -478,7 +450,7 @@
             color: white;
             transition: width 0.3s ease;
         }
-        
+
         /* Required field indicator */
         .required-info {
             font-size: 14px;
@@ -488,34 +460,34 @@
             align-items: center;
             gap: 5px;
         }
-        
+
         /* Responsive Design */
         @media screen and (max-width: 768px) {
             .container {
                 padding: 10px;
             }
-            
+
             .form-col {
                 min-width: 100%;
             }
-            
+
             .tab {
                 flex-direction: column;
             }
-            
+
             .tab button {
                 width: 100%;
                 text-align: left;
             }
-            
+
             .mode-selector {
                 flex-direction: column;
             }
-            
+
             h1 {
                 font-size: 1.5rem;
             }
-            
+
             h2 {
                 font-size: 1.3rem;
             }
@@ -527,7 +499,7 @@
         <header>
             <h1><i class="fas fa-server"></i> CBDB Cluster Deployment</h1>
         </header>
-        
+
         <!-- Flash Messages -->
         <div class="flash-messages">
             {% with messages = get_flashed_messages(with_categories=true) %}
@@ -540,64 +512,55 @@
                 {% endif %}
             {% endwith %}
         </div>
-        
+
         <!-- Tab Navigation -->
         <div class="tab">
-            <button class="tablinks {% if active_tab == 'configuration' or not active_tab %}active{% endif %}" 
-                    onclick="openTab(event, 'configuration')">
+            <button class="tablinks {% if active_tab == 'configuration' or not active_tab %}active{% endif %}" onclick="openTab(event, 'configuration')">
                 <i class="fas fa-cog"></i> Configuration
             </button>
-            <button class="tablinks {% if params.get('DEPLOY_TYPE', 'single') != 'multi' %}hidden{% endif %}" 
-                    onclick="openTab(event, 'hosts')" 
-                    id="hostsTabButton">
+            <button class="tablinks {% if params.get('DEPLOY_TYPE', 'single') != 'multi' %}hidden{% endif %}" onclick="openTab(event, 'hosts')" id="hostsTabButton">
                 <i class="fas fa-network-wired"></i> Hosts
             </button>
-            <button class="tablinks {% if active_tab == 'deploy' %}active{% endif %}" 
-                    onclick="openTab(event, 'deploy')">
+            <button class="tablinks {% if active_tab == 'deploy' %}active{% endif %}" onclick="openTab(event, 'deploy')">
                 <i class="fas fa-rocket"></i> Deploy
             </button>
         </div>
-        
+
         <!-- Configuration Tab -->
         <div id="configuration" class="tabcontent {% if active_tab == 'configuration' or not active_tab %}active{% endif %}">
             <form id="configForm" action="/save_params" method="post" enctype="multipart/form-data">
                 <!-- Deployment Mode Selector -->
                 <div class="mode-selector">
                     <h3><i class="fas fa-th-large"></i> Deployment Mode</h3>
-                    <div class="mode-option {% if params.get('DEPLOY_TYPE', 'single') == 'single' %}selected{% endif %}" 
-                         onclick="setDeploymentMode('single')">
+                    <div class="mode-option {% if params.get('DEPLOY_TYPE', 'single') == 'single' %}selected{% endif %}" onclick="setDeploymentMode('single')">
                         <i class="fas fa-laptop"></i>
                         <h4>Single Node</h4>
                         <p>Deploy all components on a single machine</p>
                     </div>
-                    <div class="mode-option {% if params.get('DEPLOY_TYPE', 'single') == 'multi' %}selected{% endif %}" 
-                         onclick="setDeploymentMode('multi')">
+                    <div class="mode-option {% if params.get('DEPLOY_TYPE', 'single') == 'multi' %}selected{% endif %}" onclick="setDeploymentMode('multi')">
                         <i class="fas fa-server"></i>
                         <h4>Multi Node</h4>
                         <p>Deploy components across multiple machines</p>
                     </div>
                 </div>
-                
+
                 <!-- Hidden field for deployment type -->
-                <input type="hidden" id="DEPLOY_TYPE" name="DEPLOY_TYPE" 
-                       value="{{ params.get('DEPLOY_TYPE', 'single') }}">
-                
+                <input type="hidden" id="DEPLOY_TYPE" name="DEPLOY_TYPE" value="{{ params.get('DEPLOY_TYPE', 'single') }}">
+
                 <!-- Mandatory Options -->
                 <h3><i class="fas fa-key"></i> Mandatory Options</h3>
                 <div class="form-row">
                     <div class="form-col">
                         <div class="form-group required">
                             <label for="ADMIN_USER">Admin User:</label>
-                            <input type="text" id="ADMIN_USER" name="ADMIN_USER" 
-                                   value="{{ params.get('ADMIN_USER', 'gpadmin') }}" required>
+                            <input type="text" id="ADMIN_USER" name="ADMIN_USER" value="{{ params.get('ADMIN_USER', 'gpadmin') }}" required>
                         </div>
-                        
+
                         <div class="form-group required">
                             <label for="ADMIN_USER_PASSWORD">Admin Password:</label>
-                            <input type="password" id="ADMIN_USER_PASSWORD" name="ADMIN_USER_PASSWORD" 
-                                   value="{{ params.get('ADMIN_USER_PASSWORD', 'Hashdata@123') }}" required>
+                            <input type="password" id="ADMIN_USER_PASSWORD" name="ADMIN_USER_PASSWORD" value="{{ params.get('ADMIN_USER_PASSWORD', 'Hashdata@123') }}" required>
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="UPLOAD_PATH">Upload Directory Path:</label>
                             <input type="text" id="UPLOAD_PATH" name="UPLOAD_PATH" value="{{ params.get('UPLOAD_PATH', '/tmp/uploads') }}" required>
@@ -614,70 +577,66 @@
                                     </button>
                                 </div>
                             </div>
-                            <small class="form-text">MUST use absolute path for native RPM names (e.g., /root/cloudberry-db-1.6.0-1.el8.x86_64.rpm) for correct product version identification.</small>
                             <input type="file" id="rpmFileUpload" style="display: none;" accept=".rpm">
                             <div class="progress hidden" style="margin-top: 10px;">
                                 <div id="rpmUploadProgress" class="progress-bar" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
                             </div>
                         </div>
+
+                        <div class="form-group required">
+                            <label for="CLOUDBERRY_BINARY_PATH">Binary Path:</label>
+                            <input type="text" id="CLOUDBERRY_BINARY_PATH" name="CLOUDBERRY_BINARY_PATH" value="{{ params.get('CLOUDBERRY_BINARY_PATH', '/usr/local/cloudberry-db') }}" required>
+                        </div>
                     </div>
-                    
+
                     <div class="form-col">
                         <div class="form-group required">
                             <label for="COORDINATOR_HOSTNAME">Coordinator Hostname:</label>
-                            <input type="text" id="COORDINATOR_HOSTNAME" name="COORDINATOR_HOSTNAME" 
-                                   value="{{ params.get('COORDINATOR_HOSTNAME', 'mdw') }}" required>
+                            <input type="text" id="COORDINATOR_HOSTNAME" name="COORDINATOR_HOSTNAME" value="{{ params.get('COORDINATOR_HOSTNAME', 'mdw') }}" required>
                         </div>
-                        
+
                         <div class="form-group required">
                             <label for="COORDINATOR_IP">Coordinator IP:</label>
-                            <input type="text" id="COORDINATOR_IP" name="COORDINATOR_IP" 
-                                   value="{{ params.get('COORDINATOR_IP', '192.168.193.21') }}" required>
+                            <input type="text" id="COORDINATOR_IP" name="COORDINATOR_IP" value="{{ params.get('COORDINATOR_IP', '192.168.193.21') }}" required>
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Cluster Initialization Parameters -->
                 <h3><i class="fas fa-database"></i> Cluster Initialization Parameters</h3>
                 <div class="form-row">
                     <div class="form-col">
                         <div class="form-group required">
                             <label for="COORDINATOR_PORT">Coordinator Port:</label>
-                            <input type="number" id="COORDINATOR_PORT" name="COORDINATOR_PORT" 
-                                   value="{{ params.get('COORDINATOR_PORT', '5432') }}" required>
+                            <input type="number" id="COORDINATOR_PORT" name="COORDINATOR_PORT" value="{{ params.get('COORDINATOR_PORT', '5432') }}" required>
                         </div>
-                        
+
                         <div class="form-group required">
                             <label for="COORDINATOR_DIRECTORY">Coordinator Directory:</label>
-                            <input type="text" id="COORDINATOR_DIRECTORY" name="COORDINATOR_DIRECTORY" 
-                                   value="{{ params.get('COORDINATOR_DIRECTORY', '/data0/database/coordinator') }}" required>
+                            <input type="text" id="COORDINATOR_DIRECTORY" name="COORDINATOR_DIRECTORY" value="{{ params.get('COORDINATOR_DIRECTORY', '/data0/database/coordinator') }}" required>
                         </div>
-                        
+
                         <div class="form-group required">
                             <label for="ARRAY_NAME">Cluster Name:</label>
-                            <input type="text" id="ARRAY_NAME" name="ARRAY_NAME" 
-                                   value="{{ params.get('ARRAY_NAME', 'CBDB_SANDBOX') }}" required>
+                            <input type="text" id="ARRAY_NAME" name="ARRAY_NAME" value="{{ params.get('ARRAY_NAME', 'CBDB_SANDBOX') }}" required>
                         </div>
-                        
+
                         <div class="form-group required">
                             <label for="SEG_PREFIX">Segment Prefix:</label>
-                            <input type="text" id="SEG_PREFIX" name="SEG_PREFIX" 
-                                   value="{{ params.get('SEG_PREFIX', 'gpseg') }}" required>
+                            <input type="text" id="SEG_PREFIX" name="SEG_PREFIX" value="{{ params.get('SEG_PREFIX', 'gpseg') }}" required>
                         </div>
-                        
+
                         <div class="form-group required">
                             <label for="PORT_BASE">Port Base:</label>
-                            <input type="number" id="PORT_BASE" name="PORT_BASE" 
-                                   value="{{ params.get('PORT_BASE', '6000') }}" required>
+                            <input type="number" id="PORT_BASE" name="PORT_BASE" value="{{ params.get('PORT_BASE', '6000') }}" required>
                         </div>
-                        
+
                         <div class="form-group required">
                             <label for="DATA_DIRECTORY">Data Directory:</label>
-                            <input type="text" id="DATA_DIRECTORY" name="DATA_DIRECTORY" 
-                                   value="{{ params.get('DATA_DIRECTORY', '/data0/database/primary /data0/database/primary') }}" required>
+                            <input type="text" id="DATA_DIRECTORY" name="DATA_DIRECTORY" value="{{ params.get('DATA_DIRECTORY', '/data0/database/primary /data0/database/primary') }}" required>
                             <small class="form-text">Enter multiple directory paths separated by spaces</small>
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="WITH_MIRROR">Enable Mirrors:</label>
                             <select id="WITH_MIRROR" name="WITH_MIRROR">
@@ -685,22 +644,20 @@
                                 <option value="true" {% if params.get('WITH_MIRROR') == 'true' %}selected{% endif %}>Yes</option>
                             </select>
                         </div>
-                        
+
                         <div id="mirrorParams" class="{% if params.get('WITH_MIRROR') != 'true' %}hidden{% endif %}">
                             <div class="form-group required">
                                 <label for="MIRROR_PORT_BASE">Mirror Port Base:</label>
-                                <input type="number" id="MIRROR_PORT_BASE" name="MIRROR_PORT_BASE" 
-                                       value="{{ params.get('MIRROR_PORT_BASE', '7000') }}" required>
+                                <input type="number" id="MIRROR_PORT_BASE" name="MIRROR_PORT_BASE" value="{{ params.get('MIRROR_PORT_BASE', '7000') }}" required>
                             </div>
-                            
+
                             <div class="form-group required">
                                 <label for="MIRROR_DATA_DIRECTORY">Mirror Data Directories:</label>
-                                <input type="text" id="MIRROR_DATA_DIRECTORY" name="MIRROR_DATA_DIRECTORY" 
-                                       value="{{ params.get('MIRROR_DATA_DIRECTORY', '/data0/database/mirror /data0/database/mirror') }}" required>
+                                <input type="text" id="MIRROR_DATA_DIRECTORY" name="MIRROR_DATA_DIRECTORY" value="{{ params.get('MIRROR_DATA_DIRECTORY', '/data0/database/mirror /data0/database/mirror') }}" required>
                                 <small class="form-text">Enter multiple directory paths separated by spaces</small>
                             </div>
                         </div>
-                        
+
                         <div class="form-group" hidden>
                             <label for="WITH_STANDBY">Enable Standby:</label>
                             <select id="WITH_STANDBY" name="WITH_STANDBY">
@@ -709,46 +666,40 @@
                             </select>
                         </div>
                     </div>
-                    
+
                     <div class="form-col">
                         <div class="form-group required">
                             <label for="TRUSTED_SHELL">Trusted Shell:</label>
-                            <input type="text" id="TRUSTED_SHELL" name="TRUSTED_SHELL" 
-                                   value="{{ params.get('TRUSTED_SHELL', 'ssh') }}" required>
+                            <input type="text" id="TRUSTED_SHELL" name="TRUSTED_SHELL" value="{{ params.get('TRUSTED_SHELL', 'ssh') }}" required>
                         </div>
-                        
+
                         <div class="form-group required">
                             <label for="CHECK_POINT_SEGMENTS">Checkpoint Segments:</label>
-                            <input type="number" id="CHECK_POINT_SEGMENTS" name="CHECK_POINT_SEGMENTS" 
-                                   value="{{ params.get('CHECK_POINT_SEGMENTS', '8') }}" required>
+                            <input type="number" id="CHECK_POINT_SEGMENTS" name="CHECK_POINT_SEGMENTS" value="{{ params.get('CHECK_POINT_SEGMENTS', '8') }}" required>
                         </div>
-                        
+
                         <div class="form-group required">
                             <label for="ENCODING">Encoding:</label>
-                            <input type="text" id="ENCODING" name="ENCODING" 
-                                   value="{{ params.get('ENCODING', 'UNICODE') }}" required>
+                            <input type="text" id="ENCODING" name="ENCODING" value="{{ params.get('ENCODING', 'UNICODE') }}" required>
                         </div>
-                        
+
                         <div class="form-group required">
                             <label for="DATABASE_NAME">Database Name:</label>
-                            <input type="text" id="DATABASE_NAME" name="DATABASE_NAME" 
-                                   value="{{ params.get('DATABASE_NAME', 'gpadmin') }}" required>
+                            <input type="text" id="DATABASE_NAME" name="DATABASE_NAME" value="{{ params.get('DATABASE_NAME', 'gpadmin') }}" required>
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="MACHINE_LIST_FILE">Machine List File:</label>
-                            <input type="text" id="MACHINE_LIST_FILE" name="MACHINE_LIST_FILE" 
-                                   value="{{ params.get('MACHINE_LIST_FILE', '/tmp/hostfile_gpinitsystem') }}">
+                            <input type="text" id="MACHINE_LIST_FILE" name="MACHINE_LIST_FILE" value="{{ params.get('MACHINE_LIST_FILE', '/tmp/hostfile_gpinitsystem') }}">
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="INIT_CONFIGFILE">Init Config File:</label>
-                            <input type="text" id="INIT_CONFIGFILE" name="INIT_CONFIGFILE" 
-                                   value="{{ params.get('INIT_CONFIGFILE', '/tmp/gpinitsystem_config') }}">
+                            <input type="text" id="INIT_CONFIGFILE" name="INIT_CONFIGFILE" value="{{ params.get('INIT_CONFIGFILE', '/tmp/gpinitsystem_config') }}">
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Optional Parameters -->
                 <h3><i class="fas fa-cogs"></i> Optional Parameters</h3>
                 <div class="form-row">
@@ -760,20 +711,19 @@
                                 <option value="true" {% if params.get('INIT_ENV_ONLY') == 'true' %}selected{% endif %}>Yes</option>
                             </select>
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="CLOUDBERRY_RPM_URL">RPM Download URL:</label>
-                            <input type="text" id="CLOUDBERRY_RPM_URL" name="CLOUDBERRY_RPM_URL" 
-                                   value="{{ params.get('CLOUDBERRY_RPM_URL', 'http://downloadlink.com/cloudberry.rpm') }}">
+                            <input type="text" id="CLOUDBERRY_RPM_URL" name="CLOUDBERRY_RPM_URL" value="{{ params.get('CLOUDBERRY_RPM_URL', 'http://downloadlink.com/cloudberry.rpm') }}">
                             <small class="form-text">URL to download the RPM package if not locally available</small>
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Multi-node specific parameters -->
                 <div id="multiNodeParams" class="{% if params.get('DEPLOY_TYPE', 'single') != 'multi' %}hidden{% endif %}">
                     <h3><i class="fas fa-network-wired"></i> Multi-Node Specific Parameters</h3>
-                    
+
                     <div class="form-row">
                         <div class="form-col">
                             <div class="form-group required">
@@ -783,15 +733,13 @@
                                     <option value="password" {% if params.get('SEGMENT_ACCESS_METHOD') == 'password' %}selected{% endif %}>Password</option>
                                 </select>
                             </div>
-                            
+
                             <div class="form-group required">
                                 <label for="SEGMENT_ACCESS_USER">Segment Access User:</label>
-                                <input type="text" id="SEGMENT_ACCESS_USER" name="SEGMENT_ACCESS_USER" 
-                                       value="{{ params.get('SEGMENT_ACCESS_USER', 'root') }}" required>
+                                <input type="text" id="SEGMENT_ACCESS_USER" name="SEGMENT_ACCESS_USER" value="{{ params.get('SEGMENT_ACCESS_USER', 'root') }}" required>
                             </div>
-                            
-                            <div class="form-group" id="keyfilePathGroup" 
-                                   {% if params.get('SEGMENT_ACCESS_METHOD') != 'keyfile' %}style="display:none;"{% endif %}>
+
+                            <div class="form-group" id="keyfilePathGroup" {% if params.get('SEGMENT_ACCESS_METHOD') != 'keyfile' %}style="display:none;"{% endif %}>
                                 <label for="SEGMENT_ACCESS_KEYFILE">Key File Path:</label>
                                 <div class="input-group">
                                     <input type="text" id="SEGMENT_ACCESS_KEYFILE" name="SEGMENT_ACCESS_KEYFILE" value="{{ params.get('SEGMENT_ACCESS_KEYFILE', '') }}">
@@ -806,17 +754,15 @@
                                     <div id="keyUploadProgress" class="progress-bar" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
                                 </div>
                             </div>
-                            
-                            <div class="form-group" id="passwordGroup" 
-                                   {% if params.get('SEGMENT_ACCESS_METHOD') == 'keyfile' %}style="display:none;"{% endif %}>
+
+                            <div class="form-group" id="passwordGroup" {% if params.get('SEGMENT_ACCESS_METHOD') == 'keyfile' %}style="display:none;"{% endif %}>
                                 <label for="SEGMENT_ACCESS_PASSWORD">Segment Access Password:</label>
-                                <input type="password" id="SEGMENT_ACCESS_PASSWORD" name="SEGMENT_ACCESS_PASSWORD" 
-                                       value="{{ params.get('SEGMENT_ACCESS_PASSWORD', 'XXXXXXXX') }}">
+                                <input type="password" id="SEGMENT_ACCESS_PASSWORD" name="SEGMENT_ACCESS_PASSWORD" value="{{ params.get('SEGMENT_ACCESS_PASSWORD', 'XXXXXXXX') }}">
                             </div>
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Hidden fields for hosts -->
                 <input type="hidden" id="coord_ip" name="coord_ip" value="{{ hosts.coordinator[0] if hosts.coordinator else '' }}">
                 <input type="hidden" id="coord_hostname" name="coord_hostname" value="{{ hosts.coordinator[1] if hosts.coordinator else '' }}">
@@ -825,17 +771,17 @@
                     <input type="hidden" id="segment_ip_{{ loop.index0 }}" name="segment_ip_{{ loop.index0 }}" value="{{ segment[0] }}">
                     <input type="hidden" id="segment_hostname_{{ loop.index0 }}" name="segment_hostname_{{ loop.index0 }}" value="{{ segment[1] }}">
                 {% endfor %}
-                
+
                 <button type="submit" class="btn">
                     <i class="fas fa-save"></i> Save Configuration
                 </button>
             </form>
         </div>
-        
+
         <!-- Hosts Tab -->
         <div id="hosts" class="tabcontent {% if active_tab == 'hosts' %}active{% endif %}">
             <h2><i class="fas fa-network-wired"></i> Host Configuration</h2>
-            
+
             <form method="post" action="/save_hosts" id="hostsForm">
                 <div class="host-group">
                     <h3><i class="fas fa-server"></i> Coordinator Host</h3>
@@ -843,20 +789,18 @@
                         <div class="form-col">
                             <div class="form-group">
                                 <label for="coord_ip_input">IP Address:</label>
-                                <input type="text" id="coord_ip_input" name="coord_ip" 
-                                       value="{{ params.get('COORDINATOR_IP', hosts.coordinator[0] if hosts.coordinator else '') }}" required>
+                                <input type="text" id="coord_ip_input" name="coord_ip" value="{{ params.get('COORDINATOR_IP', hosts.coordinator[0] if hosts.coordinator else '') }}" required>
                             </div>
                         </div>
                         <div class="form-col">
                             <div class="form-group">
                                 <label for="coord_hostname_input">Hostname:</label>
-                                <input type="text" id="coord_hostname_input" name="coord_hostname" 
-                                       value="{{ params.get('COORDINATOR_HOSTNAME', hosts.coordinator[1] if hosts.coordinator else '') }}" required>
+                                <input type="text" id="coord_hostname_input" name="coord_hostname" value="{{ params.get('COORDINATOR_HOSTNAME', hosts.coordinator[1] if hosts.coordinator else '') }}" required>
                             </div>
                         </div>
                     </div>
                 </div>
-            
+
                 <div class="host-group">
                     <h3><i class="fas fa-server"></i> Segment Hosts</h3>
                     <div id="segments_container">
@@ -870,48 +814,45 @@
                                     <div class="form-col">
                                         <div class="form-group">
                                             <label>IP Address:</label>
-                                            <input type="text" name="segment_ip_{{ loop.index0 }}" 
-                                                   value="{{ segment[0] }}" required>
+                                            <input type="text" name="segment_ip_{{ loop.index0 }}" value="{{ segment[0] }}" required>
                                         </div>
                                     </div>
                                     <div class="form-col">
                                         <div class="form-group">
                                             <label>Hostname:</label>
-                                            <input type="text" name="segment_hostname_{{ loop.index0 }}" 
-                                                   value="{{ segment[1] }}" required>
+                                            <input type="text" name="segment_hostname_{{ loop.index0 }}" value="{{ segment[1] }}" required>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         {% endfor %}
                     </div>
-                    
+
                     <button type="button" class="btn btn-secondary" onclick="addSegmentHost()">
                         <i class="fas fa-plus"></i> Add Segment Host
                     </button>
-                    
-                    <input type="hidden" id="segment_count_input" name="segment_count" 
-                           value="{{ hosts.segments|length }}">
+
+                    <input type="hidden" id="segment_count_input" name="segment_count" value="{{ hosts.segments|length }}">
                 </div>
-                
+
                 <!-- Hidden fields for parameters -->
                 {% for key, value in params.items() %}
                     <input type="hidden" name="{{ key }}" value="{{ value }}">
                 {% endfor %}
-            
+
                 <button type="submit" class="btn">
                     <i class="fas fa-save"></i> Save Hosts
                 </button>
             </form>
         </div>
-        
+
         <!-- Deploy Tab -->
         <div id="deploy" class="tabcontent {% if active_tab == 'deploy' %}active{% endif %}">
             <h2><i class="fas fa-rocket"></i> Cluster Deployment</h2>
-            
+
             <div class="mode-selector">
                 <h3><i class="fas fa-info-circle"></i> Deployment Information</h3>
-                <p>Current deployment mode: 
+                <p>Current deployment mode:
                     <strong>
                         {% if params.get('DEPLOY_TYPE', 'single') == 'single' %}
                             Single Node
@@ -920,9 +861,9 @@
                         {% endif %}
                     </strong>
                 </p>
-                
+
                 <!-- Coordinator host information with consistency check -->
-                <p>Coordinator host: 
+                <p>Coordinator host:
                     <strong>
                         {% if params.get('DEPLOY_TYPE', 'single') == 'single' %}
                             <!-- Single mode: use configuration from params -->
@@ -937,14 +878,14 @@
                         {% endif %}
                     </strong>
                 </p>
-                
+
                 <!-- Consistency check warning for multi-node deployment -->
                 {% if params.get('DEPLOY_TYPE', 'single') == 'multi' and hosts.coordinator %}
                     {% set config_hostname = params.get('COORDINATOR_HOSTNAME', '') %}
                     {% set config_ip = params.get('COORDINATOR_IP', '') %}
                     {% set hosts_hostname = hosts.coordinator[1] %}
                     {% set hosts_ip = hosts.coordinator[0] %}
-                    
+
                     {% if config_hostname != hosts_hostname or config_ip != hosts_ip %}
                     <div class="warning">
                         <p><strong>Warning:</strong> Coordinator configuration mismatch detected!</p>
@@ -954,7 +895,7 @@
                     </div>
                     {% endif %}
                 {% endif %}
-                
+
                 <!-- Segments and mirrors count consistency check -->
                 {% set data_dirs = params.get('DATA_DIRECTORY', '').split() %}
                 {% set mirror_dirs = params.get('MIRROR_DATA_DIRECTORY', '').split() %}
@@ -966,40 +907,40 @@
                     <p>Please ensure both counts are consistent for proper cluster operation.</p>
                 </div>
                 {% endif %}
-                
+
                 <!-- Display detailed deployment information -->
                 <div class="deployment-details">
                     <h4>Cluster Configuration Details</h4>
-                    
+
                     <!-- Coordinator information -->
-                    <p>Coordinator port: 
+                    <p>Coordinator port:
                         <strong>{{ params.get('COORDINATOR_PORT', 'Not configured') }}</strong>
                     </p>
-                    
-                    <p>Coordinator directory: 
+
+                    <p>Coordinator directory:
                         <strong>{{ params.get('COORDINATOR_DIRECTORY', 'Not configured') }}</strong>
                     </p>
-                    
+
                     <!-- Segment directory information -->
-                    <p>Segment data directory: 
+                    <p>Segment data directory:
                         <strong>{{ params.get('DATA_DIRECTORY', 'Not configured') }}</strong>
                     </p>
-                    <div style="color: red; font-weight: bold; font-size: smaller; margin-top: 5px; margin-bottom: 15px;">
+                    <div style="color: red; font-weight: bold; margin-top: 5px; margin-bottom: 15px;">
                         WARNING: These directories will be deleted and recreated. All files in these directories will be erased. Please ensure the data in these directories can be deleted.
                     </div>
-                    
-                    <p>Segment port base: 
+
+                    <p>Segment port base:
                         <strong>{{ params.get('PORT_BASE', 'Not configured') }}</strong>
                     </p>
-                    
+
                     <!-- Number of segments per host -->
                     {% set data_dirs = params.get('DATA_DIRECTORY', '').split() %}
-                    <p>Segments per host: 
+                    <p>Segments per host:
                         <strong>{{ data_dirs|length if data_dirs else 0 }}</strong>
                     </p>
-                    
+
                     <!-- Mirror configuration -->
-                    <p>Mirror enabled: 
+                    <p>Mirror enabled:
                         <strong>
                             {% if params.get('WITH_MIRROR', 'false') == 'true' %}
                                 Yes
@@ -1008,28 +949,28 @@
                             {% endif %}
                         </strong>
                     </p>
-                    
+
                     {% if params.get('WITH_MIRROR', 'false') == 'true' %}
-                    <p>Mirror port base: 
+                    <p>Mirror port base:
                         <strong>{{ params.get('MIRROR_PORT_BASE', 'Not configured') }}</strong>
                     </p>
-                    
-                    <p>Mirror data directory: 
+
+                    <p>Mirror data directory:
                         <strong>{{ params.get('MIRROR_DATA_DIRECTORY', 'Not configured') }}</strong>
                     </p>
-                    <div style="color: red; font-weight: bold; font-size: smaller; margin-top: 5px; margin-bottom: 15px;">
+                    <div style="color: red; font-weight: bold; margin-top: 5px; margin-bottom: 15px;">
                         WARNING: These directories will be deleted and recreated. All files in these directories will be erased. Please ensure the data in these directories can be deleted.
                     </div>
-                    
+
                     {% set mirror_dirs = params.get('MIRROR_DATA_DIRECTORY', '').split() %}
-                    <p>Mirrors per host: 
+                    <p>Mirrors per host:
                         <strong>{{ mirror_dirs|length if mirror_dirs else 0 }}</strong>
                     </p>
                     {% endif %}
-                    
+
                     <!-- Multi-node specific information -->
                     {% if params.get('DEPLOY_TYPE', 'single') == 'multi' %}
-                    <p>Segment hosts: 
+                    <p>Segment hosts:
                         <strong>
                             {% if hosts.segments %}
                                 {{ hosts.segments|length }} configured
@@ -1038,7 +979,7 @@
                             {% endif %}
                         </strong>
                     </p>
-                    
+
                     <!-- Display individual segment hosts -->
                     {% if hosts.segments %}
                     <div class="segment-hosts-details">
@@ -1053,34 +994,37 @@
                     {% endif %}
                 </div>
             </div>
-            
+
             <div class="form-group">
                 <p>Click the button below to start the cluster deployment. This process may take several minutes.</p>
-                
-                <!-- Deployment status and logs -->
-                <div id="deploymentStatus" class="deployment-status {% if not deployment_info.running %}hidden{% endif %}">
-                    <h4><i class="fas fa-info-circle"></i> Deployment Status</h4>
-                    {% if deployment_info.log_file %}
-                    <div class="log-path-info" style="background-color: #e9ecef; padding: 10px; margin-bottom: 10px; border-radius: 4px;">
-                        <strong>Deployment log file:</strong> {{ deployment_info.log_file }}<br>
-                        <small>You can check this file for detailed deployment progress.</small>
-                    </div>
-                    {% endif %}
-                    <div id="deploymentLog" class="log-container"></div>
-                    <button type="button" class="btn btn-secondary" onclick="refreshLogs()">
-                        <i class="fas fa-sync-alt"></i> Refresh Logs
-                    </button>
-                </div>
-                
-                <form method="post" action="/deploy" id="deployForm">
-                    <button type="submit" class="btn btn-success" id="deployButton" onclick="return startDeployment()">
+
+                <!-- 1. Deploy Button -->
+                <form method="post" action="/deploy" id="deployForm" onsubmit="return deployment.start();">
+                    <button type="submit" class="btn btn-success" id="deployButton">
                         <i class="fas fa-rocket"></i> Deploy Cluster
                     </button>
+
+                    <!-- 2. Log Path Info (hidden initially) -->
+                    <div id="logPathInfo" class="log-path-info" style="display: none; background-color: #e9ecef; padding: 10px; margin-bottom: 10px; border-radius: 4px;">
+                        <strong>Deployment log file:</strong> <span id="logFilePath"></span><br>
+                        <small>You can check this file for detailed deployment progress.</small>
+                    </div>
+
+                    <!-- 3. Deployment Status and Logs -->
+                    <div id="deploymentStatus" class="deployment-status {% if not deployment_info.running %}hidden{% endif %}">
+                        <h4><i class="fas fa-info-circle"></i> Deployment Status</h4>
+                        <div id="deploymentLog" class="log-container">
+                            <pre id="log-content"></pre>
+                        </div>
+                        <div id="deployment-error" class="alert alert-danger" style="display: none; margin-top: 10px;"></div>
+                    </div>
                 </form>
             </div>
         </div>
     </div>
-    
+
+    <!-- Import deployment management script -->
+    <script src="/static/js/deployment.js"></script>
     <script>
         // Tab switching
         function openTab(evt, tabName) {
@@ -1096,178 +1040,178 @@
             document.getElementById(tabName).classList.add("active");
             evt.currentTarget.classList.add("active");
         }
-        
+
         // Handle RPM file upload
-document.getElementById('rpmFileUpload').addEventListener('change', function(e) {
-    if (this.files.length > 0) {
-        const file = this.files[0];
-        const uploadPath = document.getElementById('UPLOAD_PATH').value;
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('type', 'rpm');
-        formData.append('upload_path', uploadPath);
+        document.getElementById('rpmFileUpload').addEventListener('change', function(e) {
+            if (this.files.length > 0) {
+                const file = this.files[0];
+                const uploadPath = document.getElementById('UPLOAD_PATH').value;
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('type', 'rpm');
+                formData.append('upload_path', uploadPath);
 
-        // 显示上传进度
-        const progressBar = document.getElementById('rpmUploadProgress');
-        progressBar.parentElement.classList.remove('hidden');
-        progressBar.value = 0;
-        progressBar.style.width = '0%';
+                // 显示上传进度
+                const progressBar = document.getElementById('rpmUploadProgress');
+                progressBar.parentElement.classList.remove('hidden');
+                progressBar.value = 0;
+                progressBar.style.width = '0%';
 
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', '/upload_file', true);
-        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '/upload_file', true);
+                xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
 
-        // 监听上传进度
-        xhr.upload.onprogress = function(e) {
-            if (e.lengthComputable) {
-                const percent = (e.loaded / e.total) * 100;
-                progressBar.value = percent;
-                progressBar.style.width = percent + '%';
-            }
-        };
-
-        xhr.onload = function() {
-            if (xhr.status === 200) {
-                try {
-                    const data = JSON.parse(xhr.responseText);
-                    if (data.success) {
-                        document.getElementById('CLOUDBERRY_RPM').value = data.file_path;
-                        flashMessage('RPM package uploaded successfully!', 'success');
-                    } else {
-                        flashMessage('Failed to upload RPM package: ' + data.message, 'danger');
+                // 监听上传进度
+                xhr.upload.onprogress = function(e) {
+                    if (e.lengthComputable) {
+                        const percent = (e.loaded / e.total) * 100;
+                        progressBar.value = percent;
+                        progressBar.style.width = percent + '%';
                     }
-                } catch (e) {
-                    flashMessage('Error processing server response', 'danger');
-                }
-            } else {
-                flashMessage('Upload failed with status: ' + xhr.status, 'danger');
+                };
+
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        try {
+                            const data = JSON.parse(xhr.responseText);
+                            if (data.success) {
+                                document.getElementById('CLOUDBERRY_RPM').value = data.file_path;
+                                flashMessage('RPM package uploaded successfully!', 'success');
+                            } else {
+                                flashMessage('Failed to upload RPM package: ' + data.message, 'danger');
+                            }
+                        } catch (e) {
+                            flashMessage('Error processing server response', 'danger');
+                        }
+                    } else {
+                        flashMessage('Upload failed with status: ' + xhr.status, 'danger');
+                    }
+                    // 上传完成后隐藏进度条
+                    setTimeout(() => {
+                        progressBar.parentElement.classList.add('hidden');
+                        progressBar.value = 0;
+                        progressBar.style.width = '0%';
+                    }, 1000);
+                };
+
+                xhr.onerror = function() {
+                    console.error('Error uploading RPM package');
+                    flashMessage('Error uploading RPM package. Please try again.', 'danger');
+                    // 上传失败后隐藏进度条
+                    setTimeout(() => {
+                        progressBar.parentElement.classList.add('hidden');
+                        progressBar.value = 0;
+                        progressBar.style.width = '0%';
+                    }, 1000);
+                };
+
+                xhr.send(formData);
             }
-            // 上传完成后隐藏进度条
-            setTimeout(() => {
-                progressBar.parentElement.classList.add('hidden');
-                progressBar.value = 0;
-                progressBar.style.width = '0%';
-            }, 1000);
-        };
-
-        xhr.onerror = function() {
-            console.error('Error uploading RPM package');
-            flashMessage('Error uploading RPM package. Please try again.', 'danger');
-            // 上传失败后隐藏进度条
-            setTimeout(() => {
-                progressBar.parentElement.classList.add('hidden');
-                progressBar.value = 0;
-                progressBar.style.width = '0%';
-            }, 1000);
-        };
-
-        xhr.send(formData);
-    }
-});
+        });
 
         // Handle Key file upload
-document.getElementById('keyFileUpload').addEventListener('change', function(e) {
-    if (this.files.length > 0) {
-        const file = this.files[0];
-        const uploadPath = document.getElementById('UPLOAD_PATH').value;
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('type', 'key');
-        formData.append('upload_path', uploadPath);
+        document.getElementById('keyFileUpload').addEventListener('change', function(e) {
+            if (this.files.length > 0) {
+                const file = this.files[0];
+                const uploadPath = document.getElementById('UPLOAD_PATH').value;
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('type', 'key');
+                formData.append('upload_path', uploadPath);
 
-        // 显示上传进度
-        const progressBar = document.getElementById('keyUploadProgress');
-        const progressContainer = progressBar.parentElement;
-        progressContainer.classList.remove('hidden');
-        progressBar.value = 0;
-        progressBar.style.width = '0%';
+                // 显示上传进度
+                const progressBar = document.getElementById('keyUploadProgress');
+                const progressContainer = progressBar.parentElement;
+                progressContainer.classList.remove('hidden');
+                progressBar.value = 0;
+                progressBar.style.width = '0%';
 
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', '/upload_file', true);
-        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '/upload_file', true);
+                xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
 
-        // 监听上传进度
-        xhr.upload.onprogress = function(e) {
-            if (e.lengthComputable) {
-                const percent = (e.loaded / e.total) * 100;
-                progressBar.value = percent;
-                progressBar.style.width = percent + '%';
-            }
-        };
-
-        xhr.onload = function() {
-            if (xhr.status === 200) {
-                try {
-                    const data = JSON.parse(xhr.responseText);
-                    if (data.success) {
-                        const keyFilePathInput = document.getElementById('SEGMENT_ACCESS_KEYFILE');
-                        keyFilePathInput.value = data.file_path;
-                        // 触发change事件确保值被正确识别
-                        keyFilePathInput.dispatchEvent(new Event('change'));
-                        flashMessage('Key file uploaded successfully!', 'success');
-                        console.log('Key file path updated to:', data.file_path);
-                        // 验证文件是否存在
-                        verifyFileExists(data.file_path);
-                    } else {
-                        flashMessage('Failed to upload Key file: ' + data.message, 'danger');
-                        console.error('Key upload failed:', data.message);
+                // 监听上传进度
+                xhr.upload.onprogress = function(e) {
+                    if (e.lengthComputable) {
+                        const percent = (e.loaded / e.total) * 100;
+                        progressBar.value = percent;
+                        progressBar.style.width = percent + '%';
                     }
-                } catch (e) {
-                    flashMessage('Error processing server response: ' + e.message, 'danger');
-                    console.error('Error parsing response:', e);
-                }
-            } else {
-                flashMessage('Upload failed with status: ' + xhr.status + ' - ' + xhr.statusText, 'danger');
-                console.error('Upload failed with status:', xhr.status, xhr.statusText);
+                };
+
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        try {
+                            const data = JSON.parse(xhr.responseText);
+                            if (data.success) {
+                                const keyFilePathInput = document.getElementById('SEGMENT_ACCESS_KEYFILE');
+                                keyFilePathInput.value = data.file_path;
+                                // 触发change事件确保值被正确识别
+                                keyFilePathInput.dispatchEvent(new Event('change'));
+                                flashMessage('Key file uploaded successfully!', 'success');
+                                console.log('Key file path updated to:', data.file_path);
+                                // 验证文件是否存在
+                                verifyFileExists(data.file_path);
+                            } else {
+                                flashMessage('Failed to upload Key file: ' + data.message, 'danger');
+                                console.error('Key upload failed:', data.message);
+                            }
+                        } catch (e) {
+                            flashMessage('Error processing server response: ' + e.message, 'danger');
+                            console.error('Error parsing response:', e);
+                        }
+                    } else {
+                        flashMessage('Upload failed with status: ' + xhr.status + ' - ' + xhr.statusText, 'danger');
+                        console.error('Upload failed with status:', xhr.status, xhr.statusText);
+                    }
+                    // 上传完成后隐藏进度条
+                    setTimeout(() => {
+                        progressContainer.classList.add('hidden');
+                        progressBar.value = 0;
+                        progressBar.style.width = '0%';
+                    }, 1000);
+                };
+
+                xhr.onerror = function() {
+                    console.error('Error uploading Key file: Network error');
+                    flashMessage('Network error uploading Key file. Please try again.', 'danger');
+                    // 上传失败后隐藏进度条
+                    setTimeout(() => {
+                        progressContainer.classList.add('hidden');
+                        progressBar.value = 0;
+                        progressBar.style.width = '0%';
+                    }, 1000);
+                };
+
+                xhr.send(formData);
             }
-            // 上传完成后隐藏进度条
-            setTimeout(() => {
-                progressContainer.classList.add('hidden');
-                progressBar.value = 0;
-                progressBar.style.width = '0%';
-            }, 1000);
-        };
-
-        xhr.onerror = function() {
-            console.error('Error uploading Key file: Network error');
-            flashMessage('Network error uploading Key file. Please try again.', 'danger');
-            // 上传失败后隐藏进度条
-            setTimeout(() => {
-                progressContainer.classList.add('hidden');
-                progressBar.value = 0;
-                progressBar.style.width = '0%';
-            }, 1000);
-        };
-
-        xhr.send(formData);
-    }
-});
-
-// 添加文件存在验证函数
-function verifyFileExists(filePath) {
-    fetch('/verify_file?file_path=' + encodeURIComponent(filePath))
-        .then(response => response.json())
-        .then(data => {
-            if (!data.exists) {
-                flashMessage('Warning: Uploaded file was not found on server.', 'warning');
-                console.warn('Uploaded file not found:', filePath);
-            }
-        })
-        .catch(error => {
-            console.error('Error verifying file existence:', error);
         });
-}
-        
+
+        // 添加文件存在验证函数
+        function verifyFileExists(filePath) {
+            fetch('/verify_file?file_path=' + encodeURIComponent(filePath))
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.exists) {
+                        flashMessage('Warning: Uploaded file was not found on server.', 'warning');
+                        console.warn('Uploaded file not found:', filePath);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error verifying file existence:', error);
+                });
+        }
+
         // Set deployment mode
         function setDeploymentMode(mode) {
             document.getElementById('DEPLOY_TYPE').value = mode;
-            
+
             // Update UI
             document.querySelectorAll('.mode-option').forEach(option => {
                 option.classList.remove('selected');
             });
             event.currentTarget.classList.add('selected');
-            
+
             // Show/hide multi-node parameters
             const multiNodeParams = document.getElementById('multiNodeParams');
             if (mode === 'multi') {
@@ -1275,7 +1219,7 @@ function verifyFileExists(filePath) {
             } else {
                 multiNodeParams.classList.add('hidden');
             }
-            
+
             // Show/hide hosts tab based on deployment mode
             const hostsTabButton = document.getElementById('hostsTabButton');
             if (mode === 'multi') {
@@ -1290,7 +1234,7 @@ function verifyFileExists(filePath) {
                     hostsTabButton.classList.remove('active');
                 }
             }
-            
+
             // 单节点模式下隐藏Key File Path相关元素
             if (mode === 'single') {
                 document.getElementById('keyfilePathGroup').style.display = 'none';
@@ -1301,23 +1245,23 @@ function verifyFileExists(filePath) {
                 document.getElementById('keyfilePathGroup').style.display = method === 'keyfile' ? 'block' : 'none';
                 document.getElementById('passwordGroup').style.display = method === 'keyfile' ? 'none' : 'block';
             }
-            
+
             // Check if Mirror Data Directories should be shown
             toggleMirrorDataDir();
         }
-        
+
         // Segment access method toggle
         document.getElementById('SEGMENT_ACCESS_METHOD').addEventListener('change', function() {
             const method = this.value;
             document.getElementById('keyfilePathGroup').style.display = method === 'keyfile' ? 'block' : 'none';
             document.getElementById('passwordGroup').style.display = method === 'keyfile' ? 'none' : 'block';
         });
-        
+
         // Control Mirror Data Directories visibility
         function toggleMirrorDataDir() {
             const withMirror = document.getElementById('WITH_MIRROR');
             const mirrorDataDirGroup = document.getElementById('mirrorParams');
-            
+
             if (withMirror && mirrorDataDirGroup) {
                 if (withMirror.value === 'true') {
                     mirrorDataDirGroup.classList.remove('hidden');
@@ -1326,7 +1270,7 @@ function verifyFileExists(filePath) {
                 }
             }
         }
-        
+
         // Listen for Enable Mirrors changes
         document.addEventListener('DOMContentLoaded', function() {
             const withMirror = document.getElementById('WITH_MIRROR');
@@ -1335,25 +1279,25 @@ function verifyFileExists(filePath) {
                 // Initialize on load
                 toggleMirrorDataDir();
             }
-            
+
             // Initialize form based on deployment mode
             const deployType = document.getElementById('DEPLOY_TYPE').value;
             if (deployType === 'multi') {
                 document.getElementById('multiNodeParams').classList.remove('hidden');
             }
         });
-        
+
         // Add segment host
         function addSegmentHost() {
             var container = document.getElementById("segments_container");
             var countInput = document.getElementById("segment_count_input");
             var currentCount = parseInt(countInput.value);
             var newCount = currentCount + 1;
-        
+
             var newSegment = document.createElement("div");
             newSegment.className = "segment-host";
             newSegment.id = "segment_" + currentCount;
-            newSegment.innerHTML = 
+            newSegment.innerHTML =
                 '<div class="segment-host-header">' +
                 '    <h4>Segment Host ' + newCount + '</h4>' +
                 '    <button type="button" class="remove-host" onclick="removeSegmentHost(' + currentCount + ')">✕</button>' +
@@ -1372,85 +1316,75 @@ function verifyFileExists(filePath) {
                 '        </div>' +
                 '    </div>' +
                 '</div>';
-        
+
             container.appendChild(newSegment);
             countInput.value = newCount;
         }
-        
+
         // Remove segment host
         function removeSegmentHost(index) {
             var segment = document.getElementById("segment_" + index);
             if (segment) {
                 segment.remove();
-                
+
                 // Update segment count
                 var countInput = document.getElementById("segment_count_input");
                 var currentCount = parseInt(countInput.value);
                 countInput.value = currentCount - 1;
             }
         }
-        
-        // Start deployment with confirmation
-        function startDeployment() {
-            // Check for warnings before proceeding
-            const warningItems = document.querySelectorAll('.warning');
-            if (warningItems.length > 0) {
-                alert('Please resolve all warnings before deploying the cluster.');
-                return false;
+
+        let logUpdateTimer = null;
+
+        function updateLog() {
+            // 清除之前的错误消息
+            const errorDiv = document.getElementById('deployment-error');
+            if (errorDiv) {
+                errorDiv.style.display = 'none';
+                errorDiv.textContent = '';
             }
 
-            if (confirm('Are you sure you want to deploy the cluster? This may take several minutes.')) {
-                // 禁用部署按钮
-                const deployButton = document.getElementById('deployButton');
-                deployButton.disabled = true;
-                deployButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting deployment...';
-                
-                // 显示部署状态区域
-                const deploymentStatus = document.getElementById('deploymentStatus');
-                deploymentStatus.classList.remove('hidden');
-                deploymentStatus.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Starting deployment...</div>';
-                
-                // 标记部署已开始
-                window.deploymentStarted = true;
-                
-                // 异步提交表单
-                fetch('/deploy', {
-                    method: 'POST',
-                    body: new FormData(document.getElementById('deployForm'))
-                }).then(response => response.json())
-                  .then(data => {
-                      if (data.success) {
-                          // 显示成功消息和日志文件路径
-                          deploymentStatus.innerHTML = '';
-                          let logPathElement = document.createElement('div');
-                          logPathElement.className = 'log-path-info';
-                          logPathElement.style.cssText = 'background-color: #e9ecef; padding: 10px; margin-bottom: 10px; border-radius: 4px;';
-                           
-                          // 直接使用后端返回的完整日志路径
-                          logPathElement.innerHTML = `<strong>Deployment log file:</strong> ${data.log_file}<br>` +
-                              '<small>You can check this file for detailed deployment progress.</small>';
-                          deploymentStatus.appendChild(logPathElement);
-                           
-                          // 显示成功消息
-                          flashMessage(data.message, 'success');
-                      } else {
-                          // 显示错误消息
-                          deploymentStatus.innerHTML = `<div class="text-danger">${data.message}</div>`;
-                      }
-                  })
-                  .catch(error => {
-                      console.error('Error submitting deployment form:', error);
-                      deploymentStatus.innerHTML = '<div class="text-danger">Error starting deployment. Please try again.</div>';
-                  })
-                  .finally(() => {
-                      // 无论成功失败，都重新启用按钮
-                      deployButton.disabled = false;
-                      deployButton.innerHTML = '<i class="fas fa-rocket"></i> Deploy Cluster';
-                  });
-                
-                return true;
-            }
-            return false;
+            fetch('/get_log_content?last_position=' + lastPosition)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        console.error('Error fetching log:', data.error);
+                        if (errorDiv) {
+                            errorDiv.textContent = data.error;
+                            errorDiv.style.display = 'block';
+                        }
+                        logUpdateTimer = setTimeout(updateLog, 5000);
+                        return;
+                    }
+
+                    const logContent = document.getElementById('log-content');
+                    if (logContent && data.content) {
+                        // 添加新内容
+                        logContent.textContent += data.content;
+                        lastPosition = data.position;
+
+                        // 自动滚动到底部
+                        const container = document.getElementById('deploymentLog');
+                        if (container) {
+                            container.scrollTop = container.scrollHeight;
+                        }
+                    }
+
+                    // 如果部署还在运行或者是第一次获取日志，继续轮询
+                    if (!data.eof || lastPosition === 0) {
+                        logUpdateTimer = setTimeout(updateLog, 1000);
+                    } else {
+                        console.log('Deployment finished');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    if (errorDiv) {
+                        errorDiv.textContent = 'Error fetching deployment logs. Retrying...';
+                        errorDiv.style.display = 'block';
+                    }
+                    logUpdateTimer = setTimeout(updateLog, 5000);
+                });
         }
 
         // 添加一个简单的消息显示函数
@@ -1464,7 +1398,7 @@ function verifyFileExists(filePath) {
                     <span aria-hidden="true">&times;</span>
                 </button>
             `;
-            
+
             const container = document.querySelector('.container');
             if (container) {
                 container.prepend(flashDiv);
@@ -1475,10 +1409,6 @@ function verifyFileExists(filePath) {
             }
         }
 
-
-
-
-        
         // Initialize deployment status check on page load
         document.addEventListener('DOMContentLoaded', function() {
             // Handle configuration form submission
@@ -1489,7 +1419,7 @@ function verifyFileExists(filePath) {
                     // Server will redirect to appropriate tab based on deployment mode
                 });
             }
-            
+
             // Handle hosts form submission
             const hostsForm = document.getElementById('hostsForm');
             if (hostsForm) {
@@ -1498,7 +1428,7 @@ function verifyFileExists(filePath) {
                     // Server will redirect to deploy tab
                 });
             }
-            
+
             // Set initial active tab based on URL parameter
             const urlParams = new URLSearchParams(window.location.search);
             const tabParam = urlParams.get('tab');
@@ -1506,19 +1436,23 @@ function verifyFileExists(filePath) {
                 // Find the tab button and content
                 const tabButton = document.querySelector(`.tablinks[onclick*="'${tabParam}'"]`);
                 const tabContent = document.getElementById(tabParam);
-                
+
                 if (tabButton && tabContent) {
                     // Remove active class from all tabs
                     document.querySelectorAll('.tablinks, .tabcontent').forEach(el => {
                         el.classList.remove('active');
                     });
-                    
+
                     // Add active class to the target tab
                     tabButton.classList.add('active');
                     tabContent.classList.add('active');
                 }
             }
         });
+
+        // Log update functionality has been moved to deployment.js
+
+        // Start deployment functionality has been moved to deployment.js
     </script>
 </body>
 </html>
