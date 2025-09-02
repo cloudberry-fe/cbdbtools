@@ -547,7 +547,7 @@
                     onclick="openTab(event, 'configuration')">
                 <i class="fas fa-cog"></i> Configuration
             </button>
-            <button class="tablinks {% if params.get('DEPLOY_TYPE', 'single') != 'multi' %}hidden{% endif %}" 
+            <button class="tablinks {% if active_tab == 'hosts' %}active{% endif %} {% if params.get('DEPLOY_TYPE', 'single') != 'multi' %}hidden{% endif %}" 
                     onclick="openTab(event, 'hosts')" 
                     id="hostsTabButton">
                 <i class="fas fa-network-wired"></i> Hosts
