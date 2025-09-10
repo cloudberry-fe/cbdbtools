@@ -117,7 +117,7 @@ chmod 700 get_helm.sh
 ## Create minikube user and start minikube
 echo "%wheel ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 useradd -m -G wheel minikube
-passwd minikube
+echo "1qaz2wsx"|passwd --stdin minikube
 usermod -aG docker minikube
 newgrp docker
 
