@@ -31,12 +31,17 @@ metadata:
   namespace: kube-system
 spec:
   selector:
-    actual-registry: "true"
+    actual-registry: \"true\"
     kubernetes.io/minikube-addons: registry
   ports:
-  - protocol: TCP
+  - name: http
+    protocol: TCP
     port: 5000
     targetPort: 5000
+  - name: https
+    protocol: TCP
+    port: 443
+    targetPort: 443
   type: LoadBalancer" > /home/minikube/registry-lb-service.yaml
   
 kubectl apply -f /home/minikube/registry-lb-service.yaml
