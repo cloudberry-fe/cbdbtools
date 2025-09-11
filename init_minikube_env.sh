@@ -120,5 +120,3 @@ useradd -m -G wheel minikube
 echo "1qaz2wsx"|passwd --stdin minikube
 usermod -aG docker minikube
 newgrp docker
-
-
