@@ -1,5 +1,4 @@
 #!/bin/bash
-
 minikube start
 
 ## Check the K8S status and enable addons
