@@ -1,5 +1,6 @@
 #!/bin/bash
-minikube start"
+
+minikube start
 
 ## Check the K8S status and enable addons
 kubectl get po -A
@@ -20,7 +21,5 @@ spec:
       port: 9090
       targetPort: 9090
   type: LoadBalancer" > /home/minikube/kubernetes-dashboard-lb-service.yaml
-
-chown minikube:minikube /home/minikube/kubernetes-dashboard-lb-service.yaml
 
 kubectl apply -f /home/minikube/kubernetes-dashboard-lb-service.yaml
