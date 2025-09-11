@@ -121,29 +121,4 @@ echo "1qaz2wsx"|passwd --stdin minikube
 usermod -aG docker minikube
 newgrp docker
 
-su - minikube -l -c "minikube start"
-
-## Check the K8S status and enable addons
-su - minikube -l -c "kubectl get po -A"
-su - minikube -l -c "minikube addons enable registry "
-su - minikube -l -c "minikube addons enable metrics-server"
-su - minikube -l -c "minikube addons enable dashboard"
-
-echo "apiVersion: v1
-kind: Service
-metadata:
-  name: kubernetes-dashboard-lb
-  namespace: kubernetes-dashboard
-spec:
-  selector:
-    k8s-app: kubernetes-dashboard
-  ports:
-    - protocol: TCP
-      port: 9090
-      targetPort: 9090
-  type: LoadBalancer" > /home/minikube/kubernetes-dashboard-lb-service.yaml
-
-chown minikube:minikube /home/minikube/kubernetes-dashboard-lb-service.yaml
-
-su - minikube -l -c "kubectl apply -f /home/minikube/kubernetes-dashboard-lb-service.yaml"
 
