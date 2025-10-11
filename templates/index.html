@@ -1057,8 +1057,8 @@
             <div class="form-group">
                 <p>Click the button below to start the cluster deployment. This process may take several minutes.</p>
                 
-                <!-- Deployment status and logs -->
-                <div id="deploymentStatus" class="deployment-status">
+                <!-- Deployment status and logs - initially hidden -->
+                <div id="deploymentStatus" class="deployment-status hidden">
                     <h4><i class="fas fa-info-circle"></i> Deployment Status</h4>
                     <div class="log-path-info" style="background-color: #e9ecef; padding: 10px; margin-bottom: 10px; border-radius: 4px;">
                         <strong>Deployment log file:</strong> <span id="logFilePath">Loading...</span><br>
@@ -1521,7 +1521,12 @@ function verifyFileExists(filePath) {
                         const logContainer = document.getElementById('deploymentLog');
                         logContainer.scrollTop = logContainer.scrollHeight;
                     } else {
-                        logContent.innerHTML = `Error: ${data.message}`;
+                        // Only show error if deployment has started
+                        if (window.deploymentStarted) {
+                            logContent.innerHTML = `Error: ${data.message}`;
+                        } else {
+                            logContent.innerHTML = 'Deployment has not started yet. Click "Deploy Cluster" to begin.';
+                        }
                     }
                 })
                 .catch(error => {
@@ -1561,6 +1566,9 @@ function verifyFileExists(filePath) {
         
         // Initialize deployment status check on page load
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize deployment status
+            window.deploymentStarted = false;
+            
             // Handle configuration form submission
             const configForm = document.getElementById('configForm');
             if (configForm) {
