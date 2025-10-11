@@ -246,6 +246,29 @@ MaxSessions 3000
 
 systemctl restart sshd
 
+# Configure systemd logind to disable RemoveIPC for Greenplum Database
+log_time "Configuring systemd logind to disable RemoveIPC..."
+if [ -f /etc/systemd/logind.conf ]; then
+    # Remove any existing RemoveIPC configuration
+    sed -i '/^#*RemoveIPC=/d' /etc/systemd/logind.conf
+    
+    # Add RemoveIPC=no configuration
+    echo "RemoveIPC=no" >> /etc/systemd/logind.conf
+    
+    log_time "RemoveIPC=no has been set in /etc/systemd/logind.conf"
+    log_time "Note: systemd-logind service restart is required for this setting to take effect"
+    
+    # Restart systemd-logind service to apply the change
+    if systemctl restart systemd-logind; then
+        log_time "systemd-logind service restarted successfully"
+    else
+        log_time "Warning: Failed to restart systemd-logind service. Manual restart may be required."
+        log_time "Run 'systemctl restart systemd-logind' or reboot the system to apply RemoveIPC setting"
+    fi
+else
+    log_time "Warning: /etc/systemd/logind.conf not found. RemoveIPC configuration skipped."
+fi
+
 #Step 4: Create database user
 log_time "Step 4: Create database user ${ADMIN_USER}..."
 
