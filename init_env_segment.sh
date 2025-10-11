@@ -246,6 +246,29 @@ MaxSessions 3000
 
 systemctl restart sshd
 
+# Configure systemd logind to disable RemoveIPC for Greenplum Database
+log_time "Configuring systemd logind to disable RemoveIPC..."
+if [ -f /etc/systemd/logind.conf ]; then
+    # Remove any existing RemoveIPC configuration
+    sed -i '/^#*RemoveIPC=/d' /etc/systemd/logind.conf
+    
+    # Add RemoveIPC=no configuration
+    echo "RemoveIPC=no" >> /etc/systemd/logind.conf
+    
+    log_time "RemoveIPC=no has been set in /etc/systemd/logind.conf"
+    log_time "Note: systemd-logind service restart is required for this setting to take effect"
+    
+    # Restart systemd-logind service to apply the change
+    if systemctl restart systemd-logind; then
+        log_time "systemd-logind service restarted successfully"
+    else
+        log_time "Warning: Failed to restart systemd-logind service. Manual restart may be required."
+        log_time "Run 'systemctl restart systemd-logind' or reboot the system to apply RemoveIPC setting"
+    fi
+else
+    log_time "Warning: /etc/systemd/logind.conf not found. RemoveIPC configuration skipped."
+fi
+
 #Step 4: Create database user
 log_time "Step 4: Create database user ${ADMIN_USER}..."
 
@@ -258,10 +281,10 @@ if ! id "$ADMIN_USER" &>/dev/null; then
   chown -R ${ADMIN_USER}:${ADMIN_USER} /home/${ADMIN_USER}
 else
   # Combine all patterns to be cleaned, using regex OR condition to match multiple keywords
-  if grep -qE 'COORDINATOR_DATA_DIRECTORY|MASTER_DATA_DIRECTORY|greenplum_path.sh|cluster_env.sh|synxdb_path.sh' /home/${ADMIN_USER}/.bashrc; then
+  if grep -qE 'COORDINATOR_DATA_DIRECTORY|MASTER_DATA_DIRECTORY|greenplum_path.sh|cluster_env.sh|synxdb_path.sh|cloudberry-env.sh' /home/${ADMIN_USER}/.bashrc; then
     echo "Found environment variable settings to clean up, removing them..."
     # Use extended regex to match all target patterns and delete lines (macOS compatible syntax)
-    sed -i -E '/COORDINATOR_DATA_DIRECTORY|MASTER_DATA_DIRECTORY|greenplum_path.sh|cluster_env.sh|synxdb_path.sh/d' /home/${ADMIN_USER}/.bashrc
+    sed -i -E '/COORDINATOR_DATA_DIRECTORY|MASTER_DATA_DIRECTORY|greenplum_path.sh|cluster_env.sh|synxdb_path.sh|cloudberry-env.sh/d' /home/${ADMIN_USER}/.bashrc
   fi
 fi
 

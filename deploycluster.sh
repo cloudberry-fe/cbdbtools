@@ -2,7 +2,7 @@ VARS_FILE="deploycluster_parameter.sh"
 
 source ./${VARS_FILE}
 
-log_time "CBDB tools version is: V1.0_dev20230824"
+log_time "CBDB tools version is: V1.0_dev20251011"
 
 ## Database type and version detection
 # Default values
@@ -52,7 +52,7 @@ if [ -n "$CLOUDBERRY_RPM" ]; then
         export DB_KEYWORD="synxdb4"
         export DB_VERSION=$(echo ${CLOUDBERRY_RPM} | grep -oP 'synxdb4-\K[0-9.]+')
         export CLOUDBERRY_BINARY_PATH="/usr/local/synxdb4"
-        export CLUSTER_ENV="cluster_env.sh"
+        export CLUSTER_ENV="cloudberry-env.sh"
     elif [[ "$CLOUDBERRY_RPM" == *"synxdb-2"* ]]; then
         export DB_TYPE="Synxdb"
         export DB_KEYWORD="synxdb-2"
