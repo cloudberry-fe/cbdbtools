@@ -52,11 +52,7 @@ if [ -n "$CLOUDBERRY_RPM" ]; then
         export DB_KEYWORD="synxdb4"
         export DB_VERSION=$(echo ${CLOUDBERRY_RPM} | grep -oP 'synxdb4-\K[0-9.]+')
         export CLOUDBERRY_BINARY_PATH="/usr/local/synxdb4"
-        export CLUSTER_ENV="cluster_env.sh"
-        env_file="${CLOUDBERRY_BINARY_PATH}/${CLUSTER_ENV}"
-        if [ -z ${env_file} ]; then
-          export CLUSTER_ENV="cloudberry-env.sh"
-        fi
+        export CLUSTER_ENV="cloudberry-env.sh"
     elif [[ "$CLOUDBERRY_RPM" == *"synxdb-2"* ]]; then
         export DB_TYPE="Synxdb"
         export DB_KEYWORD="synxdb-2"
