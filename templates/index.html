@@ -1058,18 +1058,29 @@
                 <p>Click the button below to start the cluster deployment. This process may take several minutes.</p>
                 
                 <!-- Deployment status and logs -->
-                <div id="deploymentStatus" class="deployment-status {% if not deployment_info.running %}hidden{% endif %}">
+                <div id="deploymentStatus" class="deployment-status">
                     <h4><i class="fas fa-info-circle"></i> Deployment Status</h4>
-                    {% if deployment_info.log_file %}
                     <div class="log-path-info" style="background-color: #e9ecef; padding: 10px; margin-bottom: 10px; border-radius: 4px;">
-                        <strong>Deployment log file:</strong> {{ deployment_info.log_file }}<br>
-                        <small>You can check this file for detailed deployment progress.</small>
+                        <strong>Deployment log file:</strong> <span id="logFilePath">Loading...</span><br>
+                        <small>Real-time deployment log display</small>
                     </div>
-                    {% endif %}
-                    <div id="deploymentLog" class="log-container"></div>
-                    <button type="button" class="btn btn-secondary" onclick="refreshLogs()">
-                        <i class="fas fa-sync-alt"></i> Refresh Logs
-                    </button>
+                    <div id="deploymentLog" class="log-container">
+                        <div id="logContent" style="white-space: pre-wrap; font-family: 'Courier New', monospace; color: #00ff00;">
+                            <!-- 日志内容将通过JavaScript动态加载 -->
+                        </div>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <button type="button" class="btn btn-secondary" onclick="loadDeploymentLog()">
+                            <i class="fas fa-sync-alt"></i> Refresh Logs
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="startAutoRefresh()">
+                            <i class="fas fa-play"></i> Auto Refresh
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="stopAutoRefresh()">
+                            <i class="fas fa-pause"></i> Stop Refresh
+                        </button>
+                        <span id="lastUpdate" style="margin-left: 15px; color: #666; font-size: 12px;"></span>
+                    </div>
                 </div>
                 
                 <form method="post" action="/deploy" id="deployForm">
@@ -1479,6 +1490,75 @@ function verifyFileExists(filePath) {
 
 
         
+        // Deployment log functions
+        let autoRefreshInterval = null;
+        
+        // Load deployment log content
+        function loadDeploymentLog() {
+            const logContent = document.getElementById('logContent');
+            const lastUpdate = document.getElementById('lastUpdate');
+            const logFilePath = document.getElementById('logFilePath');
+            
+            // Show loading indicator
+            logContent.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading logs...';
+            
+            // Fetch log content from server
+            fetch('/get_deployment_log')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Display log content with proper formatting
+                        logContent.innerHTML = data.log_content || 'Log file is empty or deployment has not started';
+                        
+                        // Update log file path
+                        logFilePath.textContent = data.log_file || 'No log file available';
+                        
+                        // Update last refresh time
+                        const now = new Date();
+                        lastUpdate.textContent = `Last updated: ${now.toLocaleString()}`;
+                        
+                        // Auto-scroll to bottom
+                        const logContainer = document.getElementById('deploymentLog');
+                        logContainer.scrollTop = logContainer.scrollHeight;
+                    } else {
+                        logContent.innerHTML = `Error: ${data.message}`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading deployment log:', error);
+                    logContent.innerHTML = 'Failed to load logs, please check network connection';
+                });
+        }
+        
+        // Start auto-refresh
+        function startAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+            
+            // Load immediately
+            loadDeploymentLog();
+            
+            // Set up interval for auto-refresh (every 5 seconds)
+            autoRefreshInterval = setInterval(loadDeploymentLog, 5000);
+            
+            // Update button states
+            document.querySelector('button[onclick="startAutoRefresh()"]').disabled = true;
+            document.querySelector('button[onclick="stopAutoRefresh()"]').disabled = false;
+        }
+        
+        // Stop auto-refresh
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+            
+            // Update button states
+            document.querySelector('button[onclick="startAutoRefresh()"]').disabled = false;
+            document.querySelector('button[onclick="stopAutoRefresh()"]').disabled = true;
+        }
+        
         // Initialize deployment status check on page load
         document.addEventListener('DOMContentLoaded', function() {
             // Handle configuration form submission
@@ -1517,6 +1597,15 @@ function verifyFileExists(filePath) {
                     tabButton.classList.add('active');
                     tabContent.classList.add('active');
                 }
+            }
+            
+            // Load deployment log when deploy tab is opened
+            const deployTabButton = document.querySelector('button[onclick*="deploy"]');
+            if (deployTabButton) {
+                deployTabButton.addEventListener('click', function() {
+                    // Small delay to ensure tab is fully loaded
+                    setTimeout(loadDeploymentLog, 100);
+                });
             }
         });
     </script>

@@ -7,10 +7,25 @@ from datetime import datetime
 import json
 import time
 import threading
-from werkzeug.utils import secure_filename  # 添加这行导入
+from werkzeug.utils import secure_filename
+import psutil
+
+
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
+
+# Global variable to track deployment status
+DEPLOYMENT_STATUS = {
+    'running': False,
+    'log_file': None,
+    'start_time': None,
+    'success': None,
+    'pid': None
+}
+
+# Lock for thread-safe access to deployment status
+DEPLOYMENT_LOCK = threading.Lock()
 
 # Configuration file paths
 PARAM_FILE = 'deploycluster_parameter.sh'
@@ -119,7 +134,7 @@ def index():
         'start_time': None
     }
     
-    # 获取当前部署状态
+    # Get current deployment status
     with DEPLOYMENT_LOCK:
         deployment_info['running'] = DEPLOYMENT_STATUS['running']
         deployment_info['log_file'] = DEPLOYMENT_STATUS['log_file']
@@ -169,9 +184,9 @@ def deploy():
     success, message = start_background_deployment(deploy_type)
     
     if success:
-        # 从message中提取日志文件名
+        # Extract log file name from message
         log_file = message.split(': ')[-1] if ': ' in message else ''
-        # 返回JSON响应包含日志文件绝对路径
+        # Return JSON response with absolute log file path
         return jsonify({
             'success': True,
             'message': message,
@@ -199,7 +214,7 @@ def deployment_status():
             'running': DEPLOYMENT_STATUS['running'],
             'log_file': DEPLOYMENT_STATUS['log_file'],
             'start_time': DEPLOYMENT_STATUS['start_time'],
-            'success': DEPLOYMENT_STATUS['success']  # 返回成功状态
+            'success': DEPLOYMENT_STATUS['success']  # Return success status
         })
 
 # New route to get deployment logs
@@ -307,6 +322,43 @@ def get_deployment_params():
         'mirror_dirs': mirror_dirs
     })
 
+# New route to get deployment log content
+@app.route('/get_deployment_log')
+def get_deployment_log_content():
+    try:
+        with DEPLOYMENT_LOCK:
+            log_file = DEPLOYMENT_STATUS['log_file']
+        
+        if not log_file:
+            return jsonify({
+                'success': False,
+                'message': 'No deployment log file available'
+            })
+        
+        if not os.path.exists(log_file):
+            return jsonify({
+                'success': False,
+                'message': f'Log file not found: {log_file}'
+            })
+        
+        # Read the entire log file
+        with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
+            log_content = f.read()
+        
+        return jsonify({
+            'success': True,
+            'log_file': log_file,
+            'log_content': log_content,
+            'file_size': len(log_content),
+            'last_modified': os.path.getmtime(log_file) if os.path.exists(log_file) else None
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error reading deployment log: {str(e)}'
+        })
+
 # 文件上传配置
 UPLOAD_FOLDER = '/tmp/uploads'
 ALLOWED_RPM_EXTENSIONS = {'rpm'}
@@ -374,21 +426,11 @@ if __name__ == '__main__':
     # Ensure templates directory exists
     if not os.path.exists('templates'):
         os.makedirs('templates')
-    # Start application
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # Start application on port 5002
+    app.run(host='0.0.0.0', port=5002, debug=True)
 
 
-# Global variable to track deployment status
-DEPLOYMENT_STATUS = {
-    'running': False,
-    'log_file': None,
-    'start_time': None,
-    'pid': None,
-    'success': None  # 新增：跟踪部署是否成功
-}
 
-# Lock for thread safety
-DEPLOYMENT_LOCK = threading.Lock()
 
 # Function to check if there's a running deployment process
 def is_deployment_running():
