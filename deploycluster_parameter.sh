@@ -1,6 +1,6 @@
 ## Mandatory options
 export ADMIN_USER="gpadmin"
-export ADMIN_USER_PASSWORD="Hashdata@123"
+export ADMIN_USER_PASSWORD="Cbdb@1234"
 export CLOUDBERRY_RPM="/tmp/cloudberry-db-release.rpm"
 export COORDINATOR_HOSTNAME="mdw"
 export COORDINATOR_IP="192.168.193.21"
