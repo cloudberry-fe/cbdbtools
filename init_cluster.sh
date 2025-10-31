@@ -100,7 +100,9 @@ else
   echo "export COORDINATOR_DATA_DIRECTORY=${COORDINATOR_DATA_DIRECTORY}" >> /home/${ADMIN_USER}/.bashrc 
 fi
 
-echo "Finished setting up environment variables for ${ADMIN_USER}..."
+echo "export PGPORT=${COORDINATOR_PORT}" >> /home/${ADMIN_USER}/.bashrc
+
+log_time "Finished setting up environment variables for ${ADMIN_USER}..."
 
 su ${ADMIN_USER} -l -c "source ${CLOUDBERRY_BINARY_PATH}/${CLUSTER_ENV};gpstop -u"
 log_time "Finished init cluster..."

@@ -413,10 +413,12 @@ if ! id "$ADMIN_USER" &>/dev/null; then
   useradd ${ADMIN_USER} -r -m -g ${ADMIN_USER}
 else 
   # Combine all patterns to be cleaned, using regex OR condition to match multiple keywords
-  if grep -qE 'COORDINATOR_DATA_DIRECTORY|MASTER_DATA_DIRECTORY|greenplum_path.sh|cluster_env.sh|synxdb_path.sh|cloudberry-env.sh' /home/${ADMIN_USER}/.bashrc; then
-    echo "Found environment variable settings to clean up, removing them..."
+  if grep -qE 'COORDINATOR_DATA_DIRECTORY|MASTER_DATA_DIRECTORY|greenplum_path.sh|cluster_env.sh|synxdb_path.sh|cloudberry-env.sh|PGPORT' /home/${ADMIN_USER}/.bashrc; then
+    echo "Found environment variable settings to clean up, creating backup and removing them..."
+    # Backup .bashrc before modification
+    cp /home/${ADMIN_USER}/.bashrc /home/${ADMIN_USER}/.bashrc.backup.$(date +%Y%m%d%H%M%S)
     # Use extended regex to match all target patterns and delete lines (macOS compatible syntax)
-    sed -i -E '/COORDINATOR_DATA_DIRECTORY|MASTER_DATA_DIRECTORY|greenplum_path.sh|cluster_env.sh|synxdb_path.sh|cloudberry-env.sh/d' /home/${ADMIN_USER}/.bashrc
+    sed -i -E '/COORDINATOR_DATA_DIRECTORY|MASTER_DATA_DIRECTORY|greenplum_path.sh|cluster_env.sh|synxdb_path.sh|cloudberry-env.sh|PGPORT/d' /home/${ADMIN_USER}/.bashrc
   fi
 fi
 
