@@ -297,8 +297,11 @@ shmall=$(expr $(getconf _PHYS_PAGES) / 2)
 shmmax=$(expr $(getconf _PHYS_PAGES) / 2 \* $(getconf PAGE_SIZE))
 min_free_kbytes=$(awk 'BEGIN {OFMT = "%.0f";} /MemTotal/ {print $2 * .03;}' /proc/meminfo)
 
-# Clean up previous HashData sysctl configuration
-sed -i '/# BEGIN HashData sysctl CONFIG/,/# END HashData sysctl CONFIG/d' /etc/sysctl.conf
+# Clean up previous HashData sysctl configuration - remove all instances from first BEGIN to last END
+# Use a loop to ensure all HashData configuration blocks are removed
+while grep -q '# BEGIN HashData sysctl CONFIG' /etc/sysctl.conf; do
+    sed -i '/# BEGIN HashData sysctl CONFIG/,/# END HashData sysctl CONFIG/d' /etc/sysctl.conf
+done
 
 echo "# BEGIN HashData sysctl CONFIG
 ######################
@@ -339,7 +342,10 @@ vm.dirty_bytes = 4294967296
 kernel.core_pattern=/var/core/core.%h.%t
 # END HashData sysctl CONFIG" |sed s/_SHMALL/${shmall}/ | sed s/_SHMMAX/${shmmax}/ | sed s/_MIN_FREE_KBYTES/${min_free_kbytes}/ >> /etc/sysctl.conf
 
-sed -i '/# BEGIN HashData limits CONFIG/,/# END HashData limits CONFIG/d' /etc/security/limits.conf
+# Use a loop to ensure all HashData limits configuration blocks are removed
+while grep -q '# BEGIN HashData limits CONFIG' /etc/security/limits.conf; do
+    sed -i '/# BEGIN HashData limits CONFIG/,/# END HashData limits CONFIG/d' /etc/security/limits.conf
+done
 
 echo "# BEGIN HashData limits CONFIG
 ######################
@@ -358,7 +364,10 @@ cat /usr/share/zoneinfo/Asia/Shanghai > /etc/localtime
 sysctl -p
 log_time "More optimization parameters need to be configured manually for production purpose, please refer to documentation..."
 
-sed -i '/# BEGIN HashData sshd CONFIG/,/# END HashData sshd CONFIG/d' /etc/ssh/sshd_config
+# Use a loop to ensure all HashData sshd configuration blocks are removed
+while grep -q '# BEGIN HashData sshd CONFIG' /etc/ssh/sshd_config; do
+    sed -i '/# BEGIN HashData sshd CONFIG/,/# END HashData sshd CONFIG/d' /etc/ssh/sshd_config
+done
 
 echo "# BEGIN HashData sshd CONFIG
 ######################
@@ -402,10 +411,6 @@ log_time "Step 4: Create database user ${ADMIN_USER}..."
 if ! id "$ADMIN_USER" &>/dev/null; then
   groupadd ${ADMIN_USER} 
   useradd ${ADMIN_USER} -r -m -g ${ADMIN_USER}
-  usermod -aG wheel ${ADMIN_USER}
-  echo ${ADMIN_USER_PASSWORD}|passwd --stdin ${ADMIN_USER}
-  echo "%wheel ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-  chown -R ${ADMIN_USER}:${ADMIN_USER} /home/${ADMIN_USER}
 else 
   # Combine all patterns to be cleaned, using regex OR condition to match multiple keywords
   if grep -qE 'COORDINATOR_DATA_DIRECTORY|MASTER_DATA_DIRECTORY|greenplum_path.sh|cluster_env.sh|synxdb_path.sh|cloudberry-env.sh' /home/${ADMIN_USER}/.bashrc; then
@@ -414,6 +419,14 @@ else
     sed -i -E '/COORDINATOR_DATA_DIRECTORY|MASTER_DATA_DIRECTORY|greenplum_path.sh|cluster_env.sh|synxdb_path.sh|cloudberry-env.sh/d' /home/${ADMIN_USER}/.bashrc
   fi
 fi
+
+usermod -aG wheel ${ADMIN_USER}
+echo ${ADMIN_USER_PASSWORD}|passwd --stdin ${ADMIN_USER}
+# Add sudoers configuration only if it doesn't exist
+if ! grep -q "%wheel ALL=(ALL) NOPASSWD: ALL" /etc/sudoers; then
+    echo "%wheel ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+fi
+chown -R ${ADMIN_USER}:${ADMIN_USER} /home/${ADMIN_USER}
 
 #Step 5: Create folders needed for the cluster
 log_time "Step 5: Create folders needed..."
