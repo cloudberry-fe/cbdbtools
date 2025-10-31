@@ -288,7 +288,7 @@ else
   if grep -qE 'COORDINATOR_DATA_DIRECTORY|MASTER_DATA_DIRECTORY|greenplum_path.sh|cluster_env.sh|synxdb_path.sh|cloudberry-env.sh|PGPORT' /home/${ADMIN_USER}/.bashrc; then
     echo "Found environment variable settings to clean up, creating backup and removing them..."
     # Backup .bashrc before modification
-    cp /home/${ADMIN_USER}/.bashrc /home/${ADMIN_USER}/.bashrc.backup.$(date +%Y%m%d%H%M%S)
+    cp /home/${ADMIN_USER}/.bashrc /home/${ADMIN_USER}/bashrc.backup.$(date +%Y%m%d%H%M%S)
     # Use extended regex to match all target patterns and delete lines (macOS compatible syntax)
     sed -i -E '/COORDINATOR_DATA_DIRECTORY|MASTER_DATA_DIRECTORY|greenplum_path.sh|cluster_env.sh|synxdb_path.sh|cloudberry-env.sh|PGPORT/d' /home/${ADMIN_USER}/.bashrc
   fi
