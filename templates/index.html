@@ -608,7 +608,7 @@
                             <label for="CLOUDBERRY_RPM">RPM Package Path:</label>
                             <div class="input-group">
                                 <input type="text" id="CLOUDBERRY_RPM" name="CLOUDBERRY_RPM" value="{{ params.get('CLOUDBERRY_RPM', '') }}">
-                                <div class="input-group-append">
+                                <div class="input-group-text">
                                     <button class="btn" type="button" onclick="document.getElementById('rpmFileUpload').click()">
                                         <i class="fas fa-upload"></i>
                                     </button>
@@ -795,11 +795,11 @@
                                 <label for="SEGMENT_ACCESS_KEYFILE">Key File Path:</label>
                                 <div class="input-group">
                                     <input type="text" id="SEGMENT_ACCESS_KEYFILE" name="SEGMENT_ACCESS_KEYFILE" value="{{ params.get('SEGMENT_ACCESS_KEYFILE', '') }}">
-                                    <div class="input-group-append">
-                                        <button class="btn" type="button" onclick="document.getElementById('keyFileUpload').click()">
-                                            <i class="fas fa-upload"></i>
-                                        </button>
-                                    </div>
+                                    <div class="input-group-text">
+                                    <button class="btn" type="button" onclick="document.getElementById('keyFileUpload').click()">
+                                        <i class="fas fa-upload"></i>
+                                    </button>
+                                </div>
                                 </div>
                                 <input type="file" id="keyFileUpload" style="display: none;">
                                 <div class="progress hidden" style="margin-top: 10px;">
@@ -1066,7 +1066,7 @@
                     </div>
                     <div id="deploymentLog" class="log-container">
                         <div id="logContent" style="white-space: pre-wrap; font-family: 'Courier New', monospace; color: #00ff00;">
-                            <!-- 日志内容将通过JavaScript动态加载 -->
+                            <!-- Log content will be dynamically loaded via JavaScript -->
                         </div>
                     </div>
                     <div style="margin-top: 10px;">
@@ -1118,7 +1118,7 @@ document.getElementById('rpmFileUpload').addEventListener('change', function(e) 
         formData.append('type', 'rpm');
         formData.append('upload_path', uploadPath);
 
-        // 显示上传进度
+        // Show upload progress
         const progressBar = document.getElementById('rpmUploadProgress');
         progressBar.parentElement.classList.remove('hidden');
         progressBar.value = 0;
@@ -1128,7 +1128,7 @@ document.getElementById('rpmFileUpload').addEventListener('change', function(e) 
         xhr.open('POST', '/upload_file', true);
         xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
 
-        // 监听上传进度
+        // Monitor upload progress
         xhr.upload.onprogress = function(e) {
             if (e.lengthComputable) {
                 const percent = (e.loaded / e.total) * 100;
@@ -1153,7 +1153,7 @@ document.getElementById('rpmFileUpload').addEventListener('change', function(e) 
             } else {
                 flashMessage('Upload failed with status: ' + xhr.status, 'danger');
             }
-            // 上传完成后隐藏进度条
+            // Hide progress bar after upload completes
             setTimeout(() => {
                 progressBar.parentElement.classList.add('hidden');
                 progressBar.value = 0;
@@ -1164,7 +1164,7 @@ document.getElementById('rpmFileUpload').addEventListener('change', function(e) 
         xhr.onerror = function() {
             console.error('Error uploading RPM package');
             flashMessage('Error uploading RPM package. Please try again.', 'danger');
-            // 上传失败后隐藏进度条
+            // Hide progress bar after upload fails
             setTimeout(() => {
                 progressBar.parentElement.classList.add('hidden');
                 progressBar.value = 0;
@@ -1186,7 +1186,7 @@ document.getElementById('keyFileUpload').addEventListener('change', function(e) 
         formData.append('type', 'key');
         formData.append('upload_path', uploadPath);
 
-        // 显示上传进度
+        // Show upload progress
         const progressBar = document.getElementById('keyUploadProgress');
         const progressContainer = progressBar.parentElement;
         progressContainer.classList.remove('hidden');
@@ -1197,7 +1197,7 @@ document.getElementById('keyFileUpload').addEventListener('change', function(e) 
         xhr.open('POST', '/upload_file', true);
         xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
 
-        // 监听上传进度
+        // Monitor upload progress
         xhr.upload.onprogress = function(e) {
             if (e.lengthComputable) {
                 const percent = (e.loaded / e.total) * 100;
@@ -1213,11 +1213,11 @@ document.getElementById('keyFileUpload').addEventListener('change', function(e) 
                     if (data.success) {
                         const keyFilePathInput = document.getElementById('SEGMENT_ACCESS_KEYFILE');
                         keyFilePathInput.value = data.file_path;
-                        // 触发change事件确保值被正确识别
+                        // Trigger change event to ensure value is correctly recognized
                         keyFilePathInput.dispatchEvent(new Event('change'));
                         flashMessage('Key file uploaded successfully!', 'success');
                         console.log('Key file path updated to:', data.file_path);
-                        // 验证文件是否存在
+                        // Verify if file exists
                         verifyFileExists(data.file_path);
                     } else {
                         flashMessage('Failed to upload Key file: ' + data.message, 'danger');
@@ -1231,7 +1231,7 @@ document.getElementById('keyFileUpload').addEventListener('change', function(e) 
                 flashMessage('Upload failed with status: ' + xhr.status + ' - ' + xhr.statusText, 'danger');
                 console.error('Upload failed with status:', xhr.status, xhr.statusText);
             }
-            // 上传完成后隐藏进度条
+            // Hide progress bar after upload completes
             setTimeout(() => {
                 progressContainer.classList.add('hidden');
                 progressBar.value = 0;
@@ -1242,7 +1242,7 @@ document.getElementById('keyFileUpload').addEventListener('change', function(e) 
         xhr.onerror = function() {
             console.error('Error uploading Key file: Network error');
             flashMessage('Network error uploading Key file. Please try again.', 'danger');
-            // 上传失败后隐藏进度条
+            // Hide progress bar after upload fails
             setTimeout(() => {
                 progressContainer.classList.add('hidden');
                 progressBar.value = 0;
@@ -1254,7 +1254,7 @@ document.getElementById('keyFileUpload').addEventListener('change', function(e) 
     }
 });
 
-// 添加文件存在验证函数
+// Add file existence verification function
 function verifyFileExists(filePath) {
     fetch('/verify_file?file_path=' + encodeURIComponent(filePath))
         .then(response => response.json())
@@ -1302,12 +1302,12 @@ function verifyFileExists(filePath) {
                 }
             }
             
-            // 单节点模式下隐藏Key File Path相关元素
+            // Hide Key File Path related elements in single-node mode
             if (mode === 'single') {
                 document.getElementById('keyfilePathGroup').style.display = 'none';
                 document.getElementById('passwordGroup').style.display = 'none';
             } else {
-                // 多节点模式下根据访问方式显示相应元素
+                // Show corresponding elements based on access method in multi-node mode
                 const method = document.getElementById('SEGMENT_ACCESS_METHOD').value;
                 document.getElementById('keyfilePathGroup').style.display = method === 'keyfile' ? 'block' : 'none';
                 document.getElementById('passwordGroup').style.display = method === 'keyfile' ? 'none' : 'block';
@@ -1411,17 +1411,17 @@ function verifyFileExists(filePath) {
             }
 
             if (confirm('Are you sure you want to deploy the cluster? This may take several minutes.')) {
-                // 禁用部署按钮
+                // Disable deployment button
                 const deployButton = document.getElementById('deployButton');
                 deployButton.disabled = true;
                 deployButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting deployment...';
                 
-                // 显示部署状态区域
+                // Show deployment status area
                 const deploymentStatus = document.getElementById('deploymentStatus');
                 deploymentStatus.classList.remove('hidden');
                 deploymentStatus.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Starting deployment...</div>';
                 
-                // 标记部署已开始
+                // Mark deployment as started
                 window.deploymentStarted = true;
                 
                 // 异步提交表单
@@ -1431,21 +1431,21 @@ function verifyFileExists(filePath) {
                 }).then(response => response.json())
                   .then(data => {
                       if (data.success) {
-                          // 显示成功消息和日志文件路径
+                          // Display success message and log file path
                           deploymentStatus.innerHTML = '';
                           let logPathElement = document.createElement('div');
                           logPathElement.className = 'log-path-info';
                           logPathElement.style.cssText = 'background-color: #e9ecef; padding: 10px; margin-bottom: 10px; border-radius: 4px;';
                            
-                          // 直接使用后端返回的完整日志路径
+                          // Use the complete log path returned from backend
                           logPathElement.innerHTML = `<strong>Deployment log file:</strong> ${data.log_file}<br>` +
                               '<small>You can check this file for detailed deployment progress.</small>';
                           deploymentStatus.appendChild(logPathElement);
                            
-                          // 显示成功消息
+                          // Display success message
                           flashMessage(data.message, 'success');
                       } else {
-                          // 显示错误消息
+                          // Display error message
                           deploymentStatus.innerHTML = `<div class="text-danger">${data.message}</div>`;
                       }
                   })
@@ -1454,7 +1454,7 @@ function verifyFileExists(filePath) {
                       deploymentStatus.innerHTML = '<div class="text-danger">Error starting deployment. Please try again.</div>';
                   })
                   .finally(() => {
-                      // 无论成功失败，都重新启用按钮
+                      // Re-enable button regardless of success or failure
                       deployButton.disabled = false;
                       deployButton.innerHTML = '<i class="fas fa-rocket"></i> Deploy Cluster';
                   });
@@ -1464,14 +1464,14 @@ function verifyFileExists(filePath) {
             return false;
         }
 
-        // 添加一个简单的消息显示函数
-        function flashMessage(message, type = 'info') {
+        // Add a simple message display function
+function flashMessage(message, type = 'info') {
             const flashDiv = document.createElement('div');
             flashDiv.className = `alert alert-${type} alert-dismissible fade show`;
             flashDiv.role = 'alert';
             flashDiv.innerHTML = `
                 ${message}
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <button type="button" class="close" data-bs-dismiss="alert" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             `;
@@ -1479,7 +1479,7 @@ function verifyFileExists(filePath) {
             const container = document.querySelector('.container');
             if (container) {
                 container.prepend(flashDiv);
-                // 3秒后自动关闭
+                // Auto-close after 3 seconds
                 setTimeout(() => {
                     flashDiv.remove();
                 }, 3000);
@@ -1573,6 +1573,29 @@ function verifyFileExists(filePath) {
             const configForm = document.getElementById('configForm');
             if (configForm) {
                 configForm.addEventListener('submit', function(e) {
+                    // Basic client-side validation
+                    const adminUser = document.getElementById('ADMIN_USER').value.trim();
+                    const adminPassword = document.getElementById('ADMIN_USER_PASSWORD').value.trim();
+                    const rpmPath = document.getElementById('CLOUDBERRY_RPM').value.trim();
+                    
+                    if (!adminUser) {
+                        flashMessage('Admin User is required', 'danger');
+                        e.preventDefault();
+                        return false;
+                    }
+                    
+                    if (!adminPassword) {
+                        flashMessage('Admin Password is required', 'danger');
+                        e.preventDefault();
+                        return false;
+                    }
+                    
+                    if (!rpmPath) {
+                        flashMessage('RPM Package path is required', 'danger');
+                        e.preventDefault();
+                        return false;
+                    }
+                    
                     // Let the form submit normally to the server
                     // Server will redirect to appropriate tab based on deployment mode
                 });
@@ -1582,6 +1605,47 @@ function verifyFileExists(filePath) {
             const hostsForm = document.getElementById('hostsForm');
             if (hostsForm) {
                 hostsForm.addEventListener('submit', function(e) {
+                    // Basic client-side validation
+                    const coordIp = document.getElementById('coord_ip_input').value.trim();
+                    const coordHostname = document.getElementById('coord_hostname_input').value.trim();
+                    const segmentCount = document.getElementById('segment_count_input').value;
+                    
+                    if (!coordIp) {
+                        flashMessage('Coordinator IP is required', 'danger');
+                        e.preventDefault();
+                        return false;
+                    }
+                    
+                    if (!coordHostname) {
+                        flashMessage('Coordinator Hostname is required', 'danger');
+                        e.preventDefault();
+                        return false;
+                    }
+                    
+                    if (segmentCount < 1) {
+                        flashMessage('At least one segment host is required', 'danger');
+                        e.preventDefault();
+                        return false;
+                    }
+                    
+                    // Validate each segment host
+                    for (let i = 0; i < segmentCount; i++) {
+                        const segmentIp = document.getElementsByName(`segment_ip_${i}`)[0]?.value.trim();
+                        const segmentHostname = document.getElementsByName(`segment_hostname_${i}`)[0]?.value.trim();
+                        
+                        if (!segmentIp) {
+                            flashMessage(`IP Address is required for Segment Host ${i+1}`, 'danger');
+                            e.preventDefault();
+                            return false;
+                        }
+                        
+                        if (!segmentHostname) {
+                            flashMessage(`Hostname is required for Segment Host ${i+1}`, 'danger');
+                            e.preventDefault();
+                            return false;
+                        }
+                    }
+                    
                     // Let the form submit normally to the server
                     // Server will redirect to deploy tab
                 });
