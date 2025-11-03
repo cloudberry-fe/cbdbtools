@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response
 import os
 import re
 import subprocess
@@ -358,6 +358,73 @@ def get_deployment_log_content():
             'success': False,
             'message': f'Error reading deployment log: {str(e)}'
         })
+
+# New route for streaming log content (tail -f functionality)
+@app.route('/stream_deployment_log')
+def stream_deployment_log():
+    def generate():
+        with DEPLOYMENT_LOCK:
+            log_file = DEPLOYMENT_STATUS['log_file']
+            is_running = DEPLOYMENT_STATUS['running']
+        
+        if not log_file or not os.path.exists(log_file):
+            yield f"data: {json.dumps({'type': 'error', 'message': 'No deployment log file available'})}\n\n"
+            return
+        
+        # Get initial file size
+        last_size = 0
+        if os.path.exists(log_file):
+            last_size = os.path.getsize(log_file)
+        
+        # Send initial content if requested
+        initial = request.args.get('initial', 'false').lower() == 'true'
+        if initial and last_size > 0:
+            try:
+                with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
+                    # Read last 100 lines for initial content
+                    lines = f.readlines()
+                    if len(lines) > 100:
+                        lines = lines[-100:]
+                    
+                    initial_content = ''.join(lines)
+                    yield f"data: {json.dumps({'type': 'initial', 'content': initial_content})}\n\n"
+            except Exception as e:
+                yield f"data: {json.dumps({'type': 'error', 'message': f'Error reading initial log content: {str(e)}'})}\n\n"
+        
+        # Continue streaming if deployment is running
+        counter = 0
+        while is_running:
+            try:
+                current_size = os.path.getsize(log_file)
+                
+                # If file size increased, read new content
+                if current_size > last_size:
+                    with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
+                        f.seek(last_size)
+                        new_content = f.read()
+                        
+                        if new_content:
+                            yield f"data: {json.dumps({'type': 'log', 'content': new_content})}\n\n"
+                    
+                    last_size = current_size
+                
+                # Check deployment status every 5 iterations
+                counter += 1
+                if counter % 5 == 0:
+                    with DEPLOYMENT_LOCK:
+                        is_running = DEPLOYMENT_STATUS['running']
+                
+                # Sleep for a short time to prevent high CPU usage
+                time.sleep(0.5)
+                
+            except Exception as e:
+                yield f"data: {json.dumps({'type': 'error', 'message': f'Error streaming log: {str(e)}'})}\n\n"
+                break
+        
+        # Send completion message
+        yield f"data: {json.dumps({'type': 'complete', 'message': 'Deployment completed or stopped'})}\n\n"
+    
+    return Response(generate(), mimetype='text/plain')
 
 # 文件上传配置
 UPLOAD_FOLDER = '/tmp/uploads'

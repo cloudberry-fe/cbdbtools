@@ -162,6 +162,79 @@
             position: relative;
         }
         
+        /* Streaming indicator */
+        .streaming-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(52, 152, 219, 0.8);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            z-index: 10;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        /* Auto-scroll toggle */
+        .auto-scroll-toggle {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background-color: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .auto-scroll-toggle:hover {
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+        
+        /* Log line highlighting for better readability */
+        .log-line-error {
+            color: #ff6b6b;
+            font-weight: bold;
+            background-color: rgba(255, 0, 0, 0.1);
+            padding: 2px 0;
+            display: block;
+        }
+        
+        .log-line-warning {
+            color: #feca57;
+            background-color: rgba(255, 193, 7, 0.1);
+            padding: 2px 0;
+            display: block;
+        }
+        
+        .log-line-success {
+            color: #48dbfb;
+            background-color: rgba(0, 200, 0, 0.1);
+            padding: 2px 0;
+            display: block;
+        }
+        
+        .log-line-info {
+            color: #0abde3;
+            padding: 2px 0;
+            display: block;
+        }
+        
         .log-container pre {
             margin: 0;
             white-space: pre-wrap;
@@ -1109,6 +1182,12 @@
                         <button type="button" class="btn btn-secondary" onclick="loadDeploymentLog()">
                             <i class="fas fa-sync-alt"></i> Refresh Logs
                         </button>
+                        <button type="button" class="btn btn-primary" onclick="startLogStreaming()">
+                            <i class="fas fa-play"></i> Start Streaming
+                        </button>
+                        <button type="button" class="btn btn-danger" onclick="stopLogStreaming()" disabled>
+                            <i class="fas fa-stop"></i> Stop Streaming
+                        </button>
                         <button type="button" class="btn btn-secondary" onclick="startAutoRefresh()">
                             <i class="fas fa-play"></i> Auto Refresh
                         </button>
@@ -1471,6 +1550,12 @@ function verifyFileExists(filePath) {
                         <button type="button" class="btn btn-secondary" onclick="loadDeploymentLog()">
                             <i class="fas fa-sync-alt"></i> Refresh Logs
                         </button>
+                        <button type="button" class="btn btn-primary" onclick="startLogStreaming()">
+                            <i class="fas fa-play"></i> Start Streaming
+                        </button>
+                        <button type="button" class="btn btn-danger" onclick="stopLogStreaming()" disabled>
+                            <i class="fas fa-stop"></i> Stop Streaming
+                        </button>
                         <button type="button" class="btn btn-secondary" onclick="startAutoRefresh()">
                             <i class="fas fa-play"></i> Auto Refresh
                         </button>
@@ -1484,8 +1569,8 @@ function verifyFileExists(filePath) {
                 // Mark deployment as started
                 window.deploymentStarted = true;
                 
-                // Start auto-refresh automatically
-                setTimeout(startAutoRefresh, 1000);
+                // Start log streaming automatically after a short delay to allow deployment to initialize
+                setTimeout(startLogStreaming, 2000);
                 
                 // 异步提交表单
                 fetch('/deploy', {
@@ -1561,8 +1646,10 @@ function flashMessage(message, type = 'info') {
         
         // Deployment log functions
         let autoRefreshInterval = null;
+        let eventSource = null;
+        let isStreaming = false;
         
-        // Load deployment log content
+        // Load deployment log content (non-streaming version)
         function loadDeploymentLog() {
             const logContent = document.getElementById('logContent');
             const lastUpdate = document.getElementById('lastUpdate');
@@ -1629,6 +1716,236 @@ function flashMessage(message, type = 'info') {
                     console.error('Error loading deployment log:', error);
                     logContent.innerHTML = `<div class="text-danger">Failed to load logs: ${error.message}. Please check network connection and try again.</div>`;
                 });
+        }
+        
+        // Start streaming log content (tail -f functionality)
+        function startLogStreaming() {
+            // Stop any existing streaming
+            stopLogStreaming();
+            
+            const logContent = document.getElementById('logContent');
+            const lastUpdate = document.getElementById('lastUpdate');
+            const logFilePath = document.getElementById('logFilePath');
+            
+            // Check if elements exist
+            if (!logContent || !lastUpdate || !logFilePath) {
+                console.error('Required log elements not found in DOM');
+                return;
+            }
+            
+            // Show loading indicator
+            logContent.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connecting to log stream...';
+            
+            // Add streaming indicator
+            const logContainer = document.getElementById('deploymentLog');
+            const streamingIndicator = document.createElement('div');
+            streamingIndicator.className = 'streaming-indicator';
+            streamingIndicator.innerHTML = '<i class="fas fa-stream"></i> LIVE';
+            logContainer.appendChild(streamingIndicator);
+            
+            // Add auto-scroll toggle
+            const autoScrollToggle = document.createElement('div');
+            autoScrollToggle.className = 'auto-scroll-toggle';
+            autoScrollToggle.innerHTML = '<i class="fas fa-arrow-down"></i> Auto-scroll: ON';
+            autoScrollToggle.dataset.autoScroll = 'true';
+            autoScrollToggle.addEventListener('click', function() {
+                const isAutoScroll = this.dataset.autoScroll === 'true';
+                this.dataset.autoScroll = !isAutoScroll;
+                this.innerHTML = isAutoScroll ? 
+                    '<i class="fas fa-arrow-down"></i> Auto-scroll: OFF' : 
+                    '<i class="fas fa-arrow-down"></i> Auto-scroll: ON';
+            });
+            logContainer.appendChild(autoScrollToggle);
+            
+            // Create EventSource for server-sent events
+            eventSource = new EventSource('/stream_deployment_log?initial=true');
+            isStreaming = true;
+            
+            // Update button states
+            const streamBtn = document.querySelector('button[onclick*="startLogStreaming"]');
+            const stopStreamBtn = document.querySelector('button[onclick*="stopLogStreaming"]');
+            const refreshBtn = document.querySelector('button[onclick*="loadDeploymentLog"]');
+            
+            if (streamBtn) {
+                streamBtn.disabled = true;
+                streamBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Streaming...';
+            }
+            
+            if (stopStreamBtn) {
+                stopStreamBtn.disabled = false;
+            }
+            
+            if (refreshBtn) {
+                refreshBtn.disabled = true;
+            }
+            
+            // Handle incoming messages
+            eventSource.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    
+                    switch (data.type) {
+                        case 'initial':
+                            // Display initial content
+                            if (data.content && data.content.trim()) {
+                                const escapedContent = data.content
+                                    .replace(/&/g, '&amp;')
+                                    .replace(/</g, '&lt;')
+                                    .replace(/>/g, '&gt;')
+                                    .replace(/"/g, '&quot;')
+                                    .replace(/'/g, '&#039;');
+                                
+                                const formattedContent = escapeHtml(escapedContent);
+                                logContent.innerHTML = `<pre style="margin: 0; white-space: pre-wrap; font-family: 'Courier New', monospace;">${formattedContent}</pre>`;
+                            } else {
+                                logContent.innerHTML = 'Waiting for log content...';
+                            }
+                            break;
+                            
+                        case 'log':
+                            // Append new log content
+                            if (data.content && data.content.trim()) {
+                                const pre = logContent.querySelector('pre');
+                                if (pre) {
+                                    const escapedContent = data.content
+                                        .replace(/&/g, '&amp;')
+                                        .replace(/</g, '&lt;')
+                                        .replace(/>/g, '&gt;')
+                                        .replace(/"/g, '&quot;')
+                                        .replace(/'/g, '&#039;');
+                                    
+                                    const formattedContent = escapeHtml(escapedContent);
+                                    
+                                    // Create a temporary div to parse the HTML
+                                    const tempDiv = document.createElement('div');
+                                    tempDiv.innerHTML = formattedContent;
+                                    
+                                    // Append each child node to the pre element
+                                    while (tempDiv.firstChild) {
+                                        pre.appendChild(tempDiv.firstChild);
+                                    }
+                                    
+                                    // Auto-scroll to bottom if enabled
+                                    const autoScrollToggle = document.querySelector('.auto-scroll-toggle');
+                                    if (autoScrollToggle && autoScrollToggle.dataset.autoScroll === 'true') {
+                                        logContainer.scrollTop = logContainer.scrollHeight;
+                                    }
+                                } else {
+                                    // If pre doesn't exist, create it
+                                    const escapedContent = data.content
+                                        .replace(/&/g, '&amp;')
+                                        .replace(/</g, '&lt;')
+                                        .replace(/>/g, '&gt;')
+                                        .replace(/"/g, '&quot;')
+                                        .replace(/'/g, '&#039;');
+                                    
+                                    const formattedContent = escapeHtml(escapedContent);
+                                    logContent.innerHTML = `<pre style="margin: 0; white-space: pre-wrap; font-family: 'Courier New', monospace;">${formattedContent}</pre>`;
+                                }
+                            }
+                            break;
+                            
+                        case 'error':
+                            // Display error message
+                            logContent.innerHTML = `<div class="text-danger">Error: ${data.message}</div>`;
+                            stopLogStreaming();
+                            break;
+                            
+                        case 'complete':
+                            // Deployment completed
+                            const now = new Date();
+                            lastUpdate.textContent = `Last updated: ${now.toLocaleString()} (Streaming completed)`;
+                            
+                            // Update streaming indicator
+                            const indicator = document.querySelector('.streaming-indicator');
+                            if (indicator) {
+                                indicator.style.backgroundColor = 'rgba(46, 204, 113, 0.8)';
+                                indicator.innerHTML = '<i class="fas fa-check-circle"></i> COMPLETED';
+                            }
+                            
+                            // Update button states
+                            if (streamBtn) {
+                                streamBtn.disabled = false;
+                                streamBtn.innerHTML = '<i class="fas fa-play"></i> Start Streaming';
+                            }
+                            
+                            if (refreshBtn) {
+                                refreshBtn.disabled = false;
+                            }
+                            break;
+                    }
+                    
+                    // Update last update time
+                    const now = new Date();
+                    lastUpdate.textContent = `Last updated: ${now.toLocaleString()} (Streaming)`;
+                    
+                } catch (error) {
+                    console.error('Error parsing log stream data:', error);
+                    logContent.innerHTML = `<div class="text-danger">Error parsing log stream: ${error.message}</div>`;
+                    stopLogStreaming();
+                }
+            };
+            
+            // Handle errors
+            eventSource.onerror = function(event) {
+                console.error('EventSource error:', event);
+                logContent.innerHTML = `<div class="text-danger">Connection to log stream failed. Please try again.</div>`;
+                
+                // Update streaming indicator
+                const indicator = document.querySelector('.streaming-indicator');
+                if (indicator) {
+                    indicator.style.backgroundColor = 'rgba(231, 76, 60, 0.8)';
+                    indicator.innerHTML = '<i class="fas fa-exclamation-triangle"></i> ERROR';
+                }
+                
+                stopLogStreaming();
+            };
+        }
+        
+        // Stop streaming log content
+        function stopLogStreaming() {
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
+            
+            isStreaming = false;
+            
+            // Remove streaming indicator and auto-scroll toggle
+            const streamingIndicator = document.querySelector('.streaming-indicator');
+            if (streamingIndicator) {
+                streamingIndicator.remove();
+            }
+            
+            const autoScrollToggle = document.querySelector('.auto-scroll-toggle');
+            if (autoScrollToggle) {
+                autoScrollToggle.remove();
+            }
+            
+            // Update button states
+            const streamBtn = document.querySelector('button[onclick*="startLogStreaming"]');
+            const stopStreamBtn = document.querySelector('button[onclick*="stopLogStreaming"]');
+            const refreshBtn = document.querySelector('button[onclick*="loadDeploymentLog"]');
+            
+            if (streamBtn) {
+                streamBtn.disabled = false;
+                streamBtn.innerHTML = '<i class="fas fa-play"></i> Start Streaming';
+            }
+            
+            if (stopStreamBtn) {
+                stopStreamBtn.disabled = true;
+            }
+            
+            if (refreshBtn) {
+                refreshBtn.disabled = false;
+            }
+            
+            // Update last update time
+            const lastUpdate = document.getElementById('lastUpdate');
+            if (lastUpdate) {
+                const now = new Date();
+                lastUpdate.textContent = `Last updated: ${now.toLocaleString()} (Streaming stopped)`;
+            }
         }
         
         // Helper function to escape HTML and format log content
