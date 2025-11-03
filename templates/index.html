@@ -149,27 +149,63 @@
             color: #00ff00;
             padding: 15px;
             border-radius: 4px;
-            height: 300px;
+            height: 400px;
             overflow-y: auto;
             font-family: 'Courier New', monospace;
             font-size: 14px;
-            line-height: 1.4;
+            line-height: 1.5;
             margin: 10px 0;
             white-space: pre-wrap;
-            word-break: break-all;
+            word-break: break-word;
+            border: 1px solid #333;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+            position: relative;
         }
         
+        .log-container pre {
+            margin: 0;
+            white-space: pre-wrap;
+            font-family: inherit;
+            font-size: inherit;
+            line-height: inherit;
+        }
+        
+        /* Enhanced scrollbar styling */
         .log-container::-webkit-scrollbar {
-            width: 8px;
+            width: 12px;
         }
         
         .log-container::-webkit-scrollbar-track {
-            background: #333;
+            background: #2a2a2a;
+            border-radius: 6px;
         }
         
         .log-container::-webkit-scrollbar-thumb {
-            background: #666;
-            border-radius: 4px;
+            background: #555;
+            border-radius: 6px;
+            border: 2px solid #2a2a2a;
+        }
+        
+        .log-container::-webkit-scrollbar-thumb:hover {
+            background: #777;
+        }
+        
+        /* Log line highlighting for better readability */
+        .log-line-error {
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+        
+        .log-line-warning {
+            color: #feca57;
+        }
+        
+        .log-line-success {
+            color: #48dbfb;
+        }
+        
+        .log-line-info {
+            color: #0abde3;
         }
         
         @keyframes fadeIn {
@@ -1416,13 +1452,40 @@ function verifyFileExists(filePath) {
                 deployButton.disabled = true;
                 deployButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting deployment...';
                 
-                // Show deployment status area
+                // Show deployment status area with proper initialization
                 const deploymentStatus = document.getElementById('deploymentStatus');
                 deploymentStatus.classList.remove('hidden');
-                deploymentStatus.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Starting deployment...</div>';
+                deploymentStatus.classList.add('deployment-running');
+                deploymentStatus.innerHTML = `
+                    <h4><i class="fas fa-info-circle"></i> Deployment Status</h4>
+                    <div class="log-path-info" style="background-color: #e9ecef; padding: 10px; margin-bottom: 10px; border-radius: 4px;">
+                        <strong>Deployment log file:</strong> <span id="logFilePath">Initializing...</span><br>
+                        <small>Real-time deployment log display</small>
+                    </div>
+                    <div id="deploymentLog" class="log-container">
+                        <div id="logContent" style="white-space: pre-wrap; font-family: 'Courier New', monospace; color: #00ff00;">
+                            <i class="fas fa-spinner fa-spin"></i> Starting deployment...
+                        </div>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <button type="button" class="btn btn-secondary" onclick="loadDeploymentLog()">
+                            <i class="fas fa-sync-alt"></i> Refresh Logs
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="startAutoRefresh()">
+                            <i class="fas fa-play"></i> Auto Refresh
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="stopAutoRefresh()">
+                            <i class="fas fa-pause"></i> Stop Refresh
+                        </button>
+                        <span id="lastUpdate" style="margin-left: 15px; color: #666; font-size: 12px;"></span>
+                    </div>
+                `;
                 
                 // Mark deployment as started
                 window.deploymentStarted = true;
+                
+                // Start auto-refresh automatically
+                setTimeout(startAutoRefresh, 1000);
                 
                 // 异步提交表单
                 fetch('/deploy', {
@@ -1431,22 +1494,28 @@ function verifyFileExists(filePath) {
                 }).then(response => response.json())
                   .then(data => {
                       if (data.success) {
-                          // Display success message and log file path
-                          deploymentStatus.innerHTML = '';
-                          let logPathElement = document.createElement('div');
-                          logPathElement.className = 'log-path-info';
-                          logPathElement.style.cssText = 'background-color: #e9ecef; padding: 10px; margin-bottom: 10px; border-radius: 4px;';
-                           
-                          // Use the complete log path returned from backend
-                          logPathElement.innerHTML = `<strong>Deployment log file:</strong> ${data.log_file}<br>` +
-                              '<small>You can check this file for detailed deployment progress.</small>';
-                          deploymentStatus.appendChild(logPathElement);
-                           
+                          // Update log file path
+                          const logFilePathElement = document.getElementById('logFilePath');
+                          if (logFilePathElement) {
+                              logFilePathElement.textContent = data.log_file || 'No log file available';
+                          }
+                          
+                          // Update deployment status area
+                          const deploymentStatus = document.getElementById('deploymentStatus');
+                          deploymentStatus.classList.remove('deployment-running');
+                          deploymentStatus.classList.add('deployment-completed');
+                          
                           // Display success message
                           flashMessage(data.message, 'success');
+                          
+                          // Load initial log content
+                          loadDeploymentLog();
                       } else {
                           // Display error message
-                          deploymentStatus.innerHTML = `<div class="text-danger">${data.message}</div>`;
+                          const logContent = document.getElementById('logContent');
+                          if (logContent) {
+                              logContent.innerHTML = `<div class="text-danger">${data.message}</div>`;
+                          }
                       }
                   })
                   .catch(error => {
@@ -1499,16 +1568,41 @@ function flashMessage(message, type = 'info') {
             const lastUpdate = document.getElementById('lastUpdate');
             const logFilePath = document.getElementById('logFilePath');
             
+            // Check if elements exist before using them
+            if (!logContent || !lastUpdate || !logFilePath) {
+                console.error('Required log elements not found in DOM');
+                return;
+            }
+            
             // Show loading indicator
             logContent.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading logs...';
             
             // Fetch log content from server
             fetch('/get_deployment_log')
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     if (data.success) {
                         // Display log content with proper formatting
-                        logContent.innerHTML = data.log_content || 'Log file is empty or deployment has not started';
+                        if (data.log_content && data.log_content.trim()) {
+                            // Escape HTML to prevent XSS
+                            const escapedContent = data.log_content
+                                .replace(/&/g, '&amp;')
+                                .replace(/</g, '&lt;')
+                                .replace(/>/g, '&gt;')
+                                .replace(/"/g, '&quot;')
+                                .replace(/'/g, '&#039;');
+                            
+                            // Add ANSI color code support for better log display
+                            const formattedContent = escapeHtml(escapedContent);
+                            logContent.innerHTML = `<pre style="margin: 0; white-space: pre-wrap; font-family: 'Courier New', monospace;">${formattedContent}</pre>`;
+                        } else {
+                            logContent.innerHTML = 'Log file is empty or deployment has not started';
+                        }
                         
                         // Update log file path
                         logFilePath.textContent = data.log_file || 'No log file available';
@@ -1519,11 +1613,13 @@ function flashMessage(message, type = 'info') {
                         
                         // Auto-scroll to bottom
                         const logContainer = document.getElementById('deploymentLog');
-                        logContainer.scrollTop = logContainer.scrollHeight;
+                        if (logContainer) {
+                            logContainer.scrollTop = logContainer.scrollHeight;
+                        }
                     } else {
                         // Only show error if deployment has started
                         if (window.deploymentStarted) {
-                            logContent.innerHTML = `Error: ${data.message}`;
+                            logContent.innerHTML = `<div class="text-danger">Error: ${data.message}</div>`;
                         } else {
                             logContent.innerHTML = 'Deployment has not started yet. Click "Deploy Cluster" to begin.';
                         }
@@ -1531,37 +1627,91 @@ function flashMessage(message, type = 'info') {
                 })
                 .catch(error => {
                     console.error('Error loading deployment log:', error);
-                    logContent.innerHTML = 'Failed to load logs, please check network connection';
+                    logContent.innerHTML = `<div class="text-danger">Failed to load logs: ${error.message}. Please check network connection and try again.</div>`;
                 });
+        }
+        
+        // Helper function to escape HTML and format log content
+        function escapeHtml(text) {
+            // Basic ANSI color code support
+            let formatted = text
+                .replace(/\x1b\[31m/g, '<span class="log-line-error">')     // Red
+                .replace(/\x1b\[32m/g, '<span class="log-line-success">')    // Green
+                .replace(/\x1b\[33m/g, '<span class="log-line-warning">')   // Yellow
+                .replace(/\x1b\[34m/g, '<span class="log-line-info">')     // Blue
+                .replace(/\x1b\[35m/g, '<span style="color: magenta;">')  // Magenta
+                .replace(/\x1b\[36m/g, '<span class="log-line-info">')     // Cyan
+                .replace(/\x1b\[37m/g, '<span style="color: white;">')    // White
+                .replace(/\x1b\[0m/g, '</span>')                         // Reset
+                .replace(/\x1b\[1m/g, '<span style="font-weight: bold;">') // Bold
+                .replace(/\x1b\[4m/g, '<span style="text-decoration: underline;">') // Underline
+                .replace(/\n/g, '<br>');                                 // Line breaks
+            
+            // Additional pattern matching for common log patterns
+            formatted = formatted
+                // Error patterns
+                .replace(/(ERROR|Error|error:|FATAL|Fatal|fatal:)/g, '<span class="log-line-error">$1</span>')
+                // Warning patterns
+                .replace(/(WARNING|Warning|warning:|WARN|Warn:)/g, '<span class="log-line-warning">$1</span>')
+                // Success patterns
+                .replace(/(SUCCESS|Success|success:|COMPLETED|Completed|completed:)/g, '<span class="log-line-success">$1</span>')
+                // Info patterns
+                .replace(/(INFO|Info|info:|NOTICE|Notice:)/g, '<span class="log-line-info">$1</span>');
+                
+            return formatted;
         }
         
         // Start auto-refresh
         function startAutoRefresh() {
-            if (autoRefreshInterval) {
-                clearInterval(autoRefreshInterval);
-            }
+            // Clear any existing interval
+            stopAutoRefresh();
             
             // Load immediately
             loadDeploymentLog();
             
-            // Set up interval for auto-refresh (every 5 seconds)
-            autoRefreshInterval = setInterval(loadDeploymentLog, 5000);
+            // Set up interval for auto-refresh (every 5 seconds) with error handling
+            window.autoRefreshInterval = setInterval(() => {
+                try {
+                    loadDeploymentLog();
+                } catch (error) {
+                    console.error('Auto refresh error:', error);
+                    // Don't stop auto-refresh on error, just log it
+                }
+            }, 5000);
             
             // Update button states
-            document.querySelector('button[onclick="startAutoRefresh()"]').disabled = true;
-            document.querySelector('button[onclick="stopAutoRefresh()"]').disabled = false;
+            const startBtn = document.querySelector('button[onclick="startAutoRefresh()"]');
+            const stopBtn = document.querySelector('button[onclick="stopAutoRefresh()"]');
+            
+            if (startBtn) {
+                startBtn.disabled = true;
+                startBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Auto Refreshing...';
+            }
+            
+            if (stopBtn) {
+                stopBtn.disabled = false;
+            }
         }
         
         // Stop auto-refresh
         function stopAutoRefresh() {
-            if (autoRefreshInterval) {
-                clearInterval(autoRefreshInterval);
-                autoRefreshInterval = null;
+            if (window.autoRefreshInterval) {
+                clearInterval(window.autoRefreshInterval);
+                window.autoRefreshInterval = null;
             }
             
             // Update button states
-            document.querySelector('button[onclick="startAutoRefresh()"]').disabled = false;
-            document.querySelector('button[onclick="stopAutoRefresh()"]').disabled = true;
+            const startBtn = document.querySelector('button[onclick="startAutoRefresh()"]');
+            const stopBtn = document.querySelector('button[onclick="stopAutoRefresh()"]');
+            
+            if (startBtn) {
+                startBtn.disabled = false;
+                startBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
+            }
+            
+            if (stopBtn) {
+                stopBtn.disabled = true;
+            }
         }
         
         // Initialize deployment status check on page load
