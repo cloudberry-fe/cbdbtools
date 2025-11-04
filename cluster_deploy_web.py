@@ -362,6 +362,9 @@ def get_deployment_log_content():
 # New route for streaming log content (tail -f functionality)
 @app.route('/stream_deployment_log')
 def stream_deployment_log():
+    # Get request parameters before entering the generator
+    initial = request.args.get('initial', 'false').lower() == 'true'
+    
     def generate():
         with DEPLOYMENT_LOCK:
             log_file = DEPLOYMENT_STATUS['log_file']
@@ -377,7 +380,6 @@ def stream_deployment_log():
             last_size = os.path.getsize(log_file)
         
         # Send initial content if requested
-        initial = request.args.get('initial', 'false').lower() == 'true'
         if initial and last_size > 0:
             try:
                 with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
