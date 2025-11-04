@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# 配置数据库连接信息
-#MASTER_HOST="master_host"  # 替换为你的Greenplum Master节点的主机名或IP地址
-#MASTER_PORT="5432"         # 替换为你的Greenplum Master节点的端口号
-#DB_NAME="your_db_name"     # 替换为你的数据库名称
-#USER="your_username"       # 替换为你的用户名
+# Configure database connection information
+#MASTER_HOST="master_host"  # Replace with your Greenplum Master node hostname or IP address
+#MASTER_PORT="5432"         # Replace with your Greenplum Master node port
+#DB_NAME="your_db_name"     # Replace with your database name
+#USER="your_username"       # Replace with your username
 
-# 获取Primary Segment的IP地址或主机名列表
-#PRIMARY_SEGMENTS=("segment1_host" "segment2_host" "segment3_host") # 替换为实际的Primary Segment主机名或IP地址
+# Get list of Primary Segment IP addresses or hostnames
+#PRIMARY_SEGMENTS=("segment1_host" "segment2_host" "segment3_host") # Replace with actual Primary Segment hostnames or IP addresses
 
 
 function start_primary_segment() {
@@ -17,9 +17,9 @@ function start_primary_segment() {
   ssh -n $1 "bash -c 'cd ~/; $GPHOME/bin/pg_ctl -D $2 -l $2/log/startup.log -w -t 600 -o \" -p $3 -c gp_role=execute \" start 2>&1' "
 }
 
-# 每5秒钟检查数据库状态
+# Check database status every 5 seconds
 while true; do
-  # 检查数据库是否能正常工作
+  # Check if database is working normally
   FailedNum=$(gpstate | grep "Total number postmaster processes missing" | awk -F '=' '{print $2}'| sed 's/[^0-9]//g')
   
   echo "$FailedNum failed segments detected."
@@ -29,7 +29,7 @@ while true; do
     break
   fi
 
-  # 等待5秒钟
+  # Wait for 5 seconds
   sleep 5
 done
 

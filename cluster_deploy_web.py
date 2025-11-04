@@ -7,10 +7,18 @@ from datetime import datetime
 import json
 import time
 import threading
-from werkzeug.utils import secure_filename  # 添加这行导入
+from werkzeug.utils import secure_filename  # Add this import
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
+
+# Deployment synchronization lock and status tracking
+DEPLOYMENT_LOCK = threading.RLock()
+DEPLOYMENT_STATUS = {
+    'running': False,
+    'log_file': None,
+    'start_time': None
+}
 
 # Configuration file paths
 PARAM_FILE = 'deploycluster_parameter.sh'
@@ -119,7 +127,7 @@ def index():
         'start_time': None
     }
     
-    # 获取当前部署状态
+    # Get current deployment status
     with DEPLOYMENT_LOCK:
         deployment_info['running'] = DEPLOYMENT_STATUS['running']
         deployment_info['log_file'] = DEPLOYMENT_STATUS['log_file']
@@ -169,9 +177,9 @@ def deploy():
     success, message = start_background_deployment(deploy_type)
     
     if success:
-        # 从message中提取日志文件名
+        # Extract log file name from message
         log_file = message.split(': ')[-1] if ': ' in message else ''
-        # 返回JSON响应包含日志文件绝对路径
+        # Return JSON response with absolute log file path
         return jsonify({
             'success': True,
             'message': message,
@@ -185,7 +193,7 @@ def deploy():
 
     if deployment_success:
         flash(f'Deployment started successfully!')
-        # 移除错误的函数调用
+        # Remove incorrect function call
     else:
         flash(f'Failed to start deployment: {message}')
     
@@ -199,7 +207,7 @@ def deployment_status():
             'running': DEPLOYMENT_STATUS['running'],
             'log_file': DEPLOYMENT_STATUS['log_file'],
             'start_time': DEPLOYMENT_STATUS['start_time'],
-            'success': DEPLOYMENT_STATUS['success']  # 返回成功状态
+            'success': DEPLOYMENT_STATUS['success']  # Return success status
         })
 
 # New route to get deployment logs
@@ -211,24 +219,24 @@ def deployment_logs():
 @app.route('/save_params', methods=['POST'])
 def save_params():
     try:
-        # 获取表单数据
+        # Get form data
         params = request.form.to_dict()
 
-        # 如果有上传的RPM文件路径，使用上传的路径
+        # Use uploaded path if RPM file is uploaded
         if 'CLOUDBERRY_RPM' in params and params['CLOUDBERRY_RPM']:
-            # 确保路径存在
+            # Ensure path exists
             if os.path.exists(params['CLOUDBERRY_RPM']):
                 print(f'Using uploaded RPM file: {params["CLOUDBERRY_RPM"]}')
             else:
                 flash(f'Warning: RPM file path does not exist: {params["CLOUDBERRY_RPM"]}')
 
-        # 如果有上传的Key文件路径，使用上传的路径
+        # Use uploaded path if Key file is uploaded
         if 'SEGMENT_ACCESS_KEYFILE' in params and params['SEGMENT_ACCESS_KEYFILE']:
-            # 只在多机模式且Segment Access Method为KeyFile时检查keyfile
+            # Only check keyfile in multi-node mode with KeyFile access method
             deploy_type = params.get('DEPLOY_TYPE', 'single')
             segment_access_method = params.get('SEGMENT_ACCESS_METHOD', '')
             if deploy_type == 'multi' and segment_access_method == 'keyfile':
-                # 确保路径存在
+                # Ensure path exists
                 if os.path.exists(params['SEGMENT_ACCESS_KEYFILE']):
                     print(f'Using uploaded Key file: {params["SEGMENT_ACCESS_KEYFILE"]}')
                 else:
@@ -236,11 +244,11 @@ def save_params():
             else:
                 print(f'Skipping key file check for {deploy_type} deployment with {segment_access_method} access')
 
-        # 保存参数
+        # Save parameters
         save_parameters(params)
         flash('Configuration parameters saved successfully!')
 
-        # 获取部署类型以确定重定向目标
+        # Get deployment type to determine redirect target
         deploy_type = params.get('DEPLOY_TYPE', 'single')
         return redirect(url_for('index_with_tab', tab='hosts' if deploy_type == 'multi' else 'deploy'))
     except Exception as e:
@@ -307,24 +315,24 @@ def get_deployment_params():
         'mirror_dirs': mirror_dirs
     })
 
-# 文件上传配置
+# File upload configuration
 UPLOAD_FOLDER = '/tmp/uploads'
 ALLOWED_RPM_EXTENSIONS = {'rpm'}
 
-# 确保上传目录存在
+# Ensure upload directory exists
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# 检查文件扩展名
+# Check file extension
 def allowed_file(filename, file_type):
     if file_type == 'rpm':
         return '.' in filename and \
                filename.rsplit('.', 1)[1].lower() in ALLOWED_RPM_EXTENSIONS
     elif file_type == 'key':
-        # 移除key文件的扩展名验证，允许任何格式的文件
+        # Remove extension validation for key files, allow any format
         return True
     return False
 
-# 文件上传路由
+# File upload route
 @app.route('/upload_file', methods=['POST'])
 def upload_file():
     try:
@@ -339,17 +347,17 @@ def upload_file():
             return jsonify({'success': False, 'message': 'No selected file'})
 
         if file and allowed_file(file.filename, file_type):
-            # 确保上传目录存在且有正确权限
+            # Ensure upload directory exists with correct permissions
             os.makedirs(upload_path, exist_ok=True)
             os.chmod(upload_path, 0o755)
             
             filename = secure_filename(file.filename)
             file_path = os.path.join(upload_path, filename)
             
-            # 保存文件并捕获可能的错误
+            # Save file and catch possible errors
             try:
                 file.save(file_path)
-                # 确保文件有正确权限
+                # Ensure file has correct permissions
                 os.chmod(file_path, 0o644)
                 return jsonify({'success': True, 'file_path': file_path})
             except Exception as e:
@@ -384,7 +392,7 @@ DEPLOYMENT_STATUS = {
     'log_file': None,
     'start_time': None,
     'pid': None,
-    'success': None  # 新增：跟踪部署是否成功
+    'success': None  # New: Track if deployment is successful
 }
 
 # Lock for thread safety
@@ -396,9 +404,9 @@ def is_deployment_running():
         if not DEPLOYMENT_STATUS['running']:
             return False
         
-        # 检查进程是否实际存在
+        # Check if process actually exists
         try:
-            # 获取当前所有python相关进程
+            # Get all current python-related processes
             for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
                 try:
                     cmdline = ' '.join(proc.info['cmdline'] or [])
@@ -407,10 +415,10 @@ def is_deployment_running():
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
                     continue
             
-            # 如果找不到进程，检查日志文件是否最近更新
+            # If process not found, check if log file was updated recently
             if DEPLOYMENT_STATUS['log_file'] and os.path.exists(DEPLOYMENT_STATUS['log_file']):
                 mtime = os.path.getmtime(DEPLOYMENT_STATUS['log_file'])
-                if time.time() - mtime < 30:  # 30秒内更新过认为仍在运行
+                if time.time() - mtime < 30:  # Considered running if updated within 30 seconds
                     return True
             
             DEPLOYMENT_STATUS['running'] = False
@@ -420,7 +428,7 @@ def is_deployment_running():
             DEPLOYMENT_STATUS['running'] = False
             return False
 
-# 修改start_background_deployment函数，使用绝对路径
+# Modify start_background_deployment function to use absolute path
 def start_background_deployment(cluster_type='single'):
     global DEPLOYMENT_STATUS
     
@@ -429,16 +437,16 @@ def start_background_deployment(cluster_type='single'):
             return False, "Deployment is already running. Please wait for it to complete."
         
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        # 使用绝对路径生成日志文件
+        # Generate log file using absolute path
         log_file = os.path.abspath(f'deploy_cluster_{timestamp}.log')
         
         DEPLOYMENT_STATUS['running'] = True
         DEPLOYMENT_STATUS['log_file'] = log_file
         DEPLOYMENT_STATUS['start_time'] = time.time()
-        DEPLOYMENT_STATUS['pid'] = None  # 新增：保存进程PID
+        DEPLOYMENT_STATUS['pid'] = None  # New: Save process PID
     
     try:
-        # 使用Popen启动进程并获取PID
+        # Start process using Popen and get PID
         process = subprocess.Popen(
             ['sh', 'run.sh', cluster_type],
             stdout=open(log_file, 'w'),
@@ -452,12 +460,12 @@ def start_background_deployment(cluster_type='single'):
             process.wait()
             with DEPLOYMENT_LOCK:
                 DEPLOYMENT_STATUS['running'] = False
-                # 检查部署是否成功
+                # Check if deployment was successful
                 try:
                     with open(log_file, 'r') as f:
                         log_content = f.read()
-                        # 根据日志内容判断部署是否成功
-                        # 更新判断条件以匹配实际日志输出
+                        # Determine if deployment was successful based on log content
+                        # Update judgment conditions to match actual log output
                         DEPLOYMENT_STATUS['success'] = ('deployment completed successfully' in log_content.lower() or 
                                                        'finished deploy cluster' in log_content.lower())
                 except:
@@ -480,7 +488,7 @@ def get_deployment_log(log_file=None, lines=100):
         with DEPLOYMENT_LOCK:
             log_file = DEPLOYMENT_STATUS['log_file']
     
-    # 检查日志文件是否存在
+    # Check if log file exists
     if not log_file:
         return "No log file specified."
     
