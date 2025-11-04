@@ -169,9 +169,13 @@ def deploy():
     success, message = start_background_deployment(deploy_type)
     
     if success:
+        # Extract log file name from message
+        log_file = message.split(': ')[-1] if ': ' in message else ''
+        # Return JSON response with absolute log file path
         return jsonify({
             'success': True,
-            'message': message
+            'message': message,
+            'log_file': log_file
         })
     else:
         return jsonify({

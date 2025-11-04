@@ -1361,8 +1361,15 @@ function verifyFileExists(filePath) {
                 }).then(response => response.json())
                   .then(data => {
                       if (data.success) {
-                          // Display success message
-                          flashMessage(data.message, 'success');
+                          // Display success message with log file path
+                          const logFilePath = data.log_file || 'Not available';
+                          flashMessage(`${data.message}<br><strong>Log file:</strong> ${logFilePath}`, 'success');
+                          
+                          // Update log file path in deployment status area
+                          const logFilePathElement = document.getElementById('logFilePath');
+                          if (logFilePathElement) {
+                              logFilePathElement.textContent = logFilePath;
+                          }
                       } else {
                           // Display error message
                           flashMessage(data.message, 'danger');
