@@ -1178,23 +1178,8 @@
                             <!-- Log content will be dynamically loaded via JavaScript -->
                         </div>
                     </div>
-                    <div style="margin-top: 10px;">
-                        <button type="button" class="btn btn-secondary" onclick="loadDeploymentLog()">
-                            <i class="fas fa-sync-alt"></i> Refresh Logs
-                        </button>
-                        <button type="button" class="btn btn-primary" onclick="startLogStreaming()">
-                            <i class="fas fa-play"></i> Start Streaming
-                        </button>
-                        <button type="button" class="btn btn-danger" onclick="stopLogStreaming()" disabled>
-                            <i class="fas fa-stop"></i> Stop Streaming
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="startAutoRefresh()">
-                            <i class="fas fa-play"></i> Auto Refresh
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="stopAutoRefresh()">
-                            <i class="fas fa-pause"></i> Stop Refresh
-                        </button>
-                        <span id="lastUpdate" style="margin-left: 15px; color: #666; font-size: 12px;"></span>
+                    <div style="margin-top: 10px; color: #666; font-size: 12px;">
+                        <span id="lastUpdate">Logs will automatically update during deployment</span>
                     </div>
                 </div>
                 
@@ -1547,22 +1532,7 @@ function verifyFileExists(filePath) {
                         </div>
                     </div>
                     <div style="margin-top: 10px;">
-                        <button type="button" class="btn btn-secondary" onclick="loadDeploymentLog()">
-                            <i class="fas fa-sync-alt"></i> Refresh Logs
-                        </button>
-                        <button type="button" class="btn btn-primary" onclick="startLogStreaming()">
-                            <i class="fas fa-play"></i> Start Streaming
-                        </button>
-                        <button type="button" class="btn btn-danger" onclick="stopLogStreaming()" disabled>
-                            <i class="fas fa-stop"></i> Stop Streaming
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="startAutoRefresh()">
-                            <i class="fas fa-play"></i> Auto Refresh
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="stopAutoRefresh()">
-                            <i class="fas fa-pause"></i> Stop Refresh
-                        </button>
-                        <span id="lastUpdate" style="margin-left: 15px; color: #666; font-size: 12px;"></span>
+                        <span id="lastUpdate" style="color: #666; font-size: 12px;">Logs will automatically update during deployment</span>
                     </div>
                 `;
                 
@@ -1725,10 +1695,9 @@ function flashMessage(message, type = 'info') {
             
             const logContent = document.getElementById('logContent');
             const lastUpdate = document.getElementById('lastUpdate');
-            const logFilePath = document.getElementById('logFilePath');
             
             // Check if elements exist
-            if (!logContent || !lastUpdate || !logFilePath) {
+            if (!logContent || !lastUpdate) {
                 console.error('Required log elements not found in DOM');
                 return;
             }
@@ -1736,48 +1705,9 @@ function flashMessage(message, type = 'info') {
             // Show loading indicator
             logContent.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connecting to log stream...';
             
-            // Add streaming indicator
-            const logContainer = document.getElementById('deploymentLog');
-            const streamingIndicator = document.createElement('div');
-            streamingIndicator.className = 'streaming-indicator';
-            streamingIndicator.innerHTML = '<i class="fas fa-stream"></i> LIVE';
-            logContainer.appendChild(streamingIndicator);
-            
-            // Add auto-scroll toggle
-            const autoScrollToggle = document.createElement('div');
-            autoScrollToggle.className = 'auto-scroll-toggle';
-            autoScrollToggle.innerHTML = '<i class="fas fa-arrow-down"></i> Auto-scroll: ON';
-            autoScrollToggle.dataset.autoScroll = 'true';
-            autoScrollToggle.addEventListener('click', function() {
-                const isAutoScroll = this.dataset.autoScroll === 'true';
-                this.dataset.autoScroll = !isAutoScroll;
-                this.innerHTML = isAutoScroll ? 
-                    '<i class="fas fa-arrow-down"></i> Auto-scroll: OFF' : 
-                    '<i class="fas fa-arrow-down"></i> Auto-scroll: ON';
-            });
-            logContainer.appendChild(autoScrollToggle);
-            
             // Create EventSource for server-sent events
             eventSource = new EventSource('/stream_deployment_log?initial=true');
             isStreaming = true;
-            
-            // Update button states
-            const streamBtn = document.querySelector('button[onclick*="startLogStreaming"]');
-            const stopStreamBtn = document.querySelector('button[onclick*="stopLogStreaming"]');
-            const refreshBtn = document.querySelector('button[onclick*="loadDeploymentLog"]');
-            
-            if (streamBtn) {
-                streamBtn.disabled = true;
-                streamBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Streaming...';
-            }
-            
-            if (stopStreamBtn) {
-                stopStreamBtn.disabled = false;
-            }
-            
-            if (refreshBtn) {
-                refreshBtn.disabled = true;
-            }
             
             // Handle incoming messages
             eventSource.onmessage = function(event) {
@@ -1825,9 +1755,9 @@ function flashMessage(message, type = 'info') {
                                         pre.appendChild(tempDiv.firstChild);
                                     }
                                     
-                                    // Auto-scroll to bottom if enabled
-                                    const autoScrollToggle = document.querySelector('.auto-scroll-toggle');
-                                    if (autoScrollToggle && autoScrollToggle.dataset.autoScroll === 'true') {
+                                    // Auto-scroll to bottom
+                                    const logContainer = document.getElementById('deploymentLog');
+                                    if (logContainer) {
                                         logContainer.scrollTop = logContainer.scrollHeight;
                                     }
                                 } else {
@@ -1855,23 +1785,6 @@ function flashMessage(message, type = 'info') {
                             // Deployment completed
                             const now = new Date();
                             lastUpdate.textContent = `Last updated: ${now.toLocaleString()} (Streaming completed)`;
-                            
-                            // Update streaming indicator
-                            const indicator = document.querySelector('.streaming-indicator');
-                            if (indicator) {
-                                indicator.style.backgroundColor = 'rgba(46, 204, 113, 0.8)';
-                                indicator.innerHTML = '<i class="fas fa-check-circle"></i> COMPLETED';
-                            }
-                            
-                            // Update button states
-                            if (streamBtn) {
-                                streamBtn.disabled = false;
-                                streamBtn.innerHTML = '<i class="fas fa-play"></i> Start Streaming';
-                            }
-                            
-                            if (refreshBtn) {
-                                refreshBtn.disabled = false;
-                            }
                             break;
                     }
                     
@@ -1890,14 +1803,6 @@ function flashMessage(message, type = 'info') {
             eventSource.onerror = function(event) {
                 console.error('EventSource error:', event);
                 logContent.innerHTML = `<div class="text-danger">Connection to log stream failed. Please try again.</div>`;
-                
-                // Update streaming indicator
-                const indicator = document.querySelector('.streaming-indicator');
-                if (indicator) {
-                    indicator.style.backgroundColor = 'rgba(231, 76, 60, 0.8)';
-                    indicator.innerHTML = '<i class="fas fa-exclamation-triangle"></i> ERROR';
-                }
-                
                 stopLogStreaming();
             };
         }
@@ -1910,35 +1815,6 @@ function flashMessage(message, type = 'info') {
             }
             
             isStreaming = false;
-            
-            // Remove streaming indicator and auto-scroll toggle
-            const streamingIndicator = document.querySelector('.streaming-indicator');
-            if (streamingIndicator) {
-                streamingIndicator.remove();
-            }
-            
-            const autoScrollToggle = document.querySelector('.auto-scroll-toggle');
-            if (autoScrollToggle) {
-                autoScrollToggle.remove();
-            }
-            
-            // Update button states
-            const streamBtn = document.querySelector('button[onclick*="startLogStreaming"]');
-            const stopStreamBtn = document.querySelector('button[onclick*="stopLogStreaming"]');
-            const refreshBtn = document.querySelector('button[onclick*="loadDeploymentLog"]');
-            
-            if (streamBtn) {
-                streamBtn.disabled = false;
-                streamBtn.innerHTML = '<i class="fas fa-play"></i> Start Streaming';
-            }
-            
-            if (stopStreamBtn) {
-                stopStreamBtn.disabled = true;
-            }
-            
-            if (refreshBtn) {
-                refreshBtn.disabled = false;
-            }
             
             // Update last update time
             const lastUpdate = document.getElementById('lastUpdate');
@@ -1978,58 +1854,7 @@ function flashMessage(message, type = 'info') {
             return formatted;
         }
         
-        // Start auto-refresh
-        function startAutoRefresh() {
-            // Clear any existing interval
-            stopAutoRefresh();
-            
-            // Load immediately
-            loadDeploymentLog();
-            
-            // Set up interval for auto-refresh (every 5 seconds) with error handling
-            window.autoRefreshInterval = setInterval(() => {
-                try {
-                    loadDeploymentLog();
-                } catch (error) {
-                    console.error('Auto refresh error:', error);
-                    // Don't stop auto-refresh on error, just log it
-                }
-            }, 5000);
-            
-            // Update button states
-            const startBtn = document.querySelector('button[onclick="startAutoRefresh()"]');
-            const stopBtn = document.querySelector('button[onclick="stopAutoRefresh()"]');
-            
-            if (startBtn) {
-                startBtn.disabled = true;
-                startBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Auto Refreshing...';
-            }
-            
-            if (stopBtn) {
-                stopBtn.disabled = false;
-            }
-        }
-        
-        // Stop auto-refresh
-        function stopAutoRefresh() {
-            if (window.autoRefreshInterval) {
-                clearInterval(window.autoRefreshInterval);
-                window.autoRefreshInterval = null;
-            }
-            
-            // Update button states
-            const startBtn = document.querySelector('button[onclick="startAutoRefresh()"]');
-            const stopBtn = document.querySelector('button[onclick="stopAutoRefresh()"]');
-            
-            if (startBtn) {
-                startBtn.disabled = false;
-                startBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
-            }
-            
-            if (stopBtn) {
-                stopBtn.disabled = true;
-            }
-        }
+
         
         // Initialize deployment status check on page load
         document.addEventListener('DOMContentLoaded', function() {
