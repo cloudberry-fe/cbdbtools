@@ -366,12 +366,32 @@ def stream_deployment_log():
     initial = request.args.get('initial', 'false').lower() == 'true'
     
     def generate():
-        with DEPLOYMENT_LOCK:
-            log_file = DEPLOYMENT_STATUS['log_file']
-            is_running = DEPLOYMENT_STATUS['running']
+        # Wait for deployment to start and log file to be created
+        max_wait_time = 30  # Maximum wait time in seconds
+        wait_interval = 0.5  # Check interval in seconds
+        waited_time = 0
         
-        if not log_file or not os.path.exists(log_file):
-            yield f"data: {json.dumps({'type': 'error', 'message': 'No deployment log file available'})}\n\n"
+        while waited_time < max_wait_time:
+            with DEPLOYMENT_LOCK:
+                log_file = DEPLOYMENT_STATUS['log_file']
+                is_running = DEPLOYMENT_STATUS['running']
+            
+            # If deployment is running and log file exists, break the wait loop
+            if is_running and log_file and os.path.exists(log_file):
+                break
+            
+            # If deployment is not running and we've waited long enough, return error
+            if not is_running and waited_time > 5:
+                yield f"data: {json.dumps({'type': 'error', 'message': 'Deployment has not started yet. Please start deployment first.'})}\n\n"
+                return
+            
+            # Wait and check again
+            time.sleep(wait_interval)
+            waited_time += wait_interval
+        
+        # If we timed out waiting for deployment to start
+        if waited_time >= max_wait_time:
+            yield f"data: {json.dumps({'type': 'error', 'message': 'Timeout waiting for deployment to start. Please try starting deployment again.'})}\n\n"
             return
         
         # Get initial file size
