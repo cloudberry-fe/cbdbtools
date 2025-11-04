@@ -566,25 +566,25 @@ if [ "$cluster_type" = "multi" ]; then
   
   mkdir -p ${working_dir}/ssh_keys
 
-  # 使用 sshpass 收集所有节点的公钥
+  # Use sshpass to collect public keys from all nodes
   for node in $(cat ${working_dir}/all_hosts.txt); do
     sshpass -p "${ADMIN_USER_PASSWORD}" scp -o StrictHostKeyChecking=no ${ADMIN_USER}@${node}:/home/${ADMIN_USER}/.ssh/id_rsa.pub ${working_dir}/ssh_keys/${node}.pub
   done
   
-  # 分发公钥到所有节点
+  # Distribute public keys to all nodes
   for target in $(cat ${working_dir}/all_hosts.txt); do
-    # 清空目标节点的 authorized_keys 文件
+    # Clear the authorized_keys file on the target node
     sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no ${ADMIN_USER}@${target} "echo '' > /home/${ADMIN_USER}/.ssh/authorized_keys"
     
-    # 将所有节点的公钥添加到目标节点的 authorized_keys 文件中
+    # Add all nodes' public keys to the target node's authorized_keys file
     for keyfile in ${working_dir}/ssh_keys/*.pub; do
       cat ${keyfile} | sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no ${ADMIN_USER}@${target} "cat >> /home/${ADMIN_USER}/.ssh/authorized_keys"
     done
     
-    # 复制 mdw 的 known_hosts 文件到目标节点
+    # Copy mdw's known_hosts file to the target node
     cat /home/${ADMIN_USER}/.ssh/known_hosts | sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no ${ADMIN_USER}@${target} "cat > /home/${ADMIN_USER}/.ssh/known_hosts"
 
-    # 设置正确的权限
+    # Set correct permissions
     sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no ${ADMIN_USER}@${target} "chmod 700 /home/${ADMIN_USER}/.ssh && chmod 600 /home/${ADMIN_USER}/.ssh/authorized_keys && chmod 644 /home/${ADMIN_USER}/.ssh/known_hosts"
   done
   log_time "Finished env init setting on coordinator and all segment nodes"
