@@ -126,175 +126,7 @@
             margin-bottom: 0;
         }
         
-        /* Deployment Status and Logs */
-        .deployment-status {
-            margin: 20px 0;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            background-color: #f9f9f9;
-            animation: fadeIn 0.5s;
-        }
-        
-        .deployment-status h4 {
-            color: var(--primary-color);
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .log-container {
-            background-color: #1e1e1e;
-            color: #00ff00;
-            padding: 15px;
-            border-radius: 4px;
-            height: 400px;
-            overflow-y: auto;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            line-height: 1.5;
-            margin: 10px 0;
-            white-space: pre-wrap;
-            word-break: break-word;
-            border: 1px solid #333;
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
-            position: relative;
-        }
-        
-        /* Streaming indicator */
-        .streaming-indicator {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background-color: rgba(52, 152, 219, 0.8);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 12px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            z-index: 10;
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.7; }
-            100% { opacity: 1; }
-        }
-        
-        /* Auto-scroll toggle */
-        .auto-scroll-toggle {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            background-color: rgba(0, 0, 0, 0.6);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 12px;
-            cursor: pointer;
-            z-index: 10;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .auto-scroll-toggle:hover {
-            background-color: rgba(0, 0, 0, 0.8);
-        }
-        
-        /* Log line highlighting for better readability */
-        .log-line-error {
-            color: #ff6b6b;
-            font-weight: bold;
-            background-color: rgba(255, 0, 0, 0.1);
-            padding: 2px 0;
-            display: block;
-        }
-        
-        .log-line-warning {
-            color: #feca57;
-            background-color: rgba(255, 193, 7, 0.1);
-            padding: 2px 0;
-            display: block;
-        }
-        
-        .log-line-success {
-            color: #48dbfb;
-            background-color: rgba(0, 200, 0, 0.1);
-            padding: 2px 0;
-            display: block;
-        }
-        
-        .log-line-info {
-            color: #0abde3;
-            padding: 2px 0;
-            display: block;
-        }
-        
-        .log-container pre {
-            margin: 0;
-            white-space: pre-wrap;
-            font-family: inherit;
-            font-size: inherit;
-            line-height: inherit;
-        }
-        
-        /* Enhanced scrollbar styling */
-        .log-container::-webkit-scrollbar {
-            width: 12px;
-        }
-        
-        .log-container::-webkit-scrollbar-track {
-            background: #2a2a2a;
-            border-radius: 6px;
-        }
-        
-        .log-container::-webkit-scrollbar-thumb {
-            background: #555;
-            border-radius: 6px;
-            border: 2px solid #2a2a2a;
-        }
-        
-        .log-container::-webkit-scrollbar-thumb:hover {
-            background: #777;
-        }
-        
-        /* Log line highlighting for better readability */
-        .log-line-error {
-            color: #ff6b6b;
-            font-weight: bold;
-        }
-        
-        .log-line-warning {
-            color: #feca57;
-        }
-        
-        .log-line-success {
-            color: #48dbfb;
-        }
-        
-        .log-line-info {
-            color: #0abde3;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .deployment-completed {
-            border-color: var(--success-color);
-            background-color: rgba(46, 204, 113, 0.1);
-        }
-        
-        .deployment-running {
-            border-color: var(--secondary-color);
-            background-color: rgba(52, 152, 219, 0.1);
-        }
+
         
         /* Tab Navigation */
         .tab {
@@ -1166,23 +998,6 @@
             <div class="form-group">
                 <p>Click the button below to start the cluster deployment. This process may take several minutes.</p>
                 
-                <!-- Deployment status and logs - initially hidden -->
-                <div id="deploymentStatus" class="deployment-status hidden">
-                    <h4><i class="fas fa-info-circle"></i> Deployment Status</h4>
-                    <div class="log-path-info" style="background-color: #e9ecef; padding: 10px; margin-bottom: 10px; border-radius: 4px;">
-                        <strong>Deployment log file:</strong> <span id="logFilePath">Loading...</span><br>
-                        <small>Real-time deployment log display</small>
-                    </div>
-                    <div id="deploymentLog" class="log-container">
-                        <div id="logContent" style="white-space: pre-wrap; font-family: 'Courier New', monospace; color: #00ff00;">
-                            <!-- Log content will be dynamically loaded via JavaScript -->
-                        </div>
-                    </div>
-                    <div style="margin-top: 10px; color: #666; font-size: 12px;">
-                        <span id="lastUpdate">Logs will automatically update during deployment</span>
-                    </div>
-                </div>
-                
                 <form method="post" action="/deploy" id="deployForm">
                     <button type="submit" class="btn btn-success" id="deployButton" onclick="return startDeployment()">
                         <i class="fas fa-rocket"></i> Deploy Cluster
@@ -1539,9 +1354,6 @@ function verifyFileExists(filePath) {
                 // Mark deployment as started
                 window.deploymentStarted = true;
                 
-                // Start log streaming automatically after a short delay to allow deployment to initialize
-                setTimeout(startLogStreaming, 2000);
-                
                 // 异步提交表单
                 fetch('/deploy', {
                     method: 'POST',
@@ -1549,33 +1361,16 @@ function verifyFileExists(filePath) {
                 }).then(response => response.json())
                   .then(data => {
                       if (data.success) {
-                          // Update log file path
-                          const logFilePathElement = document.getElementById('logFilePath');
-                          if (logFilePathElement) {
-                              logFilePathElement.textContent = data.log_file || 'No log file available';
-                          }
-                          
-                          // Update deployment status area
-                          const deploymentStatus = document.getElementById('deploymentStatus');
-                          deploymentStatus.classList.remove('deployment-running');
-                          deploymentStatus.classList.add('deployment-completed');
-                          
                           // Display success message
                           flashMessage(data.message, 'success');
-                          
-                          // Load initial log content
-                          loadDeploymentLog();
                       } else {
                           // Display error message
-                          const logContent = document.getElementById('logContent');
-                          if (logContent) {
-                              logContent.innerHTML = `<div class="text-danger">${data.message}</div>`;
-                          }
+                          flashMessage(data.message, 'danger');
                       }
                   })
                   .catch(error => {
                       console.error('Error submitting deployment form:', error);
-                      deploymentStatus.innerHTML = '<div class="text-danger">Error starting deployment. Please try again.</div>';
+                      flashMessage('Error starting deployment. Please try again.', 'danger');
                   })
                   .finally(() => {
                       // Re-enable button regardless of success or failure
@@ -1614,245 +1409,7 @@ function flashMessage(message, type = 'info') {
 
 
         
-        // Deployment log functions
-        let autoRefreshInterval = null;
-        let eventSource = null;
-        let isStreaming = false;
-        
-        // Load deployment log content (non-streaming version)
-        function loadDeploymentLog() {
-            const logContent = document.getElementById('logContent');
-            const lastUpdate = document.getElementById('lastUpdate');
-            const logFilePath = document.getElementById('logFilePath');
-            
-            // Check if elements exist before using them
-            if (!logContent || !lastUpdate || !logFilePath) {
-                console.error('Required log elements not found in DOM');
-                return;
-            }
-            
-            // Show loading indicator
-            logContent.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading logs...';
-            
-            // Fetch log content from server
-            fetch('/get_deployment_log')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! Status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        // Display log content with proper formatting
-                        if (data.log_content && data.log_content.trim()) {
-                            // Escape HTML to prevent XSS
-                            const escapedContent = data.log_content
-                                .replace(/&/g, '&amp;')
-                                .replace(/</g, '&lt;')
-                                .replace(/>/g, '&gt;')
-                                .replace(/"/g, '&quot;')
-                                .replace(/'/g, '&#039;');
-                            
-                            // Add ANSI color code support for better log display
-                            const formattedContent = escapeHtml(escapedContent);
-                            logContent.innerHTML = `<pre style="margin: 0; white-space: pre-wrap; font-family: 'Courier New', monospace;">${formattedContent}</pre>`;
-                        } else {
-                            logContent.innerHTML = 'Log file is empty or deployment has not started';
-                        }
-                        
-                        // Update log file path
-                        logFilePath.textContent = data.log_file || 'No log file available';
-                        
-                        // Update last refresh time
-                        const now = new Date();
-                        lastUpdate.textContent = `Last updated: ${now.toLocaleString()}`;
-                        
-                        // Auto-scroll to bottom
-                        const logContainer = document.getElementById('deploymentLog');
-                        if (logContainer) {
-                            logContainer.scrollTop = logContainer.scrollHeight;
-                        }
-                    } else {
-                        // Only show error if deployment has started
-                        if (window.deploymentStarted) {
-                            logContent.innerHTML = `<div class="text-danger">Error: ${data.message}</div>`;
-                        } else {
-                            logContent.innerHTML = 'Deployment has not started yet. Click "Deploy Cluster" to begin.';
-                        }
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading deployment log:', error);
-                    logContent.innerHTML = `<div class="text-danger">Failed to load logs: ${error.message}. Please check network connection and try again.</div>`;
-                });
-        }
-        
-        // Start streaming log content (tail -f functionality)
-        function startLogStreaming() {
-            // Stop any existing streaming
-            stopLogStreaming();
-            
-            const logContent = document.getElementById('logContent');
-            const lastUpdate = document.getElementById('lastUpdate');
-            
-            // Check if elements exist
-            if (!logContent || !lastUpdate) {
-                console.error('Required log elements not found in DOM');
-                return;
-            }
-            
-            // Show loading indicator
-            logContent.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connecting to log stream...';
-            
-            // Create EventSource for server-sent events
-            eventSource = new EventSource('/stream_deployment_log?initial=true');
-            isStreaming = true;
-            
-            // Handle incoming messages
-            eventSource.onmessage = function(event) {
-                try {
-                    const data = JSON.parse(event.data);
-                    
-                    switch (data.type) {
-                        case 'initial':
-                            // Display initial content
-                            if (data.content && data.content.trim()) {
-                                const escapedContent = data.content
-                                    .replace(/&/g, '&amp;')
-                                    .replace(/</g, '&lt;')
-                                    .replace(/>/g, '&gt;')
-                                    .replace(/"/g, '&quot;')
-                                    .replace(/'/g, '&#039;');
-                                
-                                const formattedContent = escapeHtml(escapedContent);
-                                logContent.innerHTML = `<pre style="margin: 0; white-space: pre-wrap; font-family: 'Courier New', monospace;">${formattedContent}</pre>`;
-                            } else {
-                                logContent.innerHTML = 'Waiting for log content...';
-                            }
-                            break;
-                            
-                        case 'log':
-                            // Append new log content
-                            if (data.content && data.content.trim()) {
-                                const pre = logContent.querySelector('pre');
-                                if (pre) {
-                                    const escapedContent = data.content
-                                        .replace(/&/g, '&amp;')
-                                        .replace(/</g, '&lt;')
-                                        .replace(/>/g, '&gt;')
-                                        .replace(/"/g, '&quot;')
-                                        .replace(/'/g, '&#039;');
-                                    
-                                    const formattedContent = escapeHtml(escapedContent);
-                                    
-                                    // Create a temporary div to parse the HTML
-                                    const tempDiv = document.createElement('div');
-                                    tempDiv.innerHTML = formattedContent;
-                                    
-                                    // Append each child node to the pre element
-                                    while (tempDiv.firstChild) {
-                                        pre.appendChild(tempDiv.firstChild);
-                                    }
-                                    
-                                    // Auto-scroll to bottom
-                                    const logContainer = document.getElementById('deploymentLog');
-                                    if (logContainer) {
-                                        logContainer.scrollTop = logContainer.scrollHeight;
-                                    }
-                                } else {
-                                    // If pre doesn't exist, create it
-                                    const escapedContent = data.content
-                                        .replace(/&/g, '&amp;')
-                                        .replace(/</g, '&lt;')
-                                        .replace(/>/g, '&gt;')
-                                        .replace(/"/g, '&quot;')
-                                        .replace(/'/g, '&#039;');
-                                    
-                                    const formattedContent = escapeHtml(escapedContent);
-                                    logContent.innerHTML = `<pre style="margin: 0; white-space: pre-wrap; font-family: 'Courier New', monospace;">${formattedContent}</pre>`;
-                                }
-                            }
-                            break;
-                            
-                        case 'error':
-                            // Display error message
-                            logContent.innerHTML = `<div class="text-danger">Error: ${data.message}</div>`;
-                            stopLogStreaming();
-                            break;
-                            
-                        case 'complete':
-                            // Deployment completed
-                            const now = new Date();
-                            lastUpdate.textContent = `Last updated: ${now.toLocaleString()} (Streaming completed)`;
-                            break;
-                    }
-                    
-                    // Update last update time
-                    const now = new Date();
-                    lastUpdate.textContent = `Last updated: ${now.toLocaleString()} (Streaming)`;
-                    
-                } catch (error) {
-                    console.error('Error parsing log stream data:', error);
-                    logContent.innerHTML = `<div class="text-danger">Error parsing log stream: ${error.message}</div>`;
-                    stopLogStreaming();
-                }
-            };
-            
-            // Handle errors
-            eventSource.onerror = function(event) {
-                console.error('EventSource error:', event);
-                logContent.innerHTML = `<div class="text-danger">Connection to log stream failed. Please try again.</div>`;
-                stopLogStreaming();
-            };
-        }
-        
-        // Stop streaming log content
-        function stopLogStreaming() {
-            if (eventSource) {
-                eventSource.close();
-                eventSource = null;
-            }
-            
-            isStreaming = false;
-            
-            // Update last update time
-            const lastUpdate = document.getElementById('lastUpdate');
-            if (lastUpdate) {
-                const now = new Date();
-                lastUpdate.textContent = `Last updated: ${now.toLocaleString()} (Streaming stopped)`;
-            }
-        }
-        
-        // Helper function to escape HTML and format log content
-        function escapeHtml(text) {
-            // Basic ANSI color code support
-            let formatted = text
-                .replace(/\x1b\[31m/g, '<span class="log-line-error">')     // Red
-                .replace(/\x1b\[32m/g, '<span class="log-line-success">')    // Green
-                .replace(/\x1b\[33m/g, '<span class="log-line-warning">')   // Yellow
-                .replace(/\x1b\[34m/g, '<span class="log-line-info">')     // Blue
-                .replace(/\x1b\[35m/g, '<span style="color: magenta;">')  // Magenta
-                .replace(/\x1b\[36m/g, '<span class="log-line-info">')     // Cyan
-                .replace(/\x1b\[37m/g, '<span style="color: white;">')    // White
-                .replace(/\x1b\[0m/g, '</span>')                         // Reset
-                .replace(/\x1b\[1m/g, '<span style="font-weight: bold;">') // Bold
-                .replace(/\x1b\[4m/g, '<span style="text-decoration: underline;">') // Underline
-                .replace(/\n/g, '<br>');                                 // Line breaks
-            
-            // Additional pattern matching for common log patterns
-            formatted = formatted
-                // Error patterns
-                .replace(/(ERROR|Error|error:|FATAL|Fatal|fatal:)/g, '<span class="log-line-error">$1</span>')
-                // Warning patterns
-                .replace(/(WARNING|Warning|warning:|WARN|Warn:)/g, '<span class="log-line-warning">$1</span>')
-                // Success patterns
-                .replace(/(SUCCESS|Success|success:|COMPLETED|Completed|completed:)/g, '<span class="log-line-success">$1</span>')
-                // Info patterns
-                .replace(/(INFO|Info|info:|NOTICE|Notice:)/g, '<span class="log-line-info">$1</span>');
-                
-            return formatted;
-        }
+
         
 
         
@@ -1963,14 +1520,7 @@ function flashMessage(message, type = 'info') {
                 }
             }
             
-            // Load deployment log when deploy tab is opened
-            const deployTabButton = document.querySelector('button[onclick*="deploy"]');
-            if (deployTabButton) {
-                deployTabButton.addEventListener('click', function() {
-                    // Small delay to ensure tab is fully loaded
-                    setTimeout(loadDeploymentLog, 100);
-                });
-            }
+
         });
     </script>
 </body>

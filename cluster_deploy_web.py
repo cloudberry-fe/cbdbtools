@@ -124,23 +124,8 @@ def deploy_cluster():
 def index():
     params = read_parameters()
     hosts = read_hosts()
-    # Add deployment_info to be passed to the template
-    deployment_info = {
-        'mode': params.get('DEPLOY_TYPE', 'single'),
-        'coordinator': hosts.get('coordinator', []),
-        'segment_hosts': hosts.get('segments', []),
-        'running': False,
-        'log_file': None,
-        'start_time': None
-    }
     
-    # Get current deployment status
-    with DEPLOYMENT_LOCK:
-        deployment_info['running'] = DEPLOYMENT_STATUS['running']
-        deployment_info['log_file'] = DEPLOYMENT_STATUS['log_file']
-        deployment_info['start_time'] = DEPLOYMENT_STATUS['start_time']
-    
-    return render_template('index.html', params=params, hosts=hosts, deployment_info=deployment_info)
+    return render_template('index.html', params=params, hosts=hosts)
 
 @app.route('/save', methods=['POST'])
 def save():
@@ -184,13 +169,9 @@ def deploy():
     success, message = start_background_deployment(deploy_type)
     
     if success:
-        # Extract log file name from message
-        log_file = message.split(': ')[-1] if ': ' in message else ''
-        # Return JSON response with absolute log file path
         return jsonify({
             'success': True,
-            'message': message,
-            'log_file': log_file
+            'message': message
         })
     else:
         return jsonify({
@@ -206,22 +187,7 @@ def deploy():
     
     return redirect(url_for('index_with_tab', tab='deploy'))
 
-# New route to get deployment status
-@app.route('/deployment_status')
-def deployment_status():
-    with DEPLOYMENT_LOCK:
-        return jsonify({
-            'running': DEPLOYMENT_STATUS['running'],
-            'log_file': DEPLOYMENT_STATUS['log_file'],
-            'start_time': DEPLOYMENT_STATUS['start_time'],
-            'success': DEPLOYMENT_STATUS['success']  # Return success status
-        })
 
-# New route to get deployment logs
-@app.route('/deployment_logs')
-def deployment_logs():
-    log_content = get_deployment_log()
-    return jsonify({'logs': log_content})
 
 @app.route('/save_params', methods=['POST'])
 def save_params():
@@ -287,23 +253,8 @@ def save_hosts_only():
 def index_with_tab(tab):
     params = read_parameters()
     hosts = read_hosts()
-    # Add deployment_info to be passed to the template
-    deployment_info = {
-        'mode': params.get('DEPLOY_TYPE', 'single'),
-        'coordinator': hosts.get('coordinator', []),
-        'segment_hosts': hosts.get('segments', []),
-        'running': False,
-        'log_file': None,
-        'start_time': None
-    }
-    # If we're on the deploy tab, get actual deployment status
-    if tab == 'deploy':
-        with DEPLOYMENT_LOCK:
-            deployment_info['running'] = DEPLOYMENT_STATUS['running']
-            deployment_info['log_file'] = DEPLOYMENT_STATUS['log_file']
-            deployment_info['start_time'] = DEPLOYMENT_STATUS['start_time']
     
-    return render_template('index.html', params=params, hosts=hosts, active_tab=tab, deployment_info=deployment_info)
+    return render_template('index.html', params=params, hosts=hosts, active_tab=tab)
 
 # New route to get deployment parameters
 @app.route('/get_deployment_params')
@@ -322,131 +273,10 @@ def get_deployment_params():
         'mirror_dirs': mirror_dirs
     })
 
-# New route to get deployment log content
-@app.route('/get_deployment_log')
-def get_deployment_log_content():
-    try:
-        with DEPLOYMENT_LOCK:
-            log_file = DEPLOYMENT_STATUS['log_file']
-        
-        if not log_file:
-            return jsonify({
-                'success': False,
-                'message': 'No deployment log file available'
-            })
-        
-        if not os.path.exists(log_file):
-            return jsonify({
-                'success': False,
-                'message': f'Log file not found: {log_file}'
-            })
-        
-        # Read the entire log file
-        with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
-            log_content = f.read()
-        
-        return jsonify({
-            'success': True,
-            'log_file': log_file,
-            'log_content': log_content,
-            'file_size': len(log_content),
-            'last_modified': os.path.getmtime(log_file) if os.path.exists(log_file) else None
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': f'Error reading deployment log: {str(e)}'
-        })
 
-# New route for streaming log content (tail -f functionality)
-@app.route('/stream_deployment_log')
-def stream_deployment_log():
-    # Get request parameters before entering the generator
-    initial = request.args.get('initial', 'false').lower() == 'true'
-    
-    def generate():
-        # Wait for deployment to start and log file to be created
-        max_wait_time = 30  # Maximum wait time in seconds
-        wait_interval = 0.5  # Check interval in seconds
-        waited_time = 0
-        
-        while waited_time < max_wait_time:
-            with DEPLOYMENT_LOCK:
-                log_file = DEPLOYMENT_STATUS['log_file']
-                is_running = DEPLOYMENT_STATUS['running']
-            
-            # If deployment is running and log file exists, break the wait loop
-            if is_running and log_file and os.path.exists(log_file):
-                break
-            
-            # If deployment is not running and we've waited long enough, return error
-            if not is_running and waited_time > 5:
-                yield f"data: {json.dumps({'type': 'error', 'message': 'Deployment has not started yet. Please start deployment first.'})}\n\n"
-                return
-            
-            # Wait and check again
-            time.sleep(wait_interval)
-            waited_time += wait_interval
-        
-        # If we timed out waiting for deployment to start
-        if waited_time >= max_wait_time:
-            yield f"data: {json.dumps({'type': 'error', 'message': 'Timeout waiting for deployment to start. Please try starting deployment again.'})}\n\n"
-            return
-        
-        # Get initial file size
-        last_size = 0
-        if os.path.exists(log_file):
-            last_size = os.path.getsize(log_file)
-        
-        # Send initial content if requested
-        if initial and last_size > 0:
-            try:
-                with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
-                    # Read last 100 lines for initial content
-                    lines = f.readlines()
-                    if len(lines) > 100:
-                        lines = lines[-100:]
-                    
-                    initial_content = ''.join(lines)
-                    yield f"data: {json.dumps({'type': 'initial', 'content': initial_content})}\n\n"
-            except Exception as e:
-                yield f"data: {json.dumps({'type': 'error', 'message': f'Error reading initial log content: {str(e)}'})}\n\n"
-        
-        # Continue streaming if deployment is running
-        counter = 0
-        while is_running:
-            try:
-                current_size = os.path.getsize(log_file)
-                
-                # If file size increased, read new content
-                if current_size > last_size:
-                    with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
-                        f.seek(last_size)
-                        new_content = f.read()
-                        
-                        if new_content:
-                            yield f"data: {json.dumps({'type': 'log', 'content': new_content})}\n\n"
-                    
-                    last_size = current_size
-                
-                # Check deployment status every 5 iterations
-                counter += 1
-                if counter % 5 == 0:
-                    with DEPLOYMENT_LOCK:
-                        is_running = DEPLOYMENT_STATUS['running']
-                
-                # Sleep for a short time to prevent high CPU usage
-                time.sleep(0.5)
-                
-            except Exception as e:
-                yield f"data: {json.dumps({'type': 'error', 'message': f'Error streaming log: {str(e)}'})}\n\n"
-                break
-        
-        # Send completion message
-        yield f"data: {json.dumps({'type': 'complete', 'message': 'Deployment completed or stopped'})}\n\n"
-    
-    return Response(generate(), mimetype='text/plain')
+
+
+
 
 # 文件上传配置
 UPLOAD_FOLDER = '/tmp/uploads'
@@ -538,12 +368,7 @@ def is_deployment_running():
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
                     continue
             
-            # 如果找不到进程，检查日志文件是否最近更新
-            if DEPLOYMENT_STATUS['log_file'] and os.path.exists(DEPLOYMENT_STATUS['log_file']):
-                mtime = os.path.getmtime(DEPLOYMENT_STATUS['log_file'])
-                if time.time() - mtime < 30:  # 30秒内更新过认为仍在运行
-                    return True
-            
+            # 如果找不到进程，则认为部署已停止
             DEPLOYMENT_STATUS['running'] = False
             return False
             
@@ -604,26 +429,3 @@ def start_background_deployment(cluster_type='single'):
         with DEPLOYMENT_LOCK:
             DEPLOYMENT_STATUS['running'] = False
         return False, str(e)
-
-# Function to get deployment log content
-def get_deployment_log(log_file=None, lines=100):
-    if not log_file:
-        with DEPLOYMENT_LOCK:
-            log_file = DEPLOYMENT_STATUS['log_file']
-    
-    # 检查日志文件是否存在
-    if not log_file:
-        return "No log file specified."
-    
-    if not os.path.exists(log_file):
-        return f"Log file not found: {log_file}"
-    
-    try:
-        with open(log_file, 'r') as f:
-            # Read last N lines
-            lines_content = f.readlines()
-            if len(lines_content) > lines:
-                lines_content = lines_content[-lines:]
-            return ''.join(lines_content)
-    except Exception as e:
-        return f"Error reading log file: {str(e)}"
