@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 import os
 import re
 import subprocess
@@ -7,25 +7,10 @@ from datetime import datetime
 import json
 import time
 import threading
-from werkzeug.utils import secure_filename
-import psutil
-
-
+from werkzeug.utils import secure_filename  # 添加这行导入
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
-
-# Global variable to track deployment status
-DEPLOYMENT_STATUS = {
-    'running': False,
-    'log_file': None,
-    'start_time': None,
-    'success': None,
-    'pid': None
-}
-
-# Lock for thread-safe access to deployment status
-DEPLOYMENT_LOCK = threading.Lock()
 
 # Configuration file paths
 PARAM_FILE = 'deploycluster_parameter.sh'
@@ -124,8 +109,23 @@ def deploy_cluster():
 def index():
     params = read_parameters()
     hosts = read_hosts()
+    # Add deployment_info to be passed to the template
+    deployment_info = {
+        'mode': params.get('DEPLOY_TYPE', 'single'),
+        'coordinator': hosts.get('coordinator', []),
+        'segment_hosts': hosts.get('segments', []),
+        'running': False,
+        'log_file': None,
+        'start_time': None
+    }
     
-    return render_template('index.html', params=params, hosts=hosts)
+    # 获取当前部署状态
+    with DEPLOYMENT_LOCK:
+        deployment_info['running'] = DEPLOYMENT_STATUS['running']
+        deployment_info['log_file'] = DEPLOYMENT_STATUS['log_file']
+        deployment_info['start_time'] = DEPLOYMENT_STATUS['start_time']
+    
+    return render_template('index.html', params=params, hosts=hosts, deployment_info=deployment_info)
 
 @app.route('/save', methods=['POST'])
 def save():
@@ -169,9 +169,9 @@ def deploy():
     success, message = start_background_deployment(deploy_type)
     
     if success:
-        # Extract log file name from message
+        # 从message中提取日志文件名
         log_file = message.split(': ')[-1] if ': ' in message else ''
-        # Return JSON response with absolute log file path
+        # 返回JSON响应包含日志文件绝对路径
         return jsonify({
             'success': True,
             'message': message,
@@ -191,7 +191,22 @@ def deploy():
     
     return redirect(url_for('index_with_tab', tab='deploy'))
 
+# New route to get deployment status
+@app.route('/deployment_status')
+def deployment_status():
+    with DEPLOYMENT_LOCK:
+        return jsonify({
+            'running': DEPLOYMENT_STATUS['running'],
+            'log_file': DEPLOYMENT_STATUS['log_file'],
+            'start_time': DEPLOYMENT_STATUS['start_time'],
+            'success': DEPLOYMENT_STATUS['success']  # 返回成功状态
+        })
 
+# New route to get deployment logs
+@app.route('/deployment_logs')
+def deployment_logs():
+    log_content = get_deployment_log()
+    return jsonify({'logs': log_content})
 
 @app.route('/save_params', methods=['POST'])
 def save_params():
@@ -257,8 +272,23 @@ def save_hosts_only():
 def index_with_tab(tab):
     params = read_parameters()
     hosts = read_hosts()
+    # Add deployment_info to be passed to the template
+    deployment_info = {
+        'mode': params.get('DEPLOY_TYPE', 'single'),
+        'coordinator': hosts.get('coordinator', []),
+        'segment_hosts': hosts.get('segments', []),
+        'running': False,
+        'log_file': None,
+        'start_time': None
+    }
+    # If we're on the deploy tab, get actual deployment status
+    if tab == 'deploy':
+        with DEPLOYMENT_LOCK:
+            deployment_info['running'] = DEPLOYMENT_STATUS['running']
+            deployment_info['log_file'] = DEPLOYMENT_STATUS['log_file']
+            deployment_info['start_time'] = DEPLOYMENT_STATUS['start_time']
     
-    return render_template('index.html', params=params, hosts=hosts, active_tab=tab)
+    return render_template('index.html', params=params, hosts=hosts, active_tab=tab, deployment_info=deployment_info)
 
 # New route to get deployment parameters
 @app.route('/get_deployment_params')
@@ -276,11 +306,6 @@ def get_deployment_params():
         'data_dirs': data_dirs,
         'mirror_dirs': mirror_dirs
     })
-
-
-
-
-
 
 # 文件上传配置
 UPLOAD_FOLDER = '/tmp/uploads'
@@ -349,11 +374,21 @@ if __name__ == '__main__':
     # Ensure templates directory exists
     if not os.path.exists('templates'):
         os.makedirs('templates')
-    # Start application on port 5002
-    app.run(host='0.0.0.0', port=5002, debug=True)
+    # Start application
+    app.run(host='0.0.0.0', port=5000, debug=True)
 
 
+# Global variable to track deployment status
+DEPLOYMENT_STATUS = {
+    'running': False,
+    'log_file': None,
+    'start_time': None,
+    'pid': None,
+    'success': None  # 新增：跟踪部署是否成功
+}
 
+# Lock for thread safety
+DEPLOYMENT_LOCK = threading.Lock()
 
 # Function to check if there's a running deployment process
 def is_deployment_running():
@@ -372,7 +407,12 @@ def is_deployment_running():
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
                     continue
             
-            # 如果找不到进程，则认为部署已停止
+            # 如果找不到进程，检查日志文件是否最近更新
+            if DEPLOYMENT_STATUS['log_file'] and os.path.exists(DEPLOYMENT_STATUS['log_file']):
+                mtime = os.path.getmtime(DEPLOYMENT_STATUS['log_file'])
+                if time.time() - mtime < 30:  # 30秒内更新过认为仍在运行
+                    return True
+            
             DEPLOYMENT_STATUS['running'] = False
             return False
             
@@ -433,3 +473,26 @@ def start_background_deployment(cluster_type='single'):
         with DEPLOYMENT_LOCK:
             DEPLOYMENT_STATUS['running'] = False
         return False, str(e)
+
+# Function to get deployment log content
+def get_deployment_log(log_file=None, lines=100):
+    if not log_file:
+        with DEPLOYMENT_LOCK:
+            log_file = DEPLOYMENT_STATUS['log_file']
+    
+    # 检查日志文件是否存在
+    if not log_file:
+        return "No log file specified."
+    
+    if not os.path.exists(log_file):
+        return f"Log file not found: {log_file}"
+    
+    try:
+        with open(log_file, 'r') as f:
+            # Read last N lines
+            lines_content = f.readlines()
+            if len(lines_content) > lines:
+                lines_content = lines_content[-lines:]
+            return ''.join(lines_content)
+    except Exception as e:
+        return f"Error reading log file: {str(e)}"
