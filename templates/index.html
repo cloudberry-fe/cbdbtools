@@ -1387,6 +1387,30 @@ function verifyFileExists(filePath) {
                 var countInput = document.getElementById("segment_count_input");
                 var currentCount = parseInt(countInput.value);
                 countInput.value = currentCount - 1;
+                
+                // Reorder remaining segment hosts
+                var container = document.getElementById("segments_container");
+                var segments = container.querySelectorAll(".segment-host");
+                
+                segments.forEach((segment, idx) => {
+                    // Update ID
+                    segment.id = "segment_" + idx;
+                    
+                    // Update header number
+                    var header = segment.querySelector("h4");
+                    header.textContent = "Segment Host " + (idx + 1);
+                    
+                    // Update remove button onclick
+                    var removeBtn = segment.querySelector(".remove-host");
+                    removeBtn.setAttribute("onclick", "removeSegmentHost(" + idx + ")");
+                    
+                    // Update input names
+                    var ipInput = segment.querySelector("input[name^='segment_ip_']");
+                    ipInput.setAttribute("name", "segment_ip_" + idx);
+                    
+                    var hostnameInput = segment.querySelector("input[name^='segment_hostname_']");
+                    hostnameInput.setAttribute("name", "segment_hostname_" + idx);
+                });
             }
         }
         
