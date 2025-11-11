@@ -754,11 +754,21 @@
                 <div class="form-row">
                     <div class="form-col">
                         <div class="form-group">
+                            <label for="INSTALL_DB_SOFTWARE">Install Database Software:</label>
+                            <select id="INSTALL_DB_SOFTWARE" name="INSTALL_DB_SOFTWARE">
+                                <option value="true" {% if params.get('INSTALL_DB_SOFTWARE') == 'true' %}selected{% endif %}>Yes</option>
+                                <option value="false" {% if params.get('INSTALL_DB_SOFTWARE') == 'false' %}selected{% endif %}>No</option>
+                            </select>
+                            <small class="form-text">Set to false if you want to skip database software installation.</small>
+                        </div>
+                        
+                        <div class="form-group">
                             <label for="INIT_ENV_ONLY">Initialize Environment Only:</label>
                             <select id="INIT_ENV_ONLY" name="INIT_ENV_ONLY">
                                 <option value="false" {% if params.get('INIT_ENV_ONLY') == 'false' %}selected{% endif %}>No</option>
                                 <option value="true" {% if params.get('INIT_ENV_ONLY') == 'true' %}selected{% endif %}>Yes</option>
                             </select>
+                            <small class="form-text">Set to true if you want to initialize environment only without cluster initialization.</small>
                         </div>
                         
                         <div class="form-group">

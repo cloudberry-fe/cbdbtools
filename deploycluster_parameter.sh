@@ -7,8 +7,9 @@ export COORDINATOR_IP="192.168.193.21"
 # Set to 'multi' for multi-node deployment
 export DEPLOY_TYPE="single"
 
-## Set to 'true' if you want to set up OS parameters only (no database installation or cluster initialization)
+## Set to 'false' if you want to skip database software installation, possibly for reinitialization cluster scenario.
 export INSTALL_DB_SOFTWARE="true"
+## Set to 'true' if you want to initialize environment only without cluster initialization
 export INIT_ENV_ONLY="false"
 export CLOUDBERRY_RPM_URL="http://downloadlink.com/cloudberry.rpm"
 export INIT_CONFIGFILE="/tmp/gpinitsystem_config"
