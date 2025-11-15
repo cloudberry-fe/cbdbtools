@@ -430,20 +430,8 @@ if ! grep -q "%wheel ALL=(ALL) NOPASSWD: ALL" /etc/sudoers; then
 fi
 chown -R ${ADMIN_USER}:${ADMIN_USER} /home/${ADMIN_USER}
 
-#Step 5: Create folders needed for the cluster
-log_time "Step 5: Create folders needed..."
-rm -rf ${COORDINATOR_DIRECTORY} ${DATA_DIRECTORY}
-mkdir -p ${COORDINATOR_DIRECTORY} ${DATA_DIRECTORY}
-chown -R ${ADMIN_USER}:${ADMIN_USER} ${COORDINATOR_DIRECTORY} ${DATA_DIRECTORY}
-
-if [ "${WITH_MIRROR}" = "true" ]; then
-  rm -rf ${MIRROR_DATA_DIRECTORY}
-  mkdir -p ${MIRROR_DATA_DIRECTORY}
-  chown -R ${ADMIN_USER}:${ADMIN_USER} ${MIRROR_DATA_DIRECTORY}
-fi
-
-#Step 6: Setup user no-password access
-log_time "Step 6: Setup user no-password access..."
+#Step 5: Setup user no-password access
+log_time "Step 5: Setup user no-password access..."
 
 echo "Configure Coordinator hostname."
 
@@ -466,12 +454,9 @@ su ${ADMIN_USER} -l -c "sshpass -p '${ADMIN_USER_PASSWORD}' ssh -o StrictHostKey
 su ${ADMIN_USER} -l -c "chmod 600 /home/${ADMIN_USER}/.ssh/authorized_keys"
 su ${ADMIN_USER} -l -c "chmod 644 /home/${ADMIN_USER}/.ssh/known_hosts"
 
-log_time "Finished env init setting on coordinator..."
-
-if [ "${INIT_ENV_ONLY}" != "true" ]; then
-  
-  #Step 7: Installing database software
-  log_time "Step 7: Installing database software..."
+if [ "${INSTALL_DB_SOFTWARE}" != "false" ]; then
+  #Step 6: Installing database software
+  log_time "Step 6: Installing database software..."
 
   rpmfile=$(ls ${CLOUDBERRY_RPM} 2>/dev/null)
     
@@ -522,8 +507,28 @@ if [ "${INIT_ENV_ONLY}" != "true" ]; then
   fi
   log_time "Finished database software installation on coordinator."
 else
-  log_time "Step 7: INI_ENV_ONLY mode, skip database software installation."
+  log_time "INSTALL_DB_SOFTWARE set to false, skip database software installation."
 fi
+
+if [ "${INIT_ENV_ONLY}" != "true" ]; then
+
+  #Step 7: Create folders needed for the cluster
+  log_time "Step 7: Create folders needed..."
+  rm -rf ${COORDINATOR_DIRECTORY} ${DATA_DIRECTORY}
+  mkdir -p ${COORDINATOR_DIRECTORY} ${DATA_DIRECTORY}
+  chown -R ${ADMIN_USER}:${ADMIN_USER} ${COORDINATOR_DIRECTORY} ${DATA_DIRECTORY}
+
+  if [ "${WITH_MIRROR}" = "true" ]; then
+    rm -rf ${MIRROR_DATA_DIRECTORY}
+    mkdir -p ${MIRROR_DATA_DIRECTORY}
+    chown -R ${ADMIN_USER}:${ADMIN_USER} ${MIRROR_DATA_DIRECTORY}
+  fi
+  log_time "Finished cluster folders creation."
+else
+  log_time "INI_ENV_ONLY mode, skip cluster folders creation."
+fi
+
+log_time "Finished env init setting on coordinator..."
 
 if [ "$cluster_type" = "multi" ]; then
   #Step 8: Setup env on segment nodes.

@@ -302,23 +302,8 @@ if ! grep -q "%wheel ALL=(ALL) NOPASSWD: ALL" /etc/sudoers; then
 fi
 chown -R ${ADMIN_USER}:${ADMIN_USER} /home/${ADMIN_USER}
 
-
-#Step 5: Create folders needed for the cluster
-log_time "Step 5: Create folders needed..."
-rm -rf ${DATA_DIRECTORY}
-echo "mkdir -p ${DATA_DIRECTORY}"
-mkdir -p ${DATA_DIRECTORY}
-chown -R ${ADMIN_USER}:${ADMIN_USER} ${DATA_DIRECTORY}
-
-if [ "${WITH_MIRROR}" = "true" ]; then
-  rm -rf ${MIRROR_DATA_DIRECTORY}
-  echo " mkdir -p ${MIRROR_DATA_DIRECTORY}"
-  mkdir -p ${MIRROR_DATA_DIRECTORY}
-  chown -R ${ADMIN_USER}:${ADMIN_USER} ${MIRROR_DATA_DIRECTORY}
-fi
-
-#Step 6: Setup user access keys and configure host names
-log_time "Step 6: Setup user access keys and configure host names."
+#Step 5: Setup user access keys and configure host names
+log_time "Step 5: Setup user access keys and configure host names."
 
 rm -f /home/${ADMIN_USER}/.ssh/id_rsa.pub
 rm -f /home/${ADMIN_USER}/.ssh/id_rsa
@@ -332,12 +317,9 @@ sed -i '/#Hashdata hosts begin/,/#Hashdata hosts end/d' /etc/hosts
 cat ${working_dir}/hostsfile >> /etc/hosts
 change_hostname ${SEGMENT_HOSTNAME}
 
-log_time "Finished env init setting on segment node ${SEGMENT_HOSTNAME}."
-
-# Check if the INIT_ENV_ONLY environment variable is set
-if [ "${INIT_ENV_ONLY}" != "true" ]; then
-  #Step 7: Installing database software
-  log_time "Step 7: Installing database software."
+if [ "${INSTALL_DB_SOFTWARE}" != "false" ]; then
+  #Step 6: Installing database software
+  log_time "Step 6: Installing database software."
   
   filename=$(basename "$CLOUDBERRY_RPM")
 
@@ -377,5 +359,28 @@ if [ "${INIT_ENV_ONLY}" != "true" ]; then
   fi
   log_time "Finished database software installation on segment node ${SEGMENT_HOSTNAME}."
 else
-  log_time "Step 7: INI_ENV_ONLY mode, skip database software installation."
+  log_time "INSTALL_DB_SOFTWARE set to false, skip database software installation."
 fi
+
+# Check if the INIT_ENV_ONLY environment variable is set
+if [ "${INIT_ENV_ONLY}" != "true" ]; then
+
+  #Step 7: Create folders needed for the cluster
+  log_time "Step 7: Create folders needed..."
+  rm -rf ${DATA_DIRECTORY}
+  echo "mkdir -p ${DATA_DIRECTORY}"
+  mkdir -p ${DATA_DIRECTORY}
+  chown -R ${ADMIN_USER}:${ADMIN_USER} ${DATA_DIRECTORY}
+
+  if [ "${WITH_MIRROR}" = "true" ]; then
+    rm -rf ${MIRROR_DATA_DIRECTORY}
+    echo " mkdir -p ${MIRROR_DATA_DIRECTORY}"
+    mkdir -p ${MIRROR_DATA_DIRECTORY}
+    chown -R ${ADMIN_USER}:${ADMIN_USER} ${MIRROR_DATA_DIRECTORY}
+  fi
+  log_time "Finished cluster folders creation."
+else
+  log_time "INI_ENV_ONLY mode, skip cluster folders creation."
+fi
+
+log_time "Finished env init setting on segment node ${SEGMENT_HOSTNAME}."
