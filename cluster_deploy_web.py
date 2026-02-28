@@ -389,6 +389,26 @@ def save_params():
         return redirect(url_for('index'))
 
 @app.route('/save_hosts', methods=['POST'])
+def save_hosts():
+    try:
+        hosts = {
+            'coordinator': [request.form.get('coord_ip'), request.form.get('coord_hostname')],
+            'segments': []
+        }
+        segment_count = int(request.form.get('segment_count', 0))
+        for i in range(segment_count):
+            ip = request.form.get(f'segment_ip_{i}')
+            hostname = request.form.get(f'segment_hostname_{i}')
+            if ip and hostname:
+                hosts['segments'].append([ip, hostname])
+        save_hosts(hosts)
+        flash('Host configuration saved successfully!')
+        return redirect(url_for('index_with_tab', tab='deploy'))
+    except Exception as e:
+        flash(f'Error saving hosts: {str(e)}')
+        return redirect(url_for('index'))
+
+@app.route('/save_hosts_only', methods=['POST'])
 def save_hosts_only():
     try:
         hosts = {
