@@ -93,8 +93,8 @@ def read_hosts():
                     hosts['segments'].append([ip, hostname])
     return hosts
 
-# Save host configuration
-def save_hosts(hosts):
+# Save host configuration to file
+def write_hosts_file(hosts):
     if os.path.exists(HOSTS_FILE):
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         backup_file = f'{HOSTS_FILE}.backup_{timestamp}'
@@ -142,26 +142,40 @@ def is_deployment_running():
 # Function to analyze log and determine current stage
 def analyze_deployment_progress(log_content):
     stage_keywords = {
-        'preparing': ['starting deployment', 'beginning', 'preparing', 'checking'],
+        'preparing': ['starting deployment', 'beginning', 'preparing', 'checking', 'detecting database type'],
         'ssh_setup': ['ssh', 'key', 'ssh-keygen', 'ssh-copy-id'],
-        'env_init_coordinator': ['init_env.sh', 'coordinator', 'mdw', 'master'],
+        'env_init_coordinator': ['init_env.sh', 'coordinator', 'mdw', 'master', 'start env init setting', 'step 1:', 'installing software'],
         'env_init_segments': ['init_env_segment', 'segment', 'sdw', 'segments'],
         'install_db': ['install', 'rpm', 'yum', 'software'],
         'init_cluster': ['init_cluster', 'gpinitsystem', 'initializing cluster'],
-        'verifying': ['verify', 'check', 'validate', 'complete', 'success']
+        'verifying': ['verify', 'check', 'validate', 'complete', 'success', 'finished']
     }
 
-    lines = log_content.lower().split('\n')
+    log_lower = log_content.lower()
     current_stage = 'preparing'
     max_weight = 0
+
+    # Special check for deployment completion
+    completion_markers = ['deployment completed', 'finished deploy', 'deploy complete', 'successfully completed']
+    if any(marker in log_lower for marker in completion_markers):
+        return 'verifying', 100, len(DEPLOYMENT_STAGES)
 
     for i, stage in enumerate(DEPLOYMENT_STAGES):
         stage_key = stage['key']
         keywords = stage_keywords.get(stage_key, [])
         for keyword in keywords:
-            if any(keyword in line for line in lines):
+            if keyword in log_lower:
                 current_stage = stage_key
                 max_weight = i
+                # Don't break, continue to see if later stages also match
+
+    # If we have some content but no specific matches, make some progress
+    if max_weight == 0 and len(log_content) > 500:
+        max_weight = 1
+        current_stage = 'env_init_coordinator'
+    if max_weight == 1 and len(log_content) > 2000:
+        max_weight = 2
+        current_stage = 'env_init_coordinator'
 
     completed_weight = sum(s['weight'] for s in DEPLOYMENT_STAGES[:max_weight])
     total_weight = sum(s['weight'] for s in DEPLOYMENT_STAGES)
@@ -224,11 +238,20 @@ def start_background_deployment(cluster_type='single'):
                 try:
                     with open(log_file, 'r') as f:
                         log_content = f.read()
-                        DEPLOYMENT_STATUS['success'] = ('deployment completed successfully' in log_content.lower() or
-                                                       'finished deploy cluster' in log_content.lower() or
-                                                       'deployment complete' in log_content.lower())
-                except:
-                    DEPLOYMENT_STATUS['success'] = None
+                        log_lower = log_content.lower()
+                        DEPLOYMENT_STATUS['success'] = (
+                            'deployment completed successfully' in log_lower or
+                            'finished deploy cluster' in log_lower or
+                            'deployment complete' in log_lower or
+                            'deploy cluster complete' in log_lower or
+                            'successfully' in log_lower and 'complete' in log_lower
+                        )
+                        # Default to success if process exited with 0 and no obvious error
+                        if DEPLOYMENT_STATUS['success'] is None:
+                            DEPLOYMENT_STATUS['success'] = process.returncode == 0 and 'error' not in log_lower[-5000:]
+                except Exception as e:
+                    print(f"Error checking deployment success: {e}")
+                    DEPLOYMENT_STATUS['success'] = process.returncode == 0
 
         monitor_thread = threading.Thread(target=monitor_process, args=(process, log_file))
         monitor_thread.daemon = True
@@ -297,7 +320,7 @@ def save():
             hostname = request.form.get(f'segment_hostname_{i}')
             if ip and hostname:
                 hosts['segments'].append([ip, hostname])
-        save_hosts(hosts)
+        write_hosts_file(hosts)
         flash('Configuration saved successfully!')
         return redirect(url_for('index'))
     except Exception as e:
@@ -401,7 +424,7 @@ def save_hosts():
             hostname = request.form.get(f'segment_hostname_{i}')
             if ip and hostname:
                 hosts['segments'].append([ip, hostname])
-        save_hosts(hosts)
+        write_hosts_file(hosts)
         flash('Host configuration saved successfully!')
         return redirect(url_for('index_with_tab', tab='deploy'))
     except Exception as e:
@@ -421,7 +444,7 @@ def save_hosts_only():
             hostname = request.form.get(f'segment_hostname_{i}')
             if ip and hostname:
                 hosts['segments'].append([ip, hostname])
-        save_hosts(hosts)
+        write_hosts_file(hosts)
         flash('Host configuration saved successfully!')
         return redirect(url_for('index_with_tab', tab='deploy'))
     except Exception as e:
