@@ -96,7 +96,7 @@ echo "# BEGIN HashData sshd CONFIG
 ######################
 
 ClientAliveInterval 60
-ClientAliveCountMax 3
+ClientAliveCountMax 9999
 MaxStartups 1000:30:3000
 MaxSessions 3000
 # END HashData sshd CONFIG" >> /etc/ssh/sshd_config
