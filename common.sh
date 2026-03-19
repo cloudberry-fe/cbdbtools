@@ -262,15 +262,11 @@ vm.dirty_expire_centisecs = 500
 vm.dirty_writeback_centisecs = 100
 $(awk '/MemTotal/{mem_kb=$2} END{
     if (mem_kb <= 67108864) {
-        print "vm.dirty_background_bytes = 0"
         print "vm.dirty_background_ratio = 3"
-        print "vm.dirty_bytes = 0"
         print "vm.dirty_ratio = 10"
     } else {
         print "vm.dirty_background_bytes = 1610612736"
-        print "vm.dirty_background_ratio = 0"
         print "vm.dirty_bytes = 4294967296"
-        print "vm.dirty_ratio = 0"
     }
 }' /proc/meminfo)
 kernel.core_pattern=/var/core/core.%h.%t
@@ -279,7 +275,8 @@ EOF
 
     # Clear conflicting dirty memory settings before applying
     # (bytes and ratio cannot both be non-zero simultaneously)
-    sysctl -w vm.dirty_background_bytes=0 vm.dirty_bytes=0 vm.dirty_background_ratio=0 vm.dirty_ratio=0 2>/dev/null
+    sysctl -w vm.dirty_background_ratio=0 vm.dirty_ratio=0 2>/dev/null
+    sysctl -w vm.dirty_background_bytes=0 vm.dirty_bytes=0 2>/dev/null
     sysctl -p
 }
 
