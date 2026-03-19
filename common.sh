@@ -277,6 +277,9 @@ kernel.core_pattern=/var/core/core.%h.%t
 # END HashData sysctl CONFIG
 EOF
 
+    # Clear conflicting dirty memory settings before applying
+    # (bytes and ratio cannot both be non-zero simultaneously)
+    sysctl -w vm.dirty_background_bytes=0 vm.dirty_bytes=0 vm.dirty_background_ratio=0 vm.dirty_ratio=0 2>/dev/null
     sysctl -p
 }
 

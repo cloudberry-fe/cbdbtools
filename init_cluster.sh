@@ -99,9 +99,15 @@ COORDINATOR_DATA_DIRECTORY="${COORDINATOR_DIRECTORY}/${SEG_PREFIX}-1"
 
 # Initialize cluster
 log_time "Running gpinitsystem..."
-if ! su "${ADMIN_USER}" -l -c "source ${CLOUDBERRY_BINARY_PATH}/${CLUSTER_ENV}; gpinitsystem -a -c ${INIT_CONFIGFILE} -h ${MACHINE_LIST_FILE}"; then
-    log_time "Warning: gpinitsystem returned non-zero exit code. Check logs for details."
-    # gpinitsystem returns 1 even on warnings, so we continue
+gpinit_exit=0
+su "${ADMIN_USER}" -l -c "source ${CLOUDBERRY_BINARY_PATH}/${CLUSTER_ENV}; gpinitsystem -a -c ${INIT_CONFIGFILE} -h ${MACHINE_LIST_FILE}" || gpinit_exit=$?
+
+if [ "$gpinit_exit" -gt 1 ]; then
+    # Exit code > 1 indicates fatal error (code 1 is warnings only)
+    log_time "FATAL: gpinitsystem failed with exit code ${gpinit_exit}. Aborting."
+    exit "$gpinit_exit"
+elif [ "$gpinit_exit" -eq 1 ]; then
+    log_time "Warning: gpinitsystem returned warnings. Check logs for details."
 fi
 
 # Set admin user password
