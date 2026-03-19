@@ -739,13 +739,9 @@ Coordinator (串行)
 
 | 优先级 | 建议 | 说明 |
 |--------|------|------|
-| P0 | pg_hba.conf 安全加固 | 提供配置项控制访问范围，而非默认 trust all |
-| P1 | Shell 脚本测试 | 使用 bats 框架为 common.sh 添加单元测试 |
-| P1 | 多 worker 启动保护 | 添加运行时检查，workers > 1 时报错退出 |
-| P2 | 配置文件独立 | deploycluster.sh 不应运行时修改参数文件 |
-| P2 | 部署回滚能力 | 失败时自动清理已执行的步骤 |
-| P2 | 部署后清理敏感信息 | 清除 `deploycluster_parameter.sh` 中的密码字段 |
-| P3 | 国际化 | Web UI 支持中英文切换 |
+| P0 | pg_hba.conf 安全加固 | 增加 `PG_HBA_TRUST_RANGE` 配置参数，默认 `0.0.0.0/0`，用户可收紧为子网范围 |
+| P1 | 配置文件权限加固 | 部署完成后对含密码的 `deploycluster_parameter.sh` 设置 `chmod 600` |
+| P3 | 配置文件独立 | deploycluster.sh 不应运行时修改参数文件 |
 
 ---
 
