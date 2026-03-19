@@ -238,6 +238,7 @@ run.sh
 | `/` | GET | - | 主页面，加载向导界面 | HTML |
 | `/detect_os` | GET | Step 1 | 自动检测当前操作系统类型和版本 | JSON |
 | `/validate_pkg_path` | POST | Step 1 | 验证安装包路径是否存在且格式匹配 | JSON |
+| `/upload_package` | POST | Step 1 | 从浏览器上传 RPM/DEB 安装包到 `/tmp/uploads/` | JSON |
 | `/save_config` | POST | Step 2 | 保存集群配置到 Session | JSON |
 | `/preview_config` | GET | Step 3 | 返回完整配置摘要 (含预检测结果) | JSON |
 | `/deploy` | POST | Step 4 | 生成配置文件，启动本地部署 | JSON |
@@ -426,7 +427,8 @@ run.sh
 **交互逻辑:**
 - 页面加载时调用 `/detect_os` 自动填充操作系统信息
 - 安装包路径输入后 (blur 事件) 调用 `/validate_pkg_path` 验证
-- 验证成功后显示检测到的数据库类型和版本
+- 支持从浏览器拖拽或点击上传安装包 (RPM/DEB)，上传到 `/tmp/uploads/`，带实时进度条
+- 上传完成后自动填充路径并触发验证，显示检测到的数据库类型和版本
 - 部署类型切换影响 Step 2 的表单内容
 
 ### 7.4 Step 2: 集群配置

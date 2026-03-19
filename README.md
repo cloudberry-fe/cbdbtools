@@ -109,7 +109,7 @@ Then open `http://<coordinator-ip>:5000` in a browser.
 
 The Web UI is a 4-step wizard:
 
-1. **Environment** - Select OS type (auto-detected), deployment mode (single/multi), and package path (validated in real-time)
+1. **Environment** - Select OS type (auto-detected), deployment mode (single/multi), and database package. You can either enter a path to a package already on the server, or **upload a package directly from your browser** via drag-and-drop (with real-time progress)
 2. **Configuration** - Set admin user, coordinator info, segment hosts (multi-node), data directories, and advanced options. Click **Save Configuration** before proceeding
 3. **Preview** - Review complete deployment summary with warnings for missing mirrors/standby
 4. **Deploy** - Real-time log streaming with phase progress indicators. Shows connection info on success
@@ -226,7 +226,7 @@ The deployment automatically applies the following optimizations per Greenplum 7
 | `init_env.sh` | Coordinator setup: deps, system tuning, user creation, SSH keys, DB install, data dirs |
 | `init_env_segment.sh` | Segment setup: same tuning + user + DB install (executed via multissh) |
 | `init_cluster.sh` | gpinitsystem, admin password, pg_hba.conf, environment variables |
-| `cluster_deploy_web.py` | Flask app: config management, deployment orchestration, SSE log streaming |
+| `cluster_deploy_web.py` | Flask app: config management, package upload, deployment orchestration, SSE log streaming |
 | `start_web.sh` | Installs deps, starts gunicorn (1 worker, 4 threads, port 5000) |
 
 ---

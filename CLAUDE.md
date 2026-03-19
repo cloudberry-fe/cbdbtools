@@ -82,6 +82,7 @@ Supported databases: Cloudberry, Greenplum (5.x/6.x/7.x), HashData Lightning, Sy
 - Flask app running locally on coordinator node
 - Calls `deploycluster.sh` via subprocess (no SSH/paramiko)
 - Gunicorn with `--workers 1 --threads 4` (required: in-process state sharing)
+- Browser-based package upload (drag-drop or click, saved to `/tmp/uploads/`)
 - Real-time log streaming via Server-Sent Events
 - Configuration stored in Flask session + server-side global (single process)
 
