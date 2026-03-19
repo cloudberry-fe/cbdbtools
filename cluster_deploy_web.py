@@ -533,6 +533,8 @@ def save_config():
         'DATA_DIRECTORY': request.form.get('DATA_DIRECTORY', '/data0/database/primary').strip(),
         'DEPLOY_TYPE': deploy_type,
         'WITH_MIRROR': request.form.get('WITH_MIRROR', 'false'),
+        'MIRROR_PORT_BASE': request.form.get('MIRROR_PORT_BASE', '7000').strip(),
+        'MIRROR_DATA_DIRECTORY': request.form.get('MIRROR_DATA_DIRECTORY', '').strip(),
         'WITH_STANDBY': request.form.get('WITH_STANDBY', 'false'),
         'INIT_ENV_ONLY': request.form.get('INIT_ENV_ONLY', 'false'),
         'INSTALL_DB_SOFTWARE': request.form.get('INSTALL_DB_SOFTWARE', 'true'),
