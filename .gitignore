@@ -350,3 +350,6 @@ MigrationBackup/
 .ionide/
 .DS_Store
 .vscode
+
+# Flask secret key
+.flask_secret_key

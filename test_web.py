@@ -28,6 +28,8 @@ from cluster_deploy_web import (
     validate_port,
     validate_path,
     DEPLOYMENT_STATUS,
+    SAVED_CONFIG,
+    SAVED_CONFIG_LOCK,
 )
 
 
@@ -38,6 +40,9 @@ def client():
     """Flask test client with session support."""
     app.config['TESTING'] = True
     app.config['SECRET_KEY'] = 'test-secret'
+    # Clear server-side config state between tests
+    with SAVED_CONFIG_LOCK:
+        SAVED_CONFIG['params'] = {}
     with app.test_client() as c:
         yield c
 

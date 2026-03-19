@@ -15,13 +15,35 @@ import time
 from datetime import datetime
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('FLASK_SECRET_KEY', os.urandom(32))
+
+# Generate a stable secret key: persist to file so it survives restarts
+# and is shared across gunicorn workers
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+_secret_key_file = os.path.join(SCRIPT_DIR, '.flask_secret_key')
+if os.environ.get('FLASK_SECRET_KEY'):
+    app.secret_key = os.environ['FLASK_SECRET_KEY']
+elif os.path.isfile(_secret_key_file):
+    with open(_secret_key_file, 'rb') as f:
+        app.secret_key = f.read()
+else:
+    _key = os.urandom(32)
+    with open(_secret_key_file, 'wb') as f:
+        f.write(_key)
+    os.chmod(_secret_key_file, 0o600)
+    app.secret_key = _key
+
 app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024 * 1024  # 2GB max upload
 
 # Path to local files
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_FILE_PATH = os.path.join(SCRIPT_DIR, 'deploycluster_parameter.sh')
 HOSTS_FILE_PATH = os.path.join(SCRIPT_DIR, 'segmenthosts.conf')
+
+# Saved config params (server-side, shared across workers via global state)
+# This is the primary store; session is a secondary fallback
+SAVED_CONFIG = {
+    'params': {},
+}
+SAVED_CONFIG_LOCK = threading.RLock()
 
 # Deployment status (protected by lock)
 DEPLOYMENT_STATUS = {
@@ -556,6 +578,11 @@ def save_config():
 
     session['deploy_params'] = deploy_params
     session['deploy_type'] = deploy_type
+
+    # Also save to server-side global (survives session loss across workers)
+    with SAVED_CONFIG_LOCK:
+        SAVED_CONFIG['params'] = deploy_params
+
     return jsonify({'success': True, 'message': 'Configuration saved'})
 
 
@@ -563,6 +590,10 @@ def save_config():
 def preview_config():
     """Return full configuration summary for the confirmation step."""
     params = session.get('deploy_params', {})
+    if not params:
+        # Fallback to server-side global
+        with SAVED_CONFIG_LOCK:
+            params = SAVED_CONFIG.get('params', {})
     if not params:
         return jsonify({'success': False, 'message': 'No configuration saved'})
 
@@ -615,6 +646,10 @@ def deploy():
         return jsonify({'success': False, 'message': 'Deployment already in progress'})
 
     config_params = session.get('deploy_params', {})
+    if not config_params:
+        # Fallback to server-side global
+        with SAVED_CONFIG_LOCK:
+            config_params = SAVED_CONFIG.get('params', {})
     if not config_params:
         return jsonify({'success': False, 'message': 'No configuration saved. Please complete Steps 1-2 first.'})
 
@@ -725,6 +760,9 @@ def reset():
         }
 
     session.pop('deploy_params', None)
+
+    with SAVED_CONFIG_LOCK:
+        SAVED_CONFIG['params'] = {}
     session.pop('deploy_type', None)
     return jsonify({'success': True})
 
