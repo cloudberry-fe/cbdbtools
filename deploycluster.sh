@@ -6,7 +6,7 @@ VARS_FILE="deploycluster_parameter.sh"
 
 source "${SCRIPT_DIR}/${VARS_FILE}"
 
-log_time "CBDB tools version is: V1.3"
+log_time "CBDB tools version is: V2.0"
 
 ## Database type and version detection
 # Default values
