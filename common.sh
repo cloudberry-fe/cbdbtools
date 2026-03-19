@@ -536,6 +536,17 @@ install_db_software() {
             fi
         fi
 
+        # Remove circular symlinks that cause filesystem loop errors
+        # (some RPMs create self-referencing symlinks inside the install directory)
+        for _dir in /usr/local/${keyword}*/; do
+            [ -d "$_dir" ] || continue
+            _base=$(basename "$_dir")
+            if [ -L "${_dir}${_base}" ]; then
+                rm -f "${_dir}${_base}"
+                log_time "Removed circular symlink: ${_dir}${_base}"
+            fi
+        done
+
         # Fix ownership
         chown -R "${ADMIN_USER}:${ADMIN_USER}" /usr/local/${keyword}* 2>/dev/null || true
         chown -R "${ADMIN_USER}:${ADMIN_USER}" ${soft_link}* 2>/dev/null || true

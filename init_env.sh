@@ -186,7 +186,6 @@ if [ "$cluster_type" = "multi" ]; then
   # Collect host keys for admin user
   for i in $(cat "${working_dir}/segment_hosts.txt"); do
     su "${ADMIN_USER}" -l -c "ssh-keyscan -t rsa,ecdsa,ed25519 ${i} >> ~/.ssh/known_hosts 2>/dev/null"
-    local ip_addr
     ip_addr=$(getent hosts "$i" | awk '{print $1}')
     if [ -n "$ip_addr" ]; then
       su "${ADMIN_USER}" -l -c "ssh-keyscan -t rsa,ecdsa,ed25519 ${ip_addr} >> ~/.ssh/known_hosts 2>/dev/null"
