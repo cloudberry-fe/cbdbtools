@@ -145,16 +145,19 @@ rm -f "/home/${ADMIN_USER}/.ssh/id_rsa"
 rm -f "/home/${ADMIN_USER}/.ssh/authorized_keys"
 rm -f "/home/${ADMIN_USER}/.ssh/known_hosts"
 
-su "${ADMIN_USER}" -l -c "ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ''"
+# Configure SSH client to suppress host key warnings (trusted cluster environment)
+cat > "/home/${ADMIN_USER}/.ssh/config" <<SSHEOF
+Host *
+    StrictHostKeyChecking no
+    LogLevel ERROR
+SSHEOF
+chown "${ADMIN_USER}:${ADMIN_USER}" "/home/${ADMIN_USER}/.ssh/config"
+chmod 600 "/home/${ADMIN_USER}/.ssh/config"
 
-# Pre-populate known_hosts for coordinator to avoid SSH warnings during gpinitsystem
-su "${ADMIN_USER}" -l -c "ssh-keyscan -t rsa,ecdsa,ed25519 ${COORDINATOR_HOSTNAME} >> ~/.ssh/known_hosts 2>/dev/null"
-su "${ADMIN_USER}" -l -c "ssh-keyscan -t rsa,ecdsa,ed25519 ${COORDINATOR_IP} >> ~/.ssh/known_hosts 2>/dev/null"
-su "${ADMIN_USER}" -l -c "ssh-keyscan -t rsa,ecdsa,ed25519 localhost >> ~/.ssh/known_hosts 2>/dev/null"
+su "${ADMIN_USER}" -l -c "ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ''"
 
 su "${ADMIN_USER}" -l -c "cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys"
 su "${ADMIN_USER}" -l -c "chmod 600 /home/${ADMIN_USER}/.ssh/authorized_keys"
-su "${ADMIN_USER}" -l -c "chmod 644 /home/${ADMIN_USER}/.ssh/known_hosts"
 
 #Step 6: Installing database software
 install_db_software "${CLOUDBERRY_RPM}" "${DB_KEYWORD}" "${CLOUDBERRY_BINARY_PATH}"

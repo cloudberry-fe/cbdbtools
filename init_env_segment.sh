@@ -42,6 +42,15 @@ rm -f "/home/${ADMIN_USER}/.ssh/id_rsa"
 rm -f "/home/${ADMIN_USER}/.ssh/authorized_keys"
 rm -f "/home/${ADMIN_USER}/.ssh/known_hosts"
 
+# Configure SSH client to suppress host key warnings (trusted cluster environment)
+cat > "/home/${ADMIN_USER}/.ssh/config" <<SSHEOF
+Host *
+    StrictHostKeyChecking no
+    LogLevel ERROR
+SSHEOF
+chown "${ADMIN_USER}:${ADMIN_USER}" "/home/${ADMIN_USER}/.ssh/config"
+chmod 600 "/home/${ADMIN_USER}/.ssh/config"
+
 su "${ADMIN_USER}" -l -c "ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ''"
 su "${ADMIN_USER}" -l -c "cat /home/${ADMIN_USER}/.ssh/id_rsa.pub > /home/${ADMIN_USER}/.ssh/authorized_keys"
 
