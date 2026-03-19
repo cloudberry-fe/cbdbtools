@@ -35,19 +35,19 @@ if [ -n "$CLOUDBERRY_RPM" ]; then
             export LEGACY_VERSION="true"
             log_time "Detected legacy Greenplum (major < 7)"
         fi
-    elif [[ "$CLOUDBERRY_RPM" == *"hashdata-lightning-2"* ]]; then
+    elif [[ "$CLOUDBERRY_RPM" == *"hashdata-lightning"* ]]; then
         export DB_TYPE="Hashdata Lightning"
-        export DB_KEYWORD="hashdata-lightning-2"
-        export DB_VERSION=$(echo "${CLOUDBERRY_RPM}" | grep -oP 'hashdata-lightning-\K[0-9.]+')
-        export CLOUDBERRY_BINARY_PATH="/usr/local/hashdata-lightning"
+        # Extract version from both RPM (hashdata-lightning-2.4.0) and DEB (hashdata-lightning_2.4.0) naming
+        export DB_VERSION=$(echo "${CLOUDBERRY_RPM}" | grep -oP 'hashdata-lightning[-_]\K[0-9.]+')
+        local hl_major=$(echo "$DB_VERSION" | cut -d. -f1)
+        if [ "$hl_major" = "1" ]; then
+            export DB_KEYWORD="cloudberry"
+            export CLOUDBERRY_BINARY_PATH="/usr/local/cloudberry-db"
+        else
+            export DB_KEYWORD="hashdata-lightning-${hl_major}"
+            export CLOUDBERRY_BINARY_PATH="/usr/local/hashdata-lightning"
+        fi
         export CLUSTER_ENV="greenplum_path.sh"
-    elif [[ "$CLOUDBERRY_RPM" == *"hashdata-lightning-1"* ]]; then
-        export DB_TYPE="Hashdata Lightning"
-        export DB_KEYWORD="cloudberry"
-        export DB_VERSION=$(echo "${CLOUDBERRY_RPM}" | grep -oP 'hashdata-lightning-\K[0-9.]+')
-        export CLOUDBERRY_BINARY_PATH="/usr/local/cloudberry-db"
-        export CLUSTER_ENV="greenplum_path.sh"
-        export LEGACY_VERSION="false"
     elif [[ "$CLOUDBERRY_RPM" == *"synxdb4"* ]]; then
         export DB_TYPE="Synxdb"
         export DB_KEYWORD="synxdb4"
