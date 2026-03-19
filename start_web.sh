@@ -57,4 +57,4 @@ fi
 
 # Start the web application using Gunicorn
 log_time "Starting web application with Gunicorn..."
-exec gunicorn --bind 0.0.0.0:5000 --workers 4 --timeout 600 wsgi:app
+exec gunicorn --bind 0.0.0.0:5000 --workers 1 --threads 4 --timeout 600 wsgi:app
