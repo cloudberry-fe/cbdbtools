@@ -6,6 +6,7 @@ Runs locally on the Coordinator node - calls deployment scripts directly.
 """
 
 from flask import Flask, render_template, request, jsonify, Response, session
+from werkzeug.utils import secure_filename
 import os
 import re
 import shlex
@@ -32,11 +33,12 @@ else:
     os.chmod(_secret_key_file, 0o600)
     app.secret_key = _key
 
-app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024 * 1024  # 2GB max upload
+app.config['MAX_CONTENT_LENGTH'] = None  # No upload size limit (database packages can exceed 2GB)
 
 # Path to local files
 CONFIG_FILE_PATH = os.path.join(SCRIPT_DIR, 'deploycluster_parameter.sh')
 HOSTS_FILE_PATH = os.path.join(SCRIPT_DIR, 'segmenthosts.conf')
+UPLOAD_DIR = '/tmp/uploads'
 
 # Saved config params (server-side, shared across threads within single worker process)
 # Requires --workers 1 in gunicorn; multiple workers would isolate this state
@@ -508,6 +510,39 @@ def validate_pkg_path():
         result['db_info'] = db_info
 
     return jsonify(result)
+
+
+@app.route('/upload_package', methods=['POST'])
+def upload_package():
+    """Upload a database package file (RPM/DEB) from the client browser."""
+    if 'package' not in request.files:
+        return jsonify({'success': False, 'message': 'No file provided'})
+
+    f = request.files['package']
+    if not f.filename:
+        return jsonify({'success': False, 'message': 'No file selected'})
+
+    filename = secure_filename(f.filename)
+    if not filename.endswith(('.rpm', '.deb')):
+        return jsonify({'success': False, 'message': 'Only .rpm and .deb files are allowed'})
+
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    dest_path = os.path.join(UPLOAD_DIR, filename)
+
+    try:
+        f.save(dest_path)
+    except OSError as e:
+        return jsonify({'success': False, 'message': f'Failed to save file: {e}'})
+
+    file_size = os.path.getsize(dest_path)
+    db_info = detect_db_from_package(dest_path)
+
+    return jsonify({
+        'success': True,
+        'file_path': dest_path,
+        'file_size': file_size,
+        'db_info': db_info,
+    })
 
 
 @app.route('/save_config', methods=['POST'])

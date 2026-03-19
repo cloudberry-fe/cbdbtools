@@ -49,6 +49,8 @@
         .fr { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
         .fr3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px; }
         .hint { font-size: 11px; color: var(--dim); margin-top: 3px; }
+        .upload-zone { border: 2px dashed var(--border); border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; transition: border-color .2s, background .2s; }
+        .upload-zone:hover, .upload-zone.dragover { border-color: var(--primary); background: rgba(59,130,246,.05); }
 
         /* Section - component block */
         .section { border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
@@ -175,8 +177,21 @@
                 <div class="fg">
                     <label>Package Path (RPM / DEB)</label>
                     <input type="text" id="pkg_path" placeholder="/opt/cloudberry-db-1.6.0-el8.x86_64.rpm" value="{{ file_config.get('CLOUDBERRY_RPM', '') }}">
-                    <div class="hint">Absolute path to the database package file on this server</div>
+                    <div class="hint">Path to a package already on this server, or upload one below</div>
                     <div id="pkg_val"></div>
+                </div>
+                <div class="fg" style="margin-top:8px">
+                    <div id="upload_zone" class="upload-zone" onclick="document.getElementById('pkg_file').click()">
+                        <input type="file" id="pkg_file" accept=".rpm,.deb" style="display:none">
+                        <div>Drag &amp; drop a package file here, or click to browse</div>
+                        <div style="font-size:11px;opacity:.5;margin-top:4px">.rpm or .deb</div>
+                    </div>
+                    <div id="upload_progress" style="display:none;margin-top:8px">
+                        <div style="background:var(--surface);border-radius:4px;height:6px;overflow:hidden">
+                            <div id="upload_bar" style="height:100%;width:0%;background:var(--primary);transition:width .3s"></div>
+                        </div>
+                        <div id="upload_text" style="font-size:11px;opacity:.7;margin-top:4px"></div>
+                    </div>
                 </div>
             </div>
             <div class="nav">
@@ -419,6 +434,72 @@ function validatePkg() {
     }).catch(() => { el.innerHTML = '<div class="vmsg err">Validation failed</div>'; });
 }
 function fmtSize(b) { if (b > 1073741824) return (b/1073741824).toFixed(1)+' GB'; if (b > 1048576) return (b/1048576).toFixed(1)+' MB'; return (b/1024).toFixed(0)+' KB'; }
+
+// ==================== File Upload ====================
+(function() {
+    const zone = document.getElementById('upload_zone');
+    const fileInput = document.getElementById('pkg_file');
+    const progress = document.getElementById('upload_progress');
+    const bar = document.getElementById('upload_bar');
+    const text = document.getElementById('upload_text');
+
+    ['dragover','dragenter'].forEach(e => zone.addEventListener(e, ev => { ev.preventDefault(); zone.classList.add('dragover'); }));
+    ['dragleave','drop'].forEach(e => zone.addEventListener(e, ev => { ev.preventDefault(); zone.classList.remove('dragover'); }));
+    zone.addEventListener('drop', ev => { const f = ev.dataTransfer.files[0]; if (f) uploadPackage(f); });
+    fileInput.addEventListener('change', () => { if (fileInput.files[0]) uploadPackage(fileInput.files[0]); fileInput.value=''; });
+
+    function uploadPackage(file) {
+        if (!file.name.match(/\.(rpm|deb)$/i)) {
+            document.getElementById('pkg_val').innerHTML = '<div class="vmsg err">Only .rpm and .deb files are allowed</div>';
+            return;
+        }
+        const el = document.getElementById('pkg_val');
+        el.innerHTML = '<div class="vmsg wait">Uploading...</div>';
+        progress.style.display = 'block';
+        bar.style.width = '0%';
+        zone.style.pointerEvents = 'none'; zone.style.opacity = '.5';
+
+        const fd = new FormData();
+        fd.append('package', file);
+        const start = Date.now();
+
+        const xhr = new XMLHttpRequest();
+        xhr.upload.addEventListener('progress', e => {
+            if (e.lengthComputable) {
+                const pct = Math.round(e.loaded / e.total * 100);
+                bar.style.width = pct + '%';
+                const elapsed = (Date.now() - start) / 1000;
+                const speed = elapsed > 0 ? e.loaded / elapsed : 0;
+                text.textContent = pct + '% — ' + fmtSize(e.loaded) + ' / ' + fmtSize(e.total) + ' (' + fmtSize(speed) + '/s)';
+            }
+        });
+        xhr.onload = () => {
+            zone.style.pointerEvents = ''; zone.style.opacity = '';
+            try {
+                const r = JSON.parse(xhr.responseText);
+                if (r.success) {
+                    document.getElementById('pkg_path').value = r.file_path;
+                    el.innerHTML = '<div class="vmsg ok">Uploaded: ' + fmtSize(r.file_size) + '</div>';
+                    validatePkg();
+                    setTimeout(() => { progress.style.display = 'none'; }, 2000);
+                } else {
+                    el.innerHTML = '<div class="vmsg err">' + (r.message || 'Upload failed') + '</div>';
+                    progress.style.display = 'none';
+                }
+            } catch(_) {
+                el.innerHTML = '<div class="vmsg err">Upload failed</div>';
+                progress.style.display = 'none';
+            }
+        };
+        xhr.onerror = () => {
+            zone.style.pointerEvents = ''; zone.style.opacity = '';
+            el.innerHTML = '<div class="vmsg err">Upload failed — network error</div>';
+            progress.style.display = 'none';
+        };
+        xhr.open('POST', '/upload_package');
+        xhr.send(fd);
+    }
+})();
 
 // ==================== Save Config ====================
 function saveConfig() {
