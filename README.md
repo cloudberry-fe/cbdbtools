@@ -100,8 +100,10 @@ Both methods run on the **coordinator node** and execute the same underlying dep
 Start the web service on the coordinator:
 
 ```bash
-sh start_web.sh
+bash start_web.sh
 ```
+
+> **Note:** Always use `bash` (not `sh`) to run the scripts. On Ubuntu, `/bin/sh` is dash which doesn't support bash features used by these scripts.
 
 Then open `http://<coordinator-ip>:5000` in a browser.
 
@@ -122,7 +124,7 @@ Edit `deploycluster_parameter.sh`:
 ## Mandatory
 export ADMIN_USER="gpadmin"
 export ADMIN_USER_PASSWORD="Cbdb@1234"
-export CLOUDBERRY_RPM="/root/hashdata-lightning-2.4.0-1.x86_64.rpm"
+export CLOUDBERRY_RPM="/root/hashdata-lightning-2.4.0-1.x86_64.rpm"  # or .deb for Ubuntu
 export COORDINATOR_HOSTNAME="mdw"
 export COORDINATOR_IP="192.168.1.100"
 export DEPLOY_TYPE="single"   # or "multi"
@@ -132,7 +134,7 @@ export DEPLOY_TYPE="single"   # or "multi"
 |-----------|------------|
 | `ADMIN_USER` | OS user for cluster (default: gpadmin) |
 | `ADMIN_USER_PASSWORD` | Password for OS user and database admin |
-| `CLOUDBERRY_RPM` | Absolute path to RPM/DEB package (filename determines DB type/version) |
+| `CLOUDBERRY_RPM` | Absolute path to RPM or DEB package. Filename determines DB type/version. Supports both RPM naming (`hashdata-lightning-2.4.0-1.x86_64.rpm`) and DEB naming (`hashdata-lightning_2.4.0-1_amd64.deb`) |
 | `COORDINATOR_HOSTNAME` | Hostname for coordinator (tool sets this) |
 | `COORDINATOR_IP` | IP address of coordinator |
 | `DEPLOY_TYPE` | `single` or `multi` |
@@ -178,9 +180,9 @@ Edit `segmenthosts.conf`:
 #### 3. Start Deployment
 
 ```bash
-sh run.sh            # Uses DEPLOY_TYPE from config
-sh run.sh single     # Force single-node
-sh run.sh multi      # Force multi-node
+bash run.sh            # Uses DEPLOY_TYPE from config
+bash run.sh single     # Force single-node
+bash run.sh multi      # Force multi-node
 ```
 
 ---
@@ -277,10 +279,13 @@ sh multiscp.sh -k ~/.ssh/id_rsa -f hosts.txt -u root ./config.ini /tmp/
 | SSH connection timeout to segments | Verify network connectivity, check firewall on segment nodes |
 | `sysctl: Invalid argument` for dirty memory | Fixed in latest version; ensure common.sh is up to date |
 | `gpinitsystem` FATAL errors | Check segment node connectivity, verify hosts in segmenthosts.conf |
+| `set: Illegal option -o pipefail` | You ran the script with `sh` instead of `bash`. Use `bash run.sh` |
+| `source: not found` on Ubuntu | gpadmin shell must be `/bin/bash`, not `/bin/sh`. Run `usermod -s /bin/bash gpadmin` |
+| `ping: command not found` during gpinitsystem | Install `iputils-ping`: `apt install iputils-ping` (auto-installed in latest version) |
+| DB type detected as "unknown" for DEB packages | Update deploycluster.sh; latest version supports both RPM and DEB naming |
 | Web UI "Save request failed" | Refresh browser (Ctrl+F5), ensure gunicorn is running |
 | Web UI shows no logs during deploy | Ensure gunicorn uses `--workers 1` (not multi-worker) |
 | THP not disabled after reboot | Check `/sys/kernel/mm/transparent_hugepage/enabled`, verify rc.local or systemd service |
-| SSH "Warning: Permanently added" | Resolved; admin user SSH config limits StrictHostKeyChecking to cluster hosts |
 
 **Logs:**
 - CLI deployment: `deploy_cluster_YYYYMMDD_HHMMSS.log` in project directory

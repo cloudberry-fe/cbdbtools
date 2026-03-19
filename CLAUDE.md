@@ -11,17 +11,17 @@ CBDBTools is a suite of shell scripts and a Flask web application for automating
 ### Command-line Deployment
 ```bash
 # Start deployment (uses DEPLOY_TYPE from config)
-sh run.sh
+bash run.sh
 
 # Force specific deployment type
-sh run.sh single   # Single-node deployment
-sh run.sh multi    # Multi-node deployment
+bash run.sh single   # Single-node deployment
+bash run.sh multi    # Multi-node deployment
 ```
 
 ### Web UI Deployment
 ```bash
 # Start the web UI (runs on port 5000)
-sh start_web.sh
+bash start_web.sh
 ```
 
 ## Architecture
@@ -59,12 +59,17 @@ Both coordinator and segment nodes are configured with:
 | `start_web.sh` | Web UI startup: installs deps, creates venv, starts gunicorn (1 worker, 4 threads) |
 | `mirrorlessfailover.sh` | Utility for segment failover without mirrors |
 
+### Important: bash vs sh
+All scripts require `bash`. On Ubuntu, `/bin/sh` is dash which lacks bash features (`set -o pipefail`, arrays, `source`, etc). All script invocations use `bash` explicitly. The `gpadmin` user is created with `-s /bin/bash`.
+
 ### Database Type Detection
 `deploycluster.sh` auto-detects database type from RPM/DEB filename and sets:
 - `DB_TYPE`, `DB_VERSION`, `DB_KEYWORD`
 - `CLOUDBERRY_BINARY_PATH` (e.g., `/usr/local/cloudberry-db`, `/usr/local/greenplum-db`)
 - `CLUSTER_ENV` (environment script name)
 - `LEGACY_VERSION` (for Greenplum < 7)
+
+Supports both RPM naming (`hashdata-lightning-2.4.0-1.x86_64.rpm`) and DEB naming (`hashdata-lightning_2.4.0-1_amd64.deb`).
 
 Supported databases: Cloudberry, Greenplum (5.x/6.x/7.x), HashData Lightning, SynxDB
 
