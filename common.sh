@@ -260,10 +260,19 @@ vm.swappiness = 1
 vm.zone_reclaim_mode = 0
 vm.dirty_expire_centisecs = 500
 vm.dirty_writeback_centisecs = 100
-vm.dirty_background_bytes = 1610612736
-vm.dirty_background_ratio = 0
-vm.dirty_ratio = 0
-vm.dirty_bytes = 4294967296
+$(awk '/MemTotal/{mem_kb=$2} END{
+    if (mem_kb <= 67108864) {
+        print "vm.dirty_background_bytes = 0"
+        print "vm.dirty_background_ratio = 3"
+        print "vm.dirty_bytes = 0"
+        print "vm.dirty_ratio = 10"
+    } else {
+        print "vm.dirty_background_bytes = 1610612736"
+        print "vm.dirty_background_ratio = 0"
+        print "vm.dirty_bytes = 4294967296"
+        print "vm.dirty_ratio = 0"
+    }
+}' /proc/meminfo)
 kernel.core_pattern=/var/core/core.%h.%t
 # END HashData sysctl CONFIG
 EOF
@@ -292,6 +301,15 @@ configure_limits() {
 * soft  core unlimited
 # END HashData limits CONFIG
 EOF
+
+    # Override RHEL default nproc limits in limits.d (takes precedence over limits.conf)
+    if [ -d /etc/security/limits.d ]; then
+        cat > /etc/security/limits.d/99-hashdata-nproc.conf <<'NPROC'
+# Override default nproc limits for database workloads
+* soft nproc 131072
+* hard nproc 131072
+NPROC
+    fi
 }
 
 # Configure SSH daemon
@@ -334,6 +352,90 @@ configure_logind() {
         log_time "systemd-logind restarted successfully"
     else
         log_time "Warning: Failed to restart systemd-logind. Reboot may be required."
+    fi
+}
+
+# Disable Transparent Huge Pages (THP) - causes performance degradation in database workloads
+disable_thp() {
+    log_time "Disabling Transparent Huge Pages (THP)..."
+
+    # Runtime disable
+    if [ -f /sys/kernel/mm/transparent_hugepage/enabled ]; then
+        echo never > /sys/kernel/mm/transparent_hugepage/enabled
+    fi
+    if [ -f /sys/kernel/mm/transparent_hugepage/defrag ]; then
+        echo never > /sys/kernel/mm/transparent_hugepage/defrag
+    fi
+
+    # Persist via rc.local for RHEL/CentOS
+    if [ "$OS_FAMILY" = "rhel" ]; then
+        local rc_file="/etc/rc.d/rc.local"
+        if [ ! -f "$rc_file" ]; then
+            echo '#!/bin/bash' > "$rc_file"
+        fi
+        chmod +x "$rc_file"
+        sed -i '/transparent_hugepage/d' "$rc_file"
+        cat >> "$rc_file" <<'THPEOF'
+# Disable THP for database performance
+if [ -f /sys/kernel/mm/transparent_hugepage/enabled ]; then
+    echo never > /sys/kernel/mm/transparent_hugepage/enabled
+fi
+if [ -f /sys/kernel/mm/transparent_hugepage/defrag ]; then
+    echo never > /sys/kernel/mm/transparent_hugepage/defrag
+fi
+THPEOF
+    elif [ "$OS_FAMILY" = "debian" ]; then
+        # Use systemd service for Ubuntu
+        cat > /etc/systemd/system/disable-thp.service <<'THPSVC'
+[Unit]
+Description=Disable Transparent Huge Pages
+DefaultDependencies=no
+After=sysinit.target local-fs.target
+Before=basic.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'echo never > /sys/kernel/mm/transparent_hugepage/enabled && echo never > /sys/kernel/mm/transparent_hugepage/defrag'
+
+[Install]
+WantedBy=basic.target
+THPSVC
+        systemctl daemon-reload
+        systemctl enable disable-thp 2>/dev/null
+    fi
+
+    # Verify
+    local thp_status
+    thp_status=$(cat /sys/kernel/mm/transparent_hugepage/enabled 2>/dev/null)
+    if echo "$thp_status" | grep -q '\[never\]'; then
+        log_time "THP disabled successfully."
+    else
+        log_time "Warning: THP may not be fully disabled. Current: ${thp_status}"
+    fi
+}
+
+# Configure NTP/chrony time synchronization
+configure_ntp() {
+    log_time "Configuring time synchronization..."
+
+    if command -v chronyd &>/dev/null; then
+        systemctl enable chronyd 2>/dev/null
+        systemctl start chronyd 2>/dev/null
+        log_time "chrony is running."
+    elif command -v ntpd &>/dev/null; then
+        systemctl enable ntpd 2>/dev/null
+        systemctl start ntpd 2>/dev/null
+        log_time "ntpd is running."
+    else
+        # Install chrony
+        if [ "$OS_FAMILY" = "debian" ]; then
+            apt-get install -y chrony 2>/dev/null
+        else
+            ${PKG_MANAGER} install -y chrony 2>/dev/null
+        fi
+        systemctl enable chronyd 2>/dev/null
+        systemctl start chronyd 2>/dev/null
+        log_time "chrony installed and started."
     fi
 }
 

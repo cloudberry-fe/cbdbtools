@@ -123,8 +123,8 @@ configure_sysctl
 configure_limits
 configure_sshd
 configure_logind
-
-log_time "Note: Additional tuning may be required for production. Refer to documentation."
+disable_thp
+configure_ntp
 
 #Step 4: Create database admin user
 log_time "Step 4: Create database user ${ADMIN_USER}..."
