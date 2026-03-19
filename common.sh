@@ -462,7 +462,8 @@ install_dependencies() {
             libldap2-dev openssh-client openssh-server openssl libssl-dev \
             perl python3 python3-psycopg2 python3-psutil python3-yaml \
             python3-setuptools python3-dev libreadline-dev rsync sed tar \
-            zip zlib1g lz4 keyutils git passwd wget net-tools libicu-dev
+            zip zlib1g lz4 keyutils git passwd wget net-tools libicu-dev \
+            iputils-ping hostname
 
         # nmon may not be available on all Ubuntu versions
         apt-get install -y nmon || true
