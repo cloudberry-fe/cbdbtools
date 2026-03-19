@@ -42,4 +42,4 @@ logfilename="$(date +%Y%m%d_%H%M%S)"
 
 log_time "Check deploy_cluster_${logfilename}.log for more detail."
 
-nohup sh "${SCRIPT_DIR}/deploycluster.sh" "$cluster_type" > "${SCRIPT_DIR}/deploy_cluster_${logfilename}.log" 2>&1 &
+nohup bash "${SCRIPT_DIR}/deploycluster.sh" "$cluster_type" > "${SCRIPT_DIR}/deploy_cluster_${logfilename}.log" 2>&1 &

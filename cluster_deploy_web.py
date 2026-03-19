@@ -370,7 +370,7 @@ def execute_local_deployment():
             f.write(log_msg)
 
         safe_type = shlex.quote(deploy_type)
-        cmd = f'sh {shlex.quote(os.path.join(SCRIPT_DIR, "deploycluster.sh"))} {safe_type}'
+        cmd = f'bash {shlex.quote(os.path.join(SCRIPT_DIR, "deploycluster.sh"))} {safe_type}'
 
         with open(log_file, 'a') as f:
             process = subprocess.Popen(

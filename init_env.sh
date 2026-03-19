@@ -55,7 +55,7 @@ function copyfile_segment() {
   local common_args="-v ${access_opts} -f ${hosts_file} -u ${SEGMENT_ACCESS_USER}"
 
   # Create working directory on segments
-  sh "${SCRIPT_DIR}/multissh.sh" ${common_args} "rm -rf ${working_dir}; mkdir -p ${working_dir}"
+  bash "${SCRIPT_DIR}/multissh.sh" ${common_args} "rm -rf ${working_dir}; mkdir -p ${working_dir}"
 
   # Copy required files
   local files_to_copy=(
@@ -74,7 +74,7 @@ function copyfile_segment() {
       src="${SCRIPT_DIR}/${f}"
     fi
     log_time "Copying ${src} to segments..."
-    sh "${SCRIPT_DIR}/multiscp.sh" ${common_args} "${src}" "${working_dir}"
+    bash "${SCRIPT_DIR}/multiscp.sh" ${common_args} "${src}" "${working_dir}"
   done
 
   log_time "Finished copying files to segment hosts."

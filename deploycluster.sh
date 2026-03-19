@@ -122,10 +122,10 @@ else
 fi
 
 deploycluster() {
-  sh "${SCRIPT_DIR}/init_env.sh" "$cluster_type"
+  bash "${SCRIPT_DIR}/init_env.sh" "$cluster_type"
 
   if [ "${INIT_ENV_ONLY}" != "true" ]; then
-    sh "${SCRIPT_DIR}/init_cluster.sh" "$cluster_type"
+    bash "${SCRIPT_DIR}/init_cluster.sh" "$cluster_type"
   else
     log_time "INIT_ENV_ONLY=true, skipping cluster initialization."
   fi
