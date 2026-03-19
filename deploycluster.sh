@@ -39,7 +39,7 @@ if [ -n "$CLOUDBERRY_RPM" ]; then
         export DB_TYPE="Hashdata Lightning"
         # Extract version from both RPM (hashdata-lightning-2.4.0) and DEB (hashdata-lightning_2.4.0) naming
         export DB_VERSION=$(echo "${CLOUDBERRY_RPM}" | grep -oP 'hashdata-lightning[-_]\K[0-9.]+')
-        local hl_major=$(echo "$DB_VERSION" | cut -d. -f1)
+        hl_major=$(echo "$DB_VERSION" | cut -d. -f1)
         if [ "$hl_major" = "1" ]; then
             export DB_KEYWORD="cloudberry"
             export CLOUDBERRY_BINARY_PATH="/usr/local/cloudberry-db"

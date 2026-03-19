@@ -549,7 +549,7 @@ create_admin_user() {
 
     if ! id "$admin_user" &>/dev/null; then
         groupadd "$admin_user" 2>/dev/null || true
-        useradd "$admin_user" -r -m -g "$admin_user"
+        useradd "$admin_user" -r -m -g "$admin_user" -s /bin/bash
     else
         # Clean up stale environment from previous installations
         if grep -qE 'COORDINATOR_DATA_DIRECTORY|MASTER_DATA_DIRECTORY|greenplum_path.sh|cluster_env.sh|synxdb_path.sh|cloudberry-env.sh|PGPORT' "/home/${admin_user}/.bashrc" 2>/dev/null; then
