@@ -146,7 +146,13 @@ rm -f "/home/${ADMIN_USER}/.ssh/authorized_keys"
 rm -f "/home/${ADMIN_USER}/.ssh/known_hosts"
 
 su "${ADMIN_USER}" -l -c "ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ''"
-su "${ADMIN_USER}" -l -c "sshpass -p '${ADMIN_USER_PASSWORD}' ssh -o StrictHostKeyChecking=no ${ADMIN_USER}@${COORDINATOR_HOSTNAME} 'cat /home/${ADMIN_USER}/.ssh/id_rsa.pub >> /home/${ADMIN_USER}/.ssh/authorized_keys'"
+
+# Pre-populate known_hosts for coordinator to avoid SSH warnings during gpinitsystem
+su "${ADMIN_USER}" -l -c "ssh-keyscan -t rsa,ecdsa,ed25519 ${COORDINATOR_HOSTNAME} >> ~/.ssh/known_hosts 2>/dev/null"
+su "${ADMIN_USER}" -l -c "ssh-keyscan -t rsa,ecdsa,ed25519 ${COORDINATOR_IP} >> ~/.ssh/known_hosts 2>/dev/null"
+su "${ADMIN_USER}" -l -c "ssh-keyscan -t rsa,ecdsa,ed25519 localhost >> ~/.ssh/known_hosts 2>/dev/null"
+
+su "${ADMIN_USER}" -l -c "cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys"
 su "${ADMIN_USER}" -l -c "chmod 600 /home/${ADMIN_USER}/.ssh/authorized_keys"
 su "${ADMIN_USER}" -l -c "chmod 644 /home/${ADMIN_USER}/.ssh/known_hosts"
 
@@ -183,7 +189,7 @@ if [ "$cluster_type" = "multi" ]; then
   #Step 9: Setup no-password access for all nodes
   log_time "Step 9: Setup no-password access for all nodes..."
 
-  # Collect host keys for admin user
+  # Collect host keys for admin user (coordinator + all segments)
   for i in $(cat "${working_dir}/segment_hosts.txt"); do
     su "${ADMIN_USER}" -l -c "ssh-keyscan -t rsa,ecdsa,ed25519 ${i} >> ~/.ssh/known_hosts 2>/dev/null"
     ip_addr=$(getent hosts "$i" | awk '{print $1}')
@@ -203,25 +209,25 @@ if [ "$cluster_type" = "multi" ]; then
 
   # Collect public keys from all nodes
   for node in $(cat "${working_dir}/all_hosts.txt"); do
-    sshpass -p "${ADMIN_USER_PASSWORD}" scp -o StrictHostKeyChecking=no \
+    sshpass -p "${ADMIN_USER_PASSWORD}" scp -o StrictHostKeyChecking=no -o LogLevel=ERROR \
       "${ADMIN_USER}@${node}:/home/${ADMIN_USER}/.ssh/id_rsa.pub" \
       "${working_dir}/ssh_keys/${node}.pub"
   done
 
   # Distribute public keys and known_hosts to all nodes
   for target in $(cat "${working_dir}/all_hosts.txt"); do
-    sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no \
+    sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no -o LogLevel=ERROR \
       "${ADMIN_USER}@${target}" "echo '' > /home/${ADMIN_USER}/.ssh/authorized_keys"
 
     for keyfile in "${working_dir}"/ssh_keys/*.pub; do
-      cat "$keyfile" | sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no \
+      cat "$keyfile" | sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no -o LogLevel=ERROR \
         "${ADMIN_USER}@${target}" "cat >> /home/${ADMIN_USER}/.ssh/authorized_keys"
     done
 
-    cat "/home/${ADMIN_USER}/.ssh/known_hosts" | sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no \
+    cat "/home/${ADMIN_USER}/.ssh/known_hosts" | sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no -o LogLevel=ERROR \
       "${ADMIN_USER}@${target}" "cat > /home/${ADMIN_USER}/.ssh/known_hosts"
 
-    sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no \
+    sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no -o LogLevel=ERROR \
       "${ADMIN_USER}@${target}" "chmod 700 /home/${ADMIN_USER}/.ssh && chmod 600 /home/${ADMIN_USER}/.ssh/authorized_keys && chmod 644 /home/${ADMIN_USER}/.ssh/known_hosts"
   done
 
