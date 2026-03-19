@@ -198,11 +198,11 @@ function execute_on_host() {
     
     if [ -n "$KEY_FILE" ]; then
         # Use key file authentication
-        ssh -o StrictHostKeyChecking=no -o ConnectTimeout=$TIMEOUT -p $PORT -i "$KEY_FILE" "$USER@$host" "$COMMAND" > "$output_file" 2>&1
+        ssh -o StrictHostKeyChecking=no -o LogLevel=ERROR -o ConnectTimeout=$TIMEOUT -p $PORT -i "$KEY_FILE" "$USER@$host" "$COMMAND" > "$output_file" 2>&1
         exit_code=$?
     else
         # Use password authentication (requires sshpass)
-        sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=$TIMEOUT -p $PORT "$USER@$host" "$COMMAND" > "$output_file" 2>&1
+        sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no -o LogLevel=ERROR -o ConnectTimeout=$TIMEOUT -p $PORT "$USER@$host" "$COMMAND" > "$output_file" 2>&1
         exit_code=$?
     fi
     

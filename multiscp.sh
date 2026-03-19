@@ -197,11 +197,11 @@ function send_file_to_host() {
     
     if [ -n "$KEY_FILE" ]; then
         # Use key file authentication
-        scp -o StrictHostKeyChecking=no -o ConnectTimeout=$TIMEOUT -P $PORT -i "$KEY_FILE" "$LOCAL_FILE" "$USER@$host:$REMOTE_PATH" > "$output_file" 2>&1
+        scp -o StrictHostKeyChecking=no -o LogLevel=ERROR -o ConnectTimeout=$TIMEOUT -P $PORT -i "$KEY_FILE" "$LOCAL_FILE" "$USER@$host:$REMOTE_PATH" > "$output_file" 2>&1
         exit_code=$?
     else
         # Use password authentication (requires sshpass)
-        sshpass -p "$PASSWORD" scp -o StrictHostKeyChecking=no -o ConnectTimeout=$TIMEOUT -P $PORT "$LOCAL_FILE" "$USER@$host:$REMOTE_PATH" > "$output_file" 2>&1
+        sshpass -p "$PASSWORD" scp -o StrictHostKeyChecking=no -o LogLevel=ERROR -o ConnectTimeout=$TIMEOUT -P $PORT "$LOCAL_FILE" "$USER@$host:$REMOTE_PATH" > "$output_file" 2>&1
         exit_code=$?
     fi
     
