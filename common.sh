@@ -10,6 +10,54 @@ function log_time() {
 }
 export -f log_time
 
+# Detect OS family, version, and package manager
+detect_os() {
+    if [ ! -f /etc/os-release ]; then
+        log_time "Warning: /etc/os-release not found. Defaulting to RHEL family."
+        export OS_FAMILY="rhel"
+        export OS_ID="unknown"
+        export OS_VERSION="0"
+        export PKG_MANAGER="yum"
+        export PKG_FORMAT="rpm"
+        return 1
+    fi
+
+    source /etc/os-release
+
+    export OS_ID="$ID"
+    export OS_VERSION="$(echo "$VERSION_ID" | cut -d. -f1)"
+
+    case "$ID" in
+        ubuntu|debian)
+            export OS_FAMILY="debian"
+            export PKG_MANAGER="apt"
+            export PKG_FORMAT="deb"
+            ;;
+        centos|rhel|ol|fedora)
+            export OS_FAMILY="rhel"
+            export PKG_FORMAT="rpm"
+            local version_major
+            version_major="$(echo "$VERSION_ID" | cut -d. -f1)"
+            if [ "$version_major" -ge 8 ] 2>/dev/null && command -v dnf &>/dev/null; then
+                export PKG_MANAGER="dnf"
+            else
+                export PKG_MANAGER="yum"
+            fi
+            ;;
+        *)
+            log_time "Warning: Unrecognized OS ID '$ID'. Defaulting to RHEL family."
+            export OS_FAMILY="rhel"
+            export PKG_MANAGER="yum"
+            export PKG_FORMAT="rpm"
+            ;;
+    esac
+
+    log_time "Detected OS: ${OS_ID} ${OS_VERSION} (family=${OS_FAMILY}, pkg=${PKG_MANAGER}, format=${PKG_FORMAT})"
+}
+
+# Run OS detection immediately so all functions can use the variables
+detect_os
+
 # Change hostname across supported OS types
 change_hostname() {
     local new_hostname="$1"
@@ -76,22 +124,42 @@ export -f change_hostname
 # Disable firewall and SELinux
 disable_firewall() {
     log_time "Disabling firewall and SELinux..."
-    systemctl stop firewalld.service 2>/dev/null || true
-    systemctl disable firewalld.service 2>/dev/null || true
 
-    if [ -f /etc/selinux/config ]; then
-        sed -i 's/^SELINUX=.*$/SELINUX=disabled/' /etc/selinux/config
+    if [ "$OS_FAMILY" = "debian" ]; then
+        # Ubuntu/Debian: disable ufw
+        if command -v ufw &>/dev/null; then
+            ufw disable 2>/dev/null || true
+            log_time "ufw disabled."
+        fi
+        # No SELinux on Ubuntu/Debian by default, skip
+    else
+        # RHEL/CentOS: disable firewalld and SELinux
+        systemctl stop firewalld.service 2>/dev/null || true
+        systemctl disable firewalld.service 2>/dev/null || true
+
+        if [ -f /etc/selinux/config ]; then
+            sed -i 's/^SELINUX=.*$/SELINUX=disabled/' /etc/selinux/config
+        fi
+        setenforce 0 2>/dev/null || true
     fi
-    setenforce 0 2>/dev/null || true
 }
 
-# Configure YUM repositories based on OS version
-configure_yum_repo() {
-    if [ "${MAUNAL_YUM_REPO}" = "true" ]; then
-        log_time "Manual YUM repo mode - skipping auto configuration."
+# Configure package repositories based on OS version
+# Backward compatible: also available as configure_yum_repo()
+configure_repo() {
+    # Support both new MANUAL_REPO and old MAUNAL_YUM_REPO variable names
+    if [ "${MANUAL_REPO}" = "true" ] || [ "${MAUNAL_YUM_REPO}" = "true" ]; then
+        log_time "Manual repo mode - skipping auto configuration."
         return 0
     fi
 
+    if [ "$OS_FAMILY" = "debian" ]; then
+        log_time "Updating apt package lists..."
+        apt-get update -y
+        return $?
+    fi
+
+    # RHEL family: existing YUM/DNF repo configuration
     log_time "Detecting OS version for YUM repo configuration..."
 
     if [ ! -f /etc/os-release ]; then
@@ -138,6 +206,11 @@ configure_yum_repo() {
             log_time "Warning: Unsupported OS version: $version_major"
             ;;
     esac
+}
+
+# Backward compatibility alias
+configure_yum_repo() {
+    configure_repo "$@"
 }
 
 # Configure sysctl kernel parameters
@@ -278,18 +351,38 @@ configure_timezone() {
 install_dependencies() {
     log_time "Installing common dependencies..."
 
-    yum install -y epel-release
+    if [ "$OS_FAMILY" = "debian" ]; then
+        apt-get update -y
 
-    yum install -y \
-        apr apr-util bash bzip2 curl iproute krb5-devel libcurl libevent \
-        libuuid libuv libxml2 libyaml libzstd openldap openssh openssh-clients \
-        openssh-server openssl openssl-libs perl python3 python3-psycopg2 \
-        python3-psutil python3-pyyaml python3-setuptools python3-devel python39 \
-        readline rsync sed tar which zip zlib lz4 keyutils \
-        git passwd wget net-tools nmon libicu
+        apt-get install -y \
+            libapr1 libaprutil1 bash bzip2 curl iproute2 libkrb5-dev libcurl4 \
+            libevent-dev uuid-runtime libuv1 libxml2 libyaml-0-2 libzstd1 \
+            libldap2-dev openssh-client openssh-server openssl libssl-dev \
+            perl python3 python3-psycopg2 python3-psutil python3-yaml \
+            python3-setuptools python3-dev libreadline-dev rsync sed tar \
+            zip zlib1g lz4 keyutils git passwd wget net-tools libicu-dev
 
-    if [ $? -ne 0 ]; then
-        log_time "Warning: Some packages may have failed to install."
+        # nmon may not be available on all Ubuntu versions
+        apt-get install -y nmon || true
+
+        if [ $? -ne 0 ]; then
+            log_time "Warning: Some packages may have failed to install."
+        fi
+    else
+        # RHEL/CentOS family
+        ${PKG_MANAGER} install -y epel-release
+
+        ${PKG_MANAGER} install -y \
+            apr apr-util bash bzip2 curl iproute krb5-devel libcurl libevent \
+            libuuid libuv libxml2 libyaml libzstd openldap openssh openssh-clients \
+            openssh-server openssl openssl-libs perl python3 python3-psycopg2 \
+            python3-psutil python3-pyyaml python3-setuptools python3-devel python39 \
+            readline rsync sed tar which zip zlib lz4 keyutils \
+            git passwd wget net-tools nmon libicu
+
+        if [ $? -ne 0 ]; then
+            log_time "Warning: Some packages may have failed to install."
+        fi
     fi
 }
 
@@ -301,13 +394,26 @@ install_sshpass() {
     fi
 
     log_time "Installing sshpass..."
-    if yum install -y sshpass 2>/dev/null; then
-        log_time "sshpass installed via yum."
-        return 0
+
+    if [ "$OS_FAMILY" = "debian" ]; then
+        if apt-get install -y sshpass 2>/dev/null; then
+            log_time "sshpass installed via apt."
+            return 0
+        fi
+    else
+        if ${PKG_MANAGER} install -y sshpass 2>/dev/null; then
+            log_time "sshpass installed via ${PKG_MANAGER}."
+            return 0
+        fi
     fi
 
     log_time "Building sshpass from source..."
-    yum install -y tar gcc make
+    if [ "$OS_FAMILY" = "debian" ]; then
+        apt-get install -y tar gcc make
+    else
+        ${PKG_MANAGER} install -y tar gcc make
+    fi
+
     local script_dir
     script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -351,19 +457,30 @@ create_admin_user() {
         fi
     fi
 
-    usermod -aG wheel "$admin_user"
-    echo "$admin_password" | passwd --stdin "$admin_user"
+    if [ "$OS_FAMILY" = "debian" ]; then
+        # Ubuntu/Debian: use sudo group and chpasswd
+        usermod -aG sudo "$admin_user"
+        echo "${admin_user}:${admin_password}" | chpasswd
 
-    if ! grep -q "%wheel ALL=(ALL) NOPASSWD: ALL" /etc/sudoers; then
-        echo "%wheel ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+        if ! grep -q "%sudo ALL=(ALL) NOPASSWD: ALL" /etc/sudoers; then
+            echo "%sudo ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+        fi
+    else
+        # RHEL/CentOS: use wheel group and passwd --stdin
+        usermod -aG wheel "$admin_user"
+        echo "$admin_password" | passwd --stdin "$admin_user"
+
+        if ! grep -q "%wheel ALL=(ALL) NOPASSWD: ALL" /etc/sudoers; then
+            echo "%wheel ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+        fi
     fi
 
     chown -R "${admin_user}:${admin_user}" "/home/${admin_user}"
 }
 
-# Install database RPM package
+# Install database software package (RPM or DEB)
 install_db_software() {
-    local rpm_path="$1"
+    local pkg_path="$1"
     local keyword="$2"
     local soft_link="$3"
 
@@ -374,20 +491,30 @@ install_db_software() {
 
     log_time "Installing database software..."
 
-    # Check if RPM exists, try to download if not
-    if [ ! -f "$rpm_path" ]; then
-        if [ -n "$CLOUDBERRY_RPM_URL" ] && [ "$CLOUDBERRY_RPM_URL" != "http://downloadlink.com/cloudberry.rpm" ]; then
-            log_time "RPM not found, downloading from ${CLOUDBERRY_RPM_URL}..."
-            wget "$CLOUDBERRY_RPM_URL" -O "$rpm_path"
+    # Check if package exists, try to download if not
+    if [ ! -f "$pkg_path" ]; then
+        # Support both new CLOUDBERRY_PKG_URL and old CLOUDBERRY_RPM_URL
+        local download_url="${CLOUDBERRY_PKG_URL:-$CLOUDBERRY_RPM_URL}"
+        if [ -n "$download_url" ] && [ "$download_url" != "http://downloadlink.com/cloudberry.rpm" ]; then
+            log_time "Package not found, downloading from ${download_url}..."
+            wget "$download_url" -O "$pkg_path"
             if [ $? -ne 0 ]; then
-                log_time "Error: Failed to download RPM."
+                log_time "Error: Failed to download package."
                 return 1
             fi
         else
-            log_time "Error: RPM file not found: $rpm_path"
+            log_time "Error: Package file not found: $pkg_path"
             return 1
         fi
     fi
+
+    # Detect package format from file extension
+    local pkg_format
+    case "$pkg_path" in
+        *.deb)  pkg_format="deb" ;;
+        *.rpm)  pkg_format="rpm" ;;
+        *)      pkg_format="$PKG_FORMAT" ;;
+    esac
 
     if [ "$keyword" != "unknown" ]; then
         # Remove previous soft link if exists
@@ -396,18 +523,30 @@ install_db_software() {
             log_time "Removed existing soft link: $soft_link"
         fi
 
-        # Install RPM
-        if ! rpm -ivh "$rpm_path" --force 2>/dev/null; then
-            log_time "RPM install failed, trying yum..."
-            yum install -y "$rpm_path"
+        # Install package based on format
+        if [ "$pkg_format" = "deb" ]; then
+            if ! dpkg -i "$pkg_path" 2>/dev/null; then
+                log_time "dpkg install had issues, resolving dependencies..."
+                apt-get install -f -y
+            fi
+        else
+            if ! rpm -ivh "$pkg_path" --force 2>/dev/null; then
+                log_time "RPM install failed, trying ${PKG_MANAGER}..."
+                ${PKG_MANAGER} install -y "$pkg_path"
+            fi
         fi
 
         # Fix ownership
         chown -R "${ADMIN_USER}:${ADMIN_USER}" /usr/local/${keyword}* 2>/dev/null || true
         chown -R "${ADMIN_USER}:${ADMIN_USER}" ${soft_link}* 2>/dev/null || true
     else
-        log_time "Unknown database type, installing with yum..."
-        yum install -y "$rpm_path"
+        log_time "Unknown database type, installing with package manager..."
+        if [ "$pkg_format" = "deb" ]; then
+            dpkg -i "$pkg_path" 2>/dev/null || true
+            apt-get install -f -y
+        else
+            ${PKG_MANAGER} install -y "$pkg_path"
+        fi
     fi
 
     log_time "Finished database software installation."

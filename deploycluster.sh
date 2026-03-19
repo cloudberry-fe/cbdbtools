@@ -18,7 +18,7 @@ export CLOUDBERRY_BINARY_PATH="/usr/local/cloudberry-db"
 export CLUSTER_ENV="greenplum_path.sh"
 
 if [ -n "$CLOUDBERRY_RPM" ]; then
-    log_time "Detecting database type from RPM: $CLOUDBERRY_RPM"
+    log_time "Detecting database type from package: $CLOUDBERRY_RPM"
 
     if [[ "$CLOUDBERRY_RPM" == *"greenplum"* ]]; then
         export DB_TYPE="Greenplum"

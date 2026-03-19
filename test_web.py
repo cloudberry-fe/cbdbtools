@@ -2,7 +2,7 @@
 """
 Tests for cluster_deploy_web.py
 Covers: input validation, config generation, config parsing, hosts file generation,
-        route behavior, and tab workflow logic.
+        OS detection, DB detection, route behavior, and wizard workflow logic.
 """
 
 import os
@@ -13,7 +13,6 @@ import textwrap
 
 import pytest
 
-# Ensure project root is on path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from cluster_deploy_web import (
@@ -22,11 +21,12 @@ from cluster_deploy_web import (
     generate_config_file,
     generate_hosts_file,
     parse_segment_hosts,
+    detect_os_info,
+    detect_db_from_package,
     validate_ip,
     validate_hostname,
     validate_port,
     validate_path,
-    REMOTE_CONFIG,
     DEPLOYMENT_STATUS,
 )
 
@@ -44,7 +44,7 @@ def client():
 
 @pytest.fixture
 def sample_params():
-    """Minimal valid deployment parameters from web UI."""
+    """Minimal valid deployment parameters."""
     return {
         'ADMIN_USER': 'gpadmin',
         'ADMIN_USER_PASSWORD': 'Test@1234',
@@ -159,7 +159,7 @@ class TestValidateHostname:
         assert not validate_hostname('')
         assert not validate_hostname(None)
         assert not validate_hostname('-starts-with-dash')
-        assert not validate_hostname('a' * 64)  # too long
+        assert not validate_hostname('a' * 64)
 
 
 class TestValidatePort:
@@ -189,7 +189,7 @@ class TestValidatePath:
         assert not validate_path('../etc/passwd')
         assert not validate_path('/root/../etc/passwd')
         assert not validate_path('relative/path')
-        assert not validate_path('/path/with spaces')  # blocked by pattern
+        assert not validate_path('/path/with spaces')
 
 
 # ====================== 2. Config File Parsing ======================
@@ -208,7 +208,6 @@ class TestParseConfigFile:
 
     def test_parse_ignores_comments_and_functions(self, tmp_config_file):
         config = parse_config_file(tmp_config_file)
-        # Should not parse function definitions or non-export lines
         assert 'log_time' not in config
         assert 'printf' not in str(config.keys())
 
@@ -226,11 +225,83 @@ class TestParseSegmentHosts:
         assert segments == []
 
 
-# ====================== 3. Config File Generation ======================
+# ====================== 3. DB Detection ======================
+
+class TestDetectDbFromPackage:
+    def test_cloudberry_rpm(self):
+        info = detect_db_from_package('/root/cloudberry-db-1.6.0-el8.x86_64.rpm')
+        assert info['db_type'] == 'Cloudberry'
+        assert info['db_version'] == '1.6.0'
+        assert info['binary_path'] == '/usr/local/cloudberry-db'
+        assert info['legacy'] is False
+
+    def test_cloudberry_deb(self):
+        info = detect_db_from_package('/root/cloudberry-db-1.6.0-ubuntu22.04.deb')
+        assert info['db_type'] == 'Cloudberry'
+        assert info['binary_path'] == '/usr/local/cloudberry-db'
+
+    def test_greenplum_legacy(self):
+        info = detect_db_from_package('/root/greenplum-db-6.25.3-el8.rpm')
+        assert info['db_type'] == 'Greenplum'
+        assert info['legacy'] is True
+
+    def test_greenplum_modern(self):
+        info = detect_db_from_package('/root/greenplum-db-7.1.0-el8.rpm')
+        assert info['db_type'] == 'Greenplum'
+        assert info['legacy'] is False
+
+    def test_hashdata_lightning_2(self):
+        info = detect_db_from_package('/root/hashdata-lightning-2.4.0-1.x86_64.rpm')
+        assert info['db_type'] == 'HashData Lightning'
+        assert info['binary_path'] == '/usr/local/hashdata-lightning'
+
+    def test_hashdata_lightning_1(self):
+        info = detect_db_from_package('/root/hashdata-lightning-1.5.0.rpm')
+        assert info['db_type'] == 'HashData Lightning'
+        assert info['binary_path'] == '/usr/local/cloudberry-db'
+
+    def test_synxdb4(self):
+        info = detect_db_from_package('/root/synxdb4-4.1.0.rpm')
+        assert info['db_type'] == 'SynxDB'
+        assert info['binary_path'] == '/usr/local/synxdb4'
+
+    def test_synxdb_2(self):
+        info = detect_db_from_package('/root/synxdb-2.0.0.rpm')
+        assert info['db_type'] == 'SynxDB'
+        assert info['legacy'] is True
+
+    def test_synxdb_1(self):
+        info = detect_db_from_package('/root/synxdb-1.5.0.rpm')
+        assert info['db_type'] == 'SynxDB'
+        assert info['legacy'] is True
+
+    def test_unknown_package(self):
+        info = detect_db_from_package('/root/some-random-package.rpm')
+        assert info is None
+
+    def test_empty_path(self):
+        info = detect_db_from_package('')
+        assert info is None
+
+    def test_none_path(self):
+        info = detect_db_from_package(None)
+        assert info is None
+
+
+class TestDetectOsInfo:
+    def test_returns_dict_with_expected_keys(self):
+        info = detect_os_info()
+        assert 'os_family' in info
+        assert 'os_id' in info
+        assert 'os_version' in info
+        assert 'os_name' in info
+        assert 'pkg_format' in info
+
+
+# ====================== 4. Config File Generation ======================
 
 class TestGenerateConfigFile:
     def test_contains_all_required_variables(self, sample_params):
-        """The generated config must include all variables needed by init_cluster.sh."""
         content = generate_config_file(sample_params)
         required_vars = [
             'INIT_CONFIGFILE', 'MACHINE_LIST_FILE', 'ARRAY_NAME',
@@ -241,11 +312,9 @@ class TestGenerateConfigFile:
             assert f'export {var}=' in content, f'Missing required variable: {var}'
 
     def test_log_time_at_end(self, sample_params):
-        """log_time function MUST be at the end; deploycluster.sh truncates after it."""
         content = generate_config_file(sample_params)
         lines = content.strip().split('\n')
 
-        # Find position of export -f log_time
         log_time_idx = None
         for i, line in enumerate(lines):
             if line.strip() == 'export -f log_time':
@@ -254,24 +323,20 @@ class TestGenerateConfigFile:
 
         assert log_time_idx is not None, 'export -f log_time not found'
 
-        # All export KEY=VALUE lines must be before export -f log_time
         for i, line in enumerate(lines):
             if line.startswith('export ') and '=' in line and i > log_time_idx:
                 pytest.fail(f'Export line after log_time at line {i}: {line}')
 
     def test_user_params_override_defaults(self, sample_params):
-        """Web UI params should override built-in defaults."""
         content = generate_config_file(sample_params)
         assert 'export COORDINATOR_PORT="5432"' in content
         assert 'export ADMIN_USER="gpadmin"' in content
 
     def test_multi_node_generates_segment_hosts(self, multi_params):
-        """Multi-node config should include SEGMENT_HOSTS."""
         content = generate_config_file(multi_params)
         assert 'export SEGMENT_HOSTS="sdw1,sdw2"' in content
 
     def test_multi_node_auto_generates_hostnames(self, sample_params):
-        """When hostnames are empty, auto-generate sdw1, sdw2, etc."""
         sample_params['DEPLOY_TYPE'] = 'multi'
         sample_params['SEGMENT_IPS'] = '10.0.0.2,10.0.0.3,10.0.0.4'
         sample_params['SEGMENT_HOSTNAMES'] = ''
@@ -279,36 +344,31 @@ class TestGenerateConfigFile:
         assert 'export SEGMENT_HOSTS="sdw1,sdw2,sdw3"' in content
 
     def test_single_node_no_segment_hosts(self, sample_params):
-        """Single-node config should not have SEGMENT_HOSTS."""
         content = generate_config_file(sample_params)
         assert 'SEGMENT_HOSTS' not in content
 
     def test_skip_keys_not_exported(self, multi_params):
-        """SEGMENT_IPS, SEGMENT_HOSTNAMES, SEGMENT_COUNT should not be exported."""
         content = generate_config_file(multi_params)
         assert 'export SEGMENT_IPS=' not in content
         assert 'export SEGMENT_HOSTNAMES=' not in content
         assert 'export SEGMENT_COUNT=' not in content
 
     def test_empty_values_not_exported(self, sample_params):
-        """Parameters with empty values should be skipped."""
         sample_params['EMPTY_PARAM'] = ''
         content = generate_config_file(sample_params)
         assert 'EMPTY_PARAM' not in content
 
     def test_special_characters_escaped(self, sample_params):
-        """Double quotes in values should be escaped."""
         sample_params['ADMIN_USER_PASSWORD'] = 'pass"word'
         content = generate_config_file(sample_params)
         assert 'pass\\"word' in content
 
     def test_valid_bash_syntax(self, sample_params):
-        """Generated file must start with shebang and be valid structure."""
         content = generate_config_file(sample_params)
         assert content.startswith('#!/bin/bash\n')
 
 
-# ====================== 4. Hosts File Generation ======================
+# ====================== 5. Hosts File Generation ======================
 
 class TestGenerateHostsFile:
     def test_basic_structure(self, multi_params):
@@ -338,85 +398,51 @@ class TestGenerateHostsFile:
         assert '10.0.0.3 sdw2' in content
 
 
-# ====================== 5. Route Tests ======================
+# ====================== 6. Route Tests ======================
 
 class TestIndexRoute:
     def test_index_returns_200(self, client):
         resp = client.get('/')
         assert resp.status_code == 200
 
-    def test_index_contains_tabs(self, client):
+    def test_index_contains_wizard_steps(self, client):
         resp = client.get('/')
         html = resp.data.decode()
-        assert 'data-tab="connection"' in html
-        assert 'data-tab="config"' in html
-        assert 'data-tab="deploy"' in html
-
-    def test_index_tab_names(self, client):
-        """Tab names should match the designed workflow."""
-        resp = client.get('/')
-        html = resp.data.decode()
-        assert 'Coordinator' in html  # Tab 1
-        assert '集群配置' in html       # Tab 2
-        assert '执行部署' in html       # Tab 3
+        # Should have the 4 wizard steps
+        assert 'step-1' in html or 'step1' in html or 'Environment' in html or 'environment' in html
 
 
-class TestTestConnectionRoute:
-    def test_invalid_host_rejected(self, client):
-        resp = client.post('/test_connection', data={
-            'host': 'not a valid host!!!',
-            'port': '22',
-            'username': 'root',
-            'password': 'pass',
-        })
+class TestDetectOsRoute:
+    def test_detect_os_returns_json(self, client):
+        resp = client.get('/detect_os')
         data = json.loads(resp.data)
-        assert not data['success']
-        assert 'Invalid' in data['message']
-
-    def test_invalid_port_rejected(self, client):
-        resp = client.post('/test_connection', data={
-            'host': '192.168.1.1',
-            'port': '99999',
-            'username': 'root',
-            'password': 'pass',
-        })
-        data = json.loads(resp.data)
-        assert not data['success']
-        assert 'Invalid port' in data['message']
+        assert data['success']
+        assert 'os_family' in data
+        assert 'pkg_format' in data
 
 
-class TestValidateRpmPathRoute:
+class TestValidatePkgPathRoute:
     def test_empty_path_rejected(self, client):
-        resp = client.post('/validate_rpm_path', data={
-            'host': '192.168.1.1',
-            'port': '22',
-            'username': 'root',
-            'password': 'pass',
-            'rpm_path': '',
-        })
+        resp = client.post('/validate_pkg_path', data={'pkg_path': ''})
         data = json.loads(resp.data)
         assert not data['valid']
 
     def test_path_traversal_rejected(self, client):
-        resp = client.post('/validate_rpm_path', data={
-            'host': '192.168.1.1',
-            'port': '22',
-            'username': 'root',
-            'password': 'pass',
-            'rpm_path': '/root/../etc/shadow',
-        })
+        resp = client.post('/validate_pkg_path', data={'pkg_path': '/root/../etc/shadow'})
         data = json.loads(resp.data)
         assert not data['valid']
         assert 'Invalid' in data['message']
+
+    def test_nonexistent_file(self, client):
+        resp = client.post('/validate_pkg_path', data={'pkg_path': '/nonexistent/file.rpm'})
+        data = json.loads(resp.data)
+        assert not data['valid']
+        assert 'not found' in data['message'].lower()
 
 
 class TestSaveConfigRoute:
     def test_save_config_returns_json(self, client):
         resp = client.post('/save_config', data={
-            'host': '192.168.1.1',
-            'port': '22',
-            'username': 'root',
-            'password': 'pass',
             'deploy_type': 'single',
             'ADMIN_USER': 'gpadmin',
             'ADMIN_USER_PASSWORD': 'Test@123',
@@ -432,23 +458,13 @@ class TestSaveConfigRoute:
         assert data['success']
 
     def test_invalid_deploy_type_rejected(self, client):
-        resp = client.post('/save_config', data={
-            'host': '192.168.1.1',
-            'port': '22',
-            'username': 'root',
-            'password': 'pass',
-            'deploy_type': 'invalid_type',
-        })
+        resp = client.post('/save_config', data={'deploy_type': 'invalid_type'})
         data = json.loads(resp.data)
         assert not data['success']
         assert 'Invalid' in data['message']
 
     def test_invalid_segment_ip_rejected(self, client):
         resp = client.post('/save_config', data={
-            'host': '192.168.1.1',
-            'port': '22',
-            'username': 'root',
-            'password': 'pass',
             'deploy_type': 'multi',
             'SEGMENT_IP_0': '999.999.999.999',
             'SEGMENT_HOSTNAME_0': 'sdw1',
@@ -458,42 +474,42 @@ class TestSaveConfigRoute:
         assert 'Invalid segment IP' in data['message']
 
 
+class TestPreviewConfigRoute:
+    def test_preview_without_config(self, client):
+        resp = client.get('/preview_config')
+        data = json.loads(resp.data)
+        assert not data['success']
+
+    def test_preview_with_saved_config(self, client):
+        # First save config
+        client.post('/save_config', data={
+            'deploy_type': 'single',
+            'ADMIN_USER': 'gpadmin',
+            'ADMIN_USER_PASSWORD': 'Test@123',
+            'CLOUDBERRY_RPM': '/root/cloudberry-db-1.6.0.rpm',
+            'COORDINATOR_HOSTNAME': 'mdw',
+            'COORDINATOR_IP': '192.168.1.100',
+            'COORDINATOR_PORT': '5432',
+            'COORDINATOR_DIRECTORY': '/data0/coordinator',
+            'DATA_DIRECTORY': '/data0/primary',
+            'WITH_MIRROR': 'false',
+        })
+        resp = client.get('/preview_config')
+        data = json.loads(resp.data)
+        assert data['success']
+        assert 'os' in data
+        assert 'warnings' in data
+        assert 'params' in data
+        # Password should not be in preview
+        assert 'ADMIN_USER_PASSWORD' not in data['params']
+
+
 class TestDeployRoute:
-    def test_deploy_without_host_rejected(self, client):
-        """Deploy should fail if no remote host configured."""
-        # Reset REMOTE_CONFIG
-        REMOTE_CONFIG['host'] = ''
-        resp = client.post('/deploy', data={
-            'CLOUDBERRY_RPM': '/root/test.rpm',
-            'rpm_source': 'local',
-        })
+    def test_deploy_without_config_rejected(self, client):
+        resp = client.post('/deploy')
         data = json.loads(resp.data)
         assert not data['success']
-        assert 'configure' in data['message'].lower() or 'server' in data['message'].lower()
-
-    def test_deploy_without_rpm_rejected(self, client):
-        resp = client.post('/deploy', data={
-            'host': '192.168.1.1',
-            'port': '22',
-            'username': 'root',
-            'password': 'pass',
-            'CLOUDBERRY_RPM': '',
-        })
-        data = json.loads(resp.data)
-        assert not data['success']
-        assert 'RPM' in data['message']
-
-    def test_deploy_invalid_rpm_path_rejected(self, client):
-        resp = client.post('/deploy', data={
-            'host': '192.168.1.1',
-            'port': '22',
-            'username': 'root',
-            'password': 'pass',
-            'CLOUDBERRY_RPM': '../etc/shadow',
-            'rpm_source': 'local',
-        })
-        data = json.loads(resp.data)
-        assert not data['success']
+        assert 'configuration' in data['message'].lower() or 'config' in data['message'].lower()
 
 
 class TestDeploymentStatusRoute:
@@ -502,12 +518,7 @@ class TestDeploymentStatusRoute:
         data = json.loads(resp.data)
         assert 'running' in data
         assert 'success' in data
-
-    def test_deployment_logs_returns_json(self, client):
-        resp = client.get('/deployment_logs')
-        data = json.loads(resp.data)
-        assert 'logs' in data
-        assert 'running' in data
+        assert 'phase' in data
 
 
 class TestResetRoute:
@@ -522,14 +533,10 @@ class TestResetRoute:
         assert status['success'] is None
 
 
-# ====================== 6. Config Merge Priority ======================
+# ====================== 7. Config Merge Priority ======================
 
 class TestConfigMergePriority:
-    """Verify: built-in defaults < original config file < web UI params."""
-
     def test_defaults_used_when_no_file_and_no_param(self, sample_params, tmp_path):
-        """When a variable is not in the file or params, use built-in default."""
-        # Use empty config file
         empty = tmp_path / 'empty.sh'
         empty.write_text('')
 
@@ -538,13 +545,12 @@ class TestConfigMergePriority:
         cluster_deploy_web.CONFIG_FILE_PATH = str(empty)
         try:
             content = generate_config_file(sample_params)
-            assert 'export ARRAY_NAME="CBDB_SANDBOX"' in content  # default
-            assert 'export SEG_PREFIX="gpseg"' in content          # default
+            assert 'export ARRAY_NAME="CBDB_SANDBOX"' in content
+            assert 'export SEG_PREFIX="gpseg"' in content
         finally:
             cluster_deploy_web.CONFIG_FILE_PATH = orig
 
     def test_file_overrides_defaults(self, sample_params, tmp_path):
-        """Original config file values should override built-in defaults."""
         config = tmp_path / 'config.sh'
         config.write_text('export ARRAY_NAME="MY_CUSTOM_CLUSTER"\n')
 
@@ -558,7 +564,6 @@ class TestConfigMergePriority:
             cluster_deploy_web.CONFIG_FILE_PATH = orig
 
     def test_ui_params_override_file(self, tmp_path):
-        """Web UI params should override values from config file."""
         config = tmp_path / 'config.sh'
         config.write_text('export COORDINATOR_PORT="15432"\n')
 
@@ -566,10 +571,7 @@ class TestConfigMergePriority:
         orig = cluster_deploy_web.CONFIG_FILE_PATH
         cluster_deploy_web.CONFIG_FILE_PATH = str(config)
         try:
-            params = {
-                'COORDINATOR_PORT': '7777',
-                'DEPLOY_TYPE': 'single',
-            }
+            params = {'COORDINATOR_PORT': '7777', 'DEPLOY_TYPE': 'single'}
             content = generate_config_file(params)
             assert 'export COORDINATOR_PORT="7777"' in content
             assert '15432' not in content
@@ -577,17 +579,12 @@ class TestConfigMergePriority:
             cluster_deploy_web.CONFIG_FILE_PATH = orig
 
 
-# ====================== 7. Deploycluster.sh Compatibility ======================
+# ====================== 8. Deploycluster.sh Compatibility ======================
 
 class TestDeployclusterCompatibility:
-    """Simulate what deploycluster.sh does to the generated config file."""
-
     def test_truncation_preserves_all_params(self, sample_params):
-        """Simulate: sed -i '/^export -f log_time$/q' config.sh
-        All export params must survive the truncation."""
         content = generate_config_file(sample_params)
 
-        # Simulate sed truncation
         truncated_lines = []
         for line in content.split('\n'):
             truncated_lines.append(line)
@@ -596,7 +593,6 @@ class TestDeployclusterCompatibility:
 
         truncated = '\n'.join(truncated_lines)
 
-        # Verify all critical variables survived
         critical_vars = [
             'ADMIN_USER', 'CLOUDBERRY_RPM', 'COORDINATOR_HOSTNAME',
             'COORDINATOR_PORT', 'COORDINATOR_DIRECTORY', 'DATA_DIRECTORY',
@@ -608,9 +604,7 @@ class TestDeployclusterCompatibility:
                 f'{var} lost after deploycluster.sh truncation!'
 
     def test_init_cluster_variables_present(self, sample_params):
-        """init_cluster.sh sources the config - all its variables must exist."""
         content = generate_config_file(sample_params)
-        # Variables used in init_cluster.sh
         assert 'INIT_CONFIGFILE' in content
         assert 'MACHINE_LIST_FILE' in content
         assert 'COORDINATOR_HOSTNAME' in content

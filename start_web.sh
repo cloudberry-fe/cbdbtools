@@ -6,6 +6,9 @@ VARS_FILE="deploycluster_parameter.sh"
 source "${SCRIPT_DIR}/${VARS_FILE}"
 source "${SCRIPT_DIR}/common.sh"
 
+# Detect OS
+detect_os
+
 # Turn off firewalls
 log_time "Step 1: Turn off firewalls..."
 disable_firewall
@@ -16,12 +19,17 @@ pkill -f gunicorn || true
 
 # Step 2: Installing Software Dependencies
 log_time "Step 2: Installing Software Dependencies..."
-configure_yum_repo
+configure_repo
 
-# Install required packages
+# Install required packages based on OS
 log_time "Step 3: Install required packages..."
-yum install -y epel-release
-yum install -y python3 python3-pip openssl-devel openssl
+if [ "$OS_FAMILY" = "debian" ]; then
+    apt-get update
+    apt-get install -y python3 python3-pip python3-venv openssl
+else
+    yum install -y epel-release
+    yum install -y python3 python3-pip openssl-devel openssl
+fi
 
 # Configure SSHD
 configure_sshd
@@ -39,17 +47,11 @@ pip install --upgrade pip
 
 # Install required packages
 log_time "Installing required packages..."
-pip install flask gunicorn paramiko
+pip install flask gunicorn
 
 # Verify Flask installation
 if ! python3 -c "import flask" &>/dev/null; then
     log_time "Error: Flask installation failed"
-    exit 1
-fi
-
-# Verify paramiko installation
-if ! python3 -c "import paramiko" &>/dev/null; then
-    log_time "Error: paramiko installation failed"
     exit 1
 fi
 

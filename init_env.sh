@@ -108,7 +108,7 @@ log_time "Start env init setting on coordinator..."
 
 #Step 1: Installing Software Dependencies
 log_time "Step 1: Installing Software Dependencies..."
-configure_yum_repo
+configure_repo
 configure_timezone "${TIMEZONE:-Asia/Shanghai}"
 install_sshpass
 install_dependencies
