@@ -145,9 +145,9 @@ rm -f "/home/${ADMIN_USER}/.ssh/id_rsa"
 rm -f "/home/${ADMIN_USER}/.ssh/authorized_keys"
 rm -f "/home/${ADMIN_USER}/.ssh/known_hosts"
 
-# Configure SSH client to suppress host key warnings (trusted cluster environment)
+# Configure SSH client to suppress host key warnings for cluster hosts only
 cat > "/home/${ADMIN_USER}/.ssh/config" <<SSHEOF
-Host *
+Host ${COORDINATOR_HOSTNAME} ${COORDINATOR_IP} localhost
     StrictHostKeyChecking no
     LogLevel ERROR
 SSHEOF
@@ -180,6 +180,10 @@ if [ "$cluster_type" = "multi" ]; then
     awk '/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/ {print $2}' > "${working_dir}/segment_hosts.txt"
 
   config_hostsfile
+
+  # Extend SSH config to include segment hosts
+  seg_hosts=$(paste -sd' ' "${working_dir}/segment_hosts.txt")
+  sed -i "s/^Host .*/& ${seg_hosts}/" "/home/${ADMIN_USER}/.ssh/config"
 
   # Add segment hosts to known_hosts for root
   for i in $(cat "${working_dir}/segment_hosts.txt"); do

@@ -38,8 +38,8 @@ app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024 * 1024  # 2GB max upload
 CONFIG_FILE_PATH = os.path.join(SCRIPT_DIR, 'deploycluster_parameter.sh')
 HOSTS_FILE_PATH = os.path.join(SCRIPT_DIR, 'segmenthosts.conf')
 
-# Saved config params (server-side, shared across workers via global state)
-# This is the primary store; session is a secondary fallback
+# Saved config params (server-side, shared across threads within single worker process)
+# Requires --workers 1 in gunicorn; multiple workers would isolate this state
 SAVED_CONFIG = {
     'params': {},
 }
@@ -631,10 +631,9 @@ def preview_config():
 @app.route('/deploy', methods=['POST'])
 def deploy():
     """Start local deployment."""
-    global DEPLOYMENT_STATUS
-
-    if DEPLOYMENT_STATUS.get('running', False):
-        return jsonify({'success': False, 'message': 'Deployment already in progress'})
+    with DEPLOYMENT_LOCK:
+        if DEPLOYMENT_STATUS.get('running', False):
+            return jsonify({'success': False, 'message': 'Deployment already in progress'})
 
     config_params = session.get('deploy_params', {})
     if not config_params:
@@ -674,6 +673,9 @@ def deploy():
     log_file = os.path.join(SCRIPT_DIR, log_filename)
 
     with DEPLOYMENT_LOCK:
+        # Double-check under lock to prevent TOCTOU race
+        if DEPLOYMENT_STATUS.get('running', False):
+            return jsonify({'success': False, 'message': 'Deployment already in progress'})
         DEPLOYMENT_STATUS['running'] = True
         DEPLOYMENT_STATUS['success'] = None
         DEPLOYMENT_STATUS['log_content'] = ''
@@ -739,12 +741,10 @@ def stream_logs():
 @app.route('/reset', methods=['POST'])
 def reset():
     """Reset deployment status."""
-    global DEPLOYMENT_STATUS
-
     with DEPLOYMENT_LOCK:
         if DEPLOYMENT_STATUS.get('running', False):
             return jsonify({'success': False, 'message': 'Cannot reset while deployment is running'})
-        DEPLOYMENT_STATUS = {
+        DEPLOYMENT_STATUS.update({
             'running': False,
             'success': None,
             'log_content': '',
@@ -752,7 +752,7 @@ def reset():
             'log_file': None,
             'deploy_type': 'single',
             'phase': '',
-        }
+        })
 
     session.pop('deploy_params', None)
 

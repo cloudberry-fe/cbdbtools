@@ -13,9 +13,9 @@ detect_os
 log_time "Step 1: Turn off firewalls..."
 disable_firewall
 
-# Kill any existing gunicorn processes
+# Kill any existing CBDBTools gunicorn processes
 log_time "Killing any existing gunicorn processes..."
-pkill -f gunicorn || true
+pkill -f "gunicorn.*wsgi:app" || true
 
 # Step 2: Installing Software Dependencies
 log_time "Step 2: Installing Software Dependencies..."

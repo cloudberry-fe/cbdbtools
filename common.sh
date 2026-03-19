@@ -33,7 +33,7 @@ detect_os() {
             export PKG_MANAGER="apt"
             export PKG_FORMAT="deb"
             ;;
-        centos|rhel|ol|fedora)
+        centos|rhel|ol|rocky|almalinux|fedora)
             export OS_FAMILY="rhel"
             export PKG_FORMAT="rpm"
             local version_major

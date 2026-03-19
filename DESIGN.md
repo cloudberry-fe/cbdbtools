@@ -350,7 +350,8 @@ run.sh
 
 - SSH 支持密码和密钥两种认证方式
 - 密钥文件保存到 `/tmp`，权限 `0o600`
-- 密码仅存储在 Flask Session 中，不写入日志
+- 密码存储在 Flask Session 和服务端 `SAVED_CONFIG` 中，部署时写入 `deploycluster_parameter.sh` 配置文件（明文）
+- 数据库管理员密码使用 `ADMIN_USER_PASSWORD` 配置参数
 - 部署完成后集群内使用 SSH 密钥免密访问
 
 ### 6.3 系统安全变更
@@ -732,6 +733,7 @@ Coordinator (串行)
 | L4 | 同一时间只能运行一个部署 | 全局 `DEPLOYMENT_STATUS` + 单进程架构限制 |
 | L5 | deploycluster.sh 修改自身参数文件 | 副作用不明显，可能导致配置混乱 |
 | L6 | sshpass 源码包内嵌仓库 | 版本更新不方便 |
+| L7 | 密码明文写入 `deploycluster_parameter.sh` | 部署完成后应考虑清理或限制文件权限 |
 
 ### 12.2 改进建议
 
@@ -739,8 +741,10 @@ Coordinator (串行)
 |--------|------|------|
 | P0 | pg_hba.conf 安全加固 | 提供配置项控制访问范围，而非默认 trust all |
 | P1 | Shell 脚本测试 | 使用 bats 框架为 common.sh 添加单元测试 |
+| P1 | 多 worker 启动保护 | 添加运行时检查，workers > 1 时报错退出 |
 | P2 | 配置文件独立 | deploycluster.sh 不应运行时修改参数文件 |
 | P2 | 部署回滚能力 | 失败时自动清理已执行的步骤 |
+| P2 | 部署后清理敏感信息 | 清除 `deploycluster_parameter.sh` 中的密码字段 |
 | P3 | 国际化 | Web UI 支持中英文切换 |
 
 ---

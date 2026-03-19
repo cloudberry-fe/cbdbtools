@@ -106,7 +106,8 @@ fi
 
 # Set admin user password
 log_time "Setting database admin password..."
-su "${ADMIN_USER}" -l -c "export COORDINATOR_DATA_DIRECTORY=${COORDINATOR_DATA_DIRECTORY}; source ${CLOUDBERRY_BINARY_PATH}/${CLUSTER_ENV}; psql -d ${DATABASE_NAME} -c \"alter user ${ADMIN_USER} password 'Hashdata@123'\"" || \
+DB_PASSWORD="${ADMIN_USER_PASSWORD:-Hashdata@123}"
+su "${ADMIN_USER}" -l -c "export COORDINATOR_DATA_DIRECTORY=${COORDINATOR_DATA_DIRECTORY}; source ${CLOUDBERRY_BINARY_PATH}/${CLUSTER_ENV}; psql -d ${DATABASE_NAME} -c \"alter user ${ADMIN_USER} password '${DB_PASSWORD}'\"" || \
     log_time "Warning: Failed to set admin password."
 
 # Configure pg_hba.conf for remote access

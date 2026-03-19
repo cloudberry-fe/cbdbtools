@@ -42,9 +42,10 @@ rm -f "/home/${ADMIN_USER}/.ssh/id_rsa"
 rm -f "/home/${ADMIN_USER}/.ssh/authorized_keys"
 rm -f "/home/${ADMIN_USER}/.ssh/known_hosts"
 
-# Configure SSH client to suppress host key warnings (trusted cluster environment)
+# Configure SSH client to suppress host key warnings for cluster hosts
+cluster_hosts=$(awk '{print $2}' "${working_dir}/hostsfile" 2>/dev/null | paste -sd' ')
 cat > "/home/${ADMIN_USER}/.ssh/config" <<SSHEOF
-Host *
+Host ${cluster_hosts:-*} localhost
     StrictHostKeyChecking no
     LogLevel ERROR
 SSHEOF
