@@ -357,15 +357,6 @@ def execute_local_deployment():
     """Execute deployment locally in background thread."""
     global DEPLOYMENT_STATUS
 
-    with DEPLOYMENT_LOCK:
-        if DEPLOYMENT_STATUS['running']:
-            return
-        DEPLOYMENT_STATUS['running'] = True
-        DEPLOYMENT_STATUS['success'] = None
-        DEPLOYMENT_STATUS['log_content'] = ''
-        DEPLOYMENT_STATUS['start_time'] = time.time()
-        DEPLOYMENT_STATUS['phase'] = 'env_init'
-
     log_file = DEPLOYMENT_STATUS['log_file']
     deploy_type = DEPLOYMENT_STATUS.get('deploy_type', 'single')
 
@@ -683,9 +674,13 @@ def deploy():
     log_file = os.path.join(SCRIPT_DIR, log_filename)
 
     with DEPLOYMENT_LOCK:
+        DEPLOYMENT_STATUS['running'] = True
+        DEPLOYMENT_STATUS['success'] = None
+        DEPLOYMENT_STATUS['log_content'] = ''
+        DEPLOYMENT_STATUS['start_time'] = time.time()
+        DEPLOYMENT_STATUS['phase'] = 'env_init'
         DEPLOYMENT_STATUS['deploy_type'] = deploy_type
         DEPLOYMENT_STATUS['log_file'] = log_file
-        DEPLOYMENT_STATUS['phase'] = ''
 
     # Start deployment in background thread
     thread = threading.Thread(target=execute_local_deployment)

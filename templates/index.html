@@ -636,7 +636,7 @@ function endDeploy(success, msg) {
     } else if (success === false) {
         sb.className = 'status-bar fail'; sb.textContent = msg || 'Deployment Failed';
     } else {
-        sb.className = 'status-bar fail'; sb.textContent = msg || 'Deployment finished (check logs)';
+        sb.className = 'status-bar fail'; sb.textContent = msg || 'Deployment status unknown — check logs for details';
     }
 }
 
