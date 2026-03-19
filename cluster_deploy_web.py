@@ -1,547 +1,893 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+#!/usr/bin/env python3
+"""
+CBDB Cluster Deployment Web UI
+A web-based interface for deploying Cloudberry/Greenplum/HashData clusters
+Can run on any machine and connect to remote deployment servers via SSH
+"""
+
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response, session
 import os
 import re
-import subprocess
-import shutil
-from datetime import datetime
-import json
-import time
+import shlex
 import threading
+import time
+import json
+from datetime import datetime
 from werkzeug.utils import secure_filename
-import psutil
 
 app = Flask(__name__)
-app.secret_key = 'supersecretkey'
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', os.urandom(32))
+app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024 * 1024  # 2GB max upload
 
-# Configuration file paths
-PARAM_FILE = 'deploycluster_parameter.sh'
-HOSTS_FILE = 'segmenthosts.conf'
+# Path to the local config file
+CONFIG_FILE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'deploycluster_parameter.sh')
 
-# Deployment synchronization lock and status tracking
-DEPLOYMENT_LOCK = threading.RLock()
-DEPLOYMENT_STATUS = {
-    'running': False,
-    'log_file': None,
-    'start_time': None,
-    'pid': None,
-    'success': None,
-    'current_stage': 'idle',
-    'stage_progress': 0,
-    'total_stages': 0,
-    'completed_stages': 0
+
+def parse_config_file(config_path=None):
+    """Parse deploycluster_parameter.sh and return a dict of exported variables."""
+    if config_path is None:
+        config_path = CONFIG_FILE_PATH
+    config = {}
+    if not os.path.isfile(config_path):
+        return config
+    export_pattern = re.compile(r'^export\s+([A-Za-z_][A-Za-z0-9_]*)=["\']?(.*?)["\']?\s*$')
+    with open(config_path, 'r') as f:
+        for line in f:
+            line = line.strip()
+            m = export_pattern.match(line)
+            if m:
+                config[m.group(1)] = m.group(2)
+    return config
+
+# Remote server configuration
+REMOTE_CONFIG = {
+    'host': '',
+    'port': 22,
+    'username': 'root',
+    'password': '',
+    'key_file': '',
+    'deploy_path': '/opt/cbdbtools'
 }
 
-# Define deployment stages for progress tracking
-DEPLOYMENT_STAGES = [
-    {'key': 'preparing', 'name': 'Preparing', 'description': '准备部署环境', 'weight': 5},
-    {'key': 'ssh_setup', 'name': 'SSH Setup', 'description': '配置 SSH 密钥', 'weight': 10},
-    {'key': 'env_init_coordinator', 'name': 'Env Coordinator', 'description': '初始化 Coordinator 节点', 'weight': 25},
-    {'key': 'env_init_segments', 'name': 'Env Segments', 'description': '初始化 Segment 节点', 'weight': 25},
-    {'key': 'install_db', 'name': 'Install DB', 'description': '安装数据库软件', 'weight': 15},
-    {'key': 'init_cluster', 'name': 'Init Cluster', 'description': '初始化数据库集群', 'weight': 15},
-    {'key': 'verifying', 'name': 'Verifying', 'description': '验证部署结果', 'weight': 5}
-]
+# Deployment status
+DEPLOYMENT_STATUS = {
+    'running': False,
+    'success': None,
+    'log_content': '',
+    'start_time': None,
+    'remote_log_file': None,
+    'deploy_type': 'single'
+}
 
-# Read configuration parameters
-def read_parameters():
-    params = {}
-    if os.path.exists(PARAM_FILE):
-        with open(PARAM_FILE, 'r') as f:
-            content = f.read()
-            for line in content.split('\n'):
-                if line.startswith('export '):
-                    parts = line[7:].split('=', 1)
-                    if len(parts) == 2:
-                        key = parts[0].strip()
-                        value = parts[1].strip().strip('"\'')
-                        params[key] = value
-    return params
+DEPLOYMENT_LOCK = threading.RLock()
 
-# Save configuration parameters
-def save_parameters(params):
-    if os.path.exists(PARAM_FILE):
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        backup_file = f'{PARAM_FILE}.backup_{timestamp}'
-        shutil.copy2(PARAM_FILE, backup_file)
-        print(f'Parameter file backed up as: {backup_file}')
+# Input validation patterns
+IP_PATTERN = re.compile(r'^(\d{1,3}\.){3}\d{1,3}$')
+HOSTNAME_PATTERN = re.compile(r'^[a-zA-Z0-9][a-zA-Z0-9._-]{0,62}$')
+PORT_PATTERN = re.compile(r'^\d{1,5}$')
+PATH_PATTERN = re.compile(r'^/[a-zA-Z0-9_./-]+$')
 
-    with open('deploycluster_parameter.sh', 'r') as f:
-        content = f.read()
 
-    for key, value in params.items():
-        pattern = r'(export\s+' + key + r'\s*=\s*["\'])(.*?)(["\'])'
-        replacement = f'export {key}="{value}"'
-        content = re.sub(pattern, replacement, content)
+def validate_ip(ip):
+    """Validate IP address format"""
+    if not ip or not IP_PATTERN.match(ip):
+        return False
+    parts = ip.split('.')
+    return all(0 <= int(p) <= 255 for p in parts)
 
-    with open(PARAM_FILE, 'w') as f:
-        f.write(content)
 
-# Read host configuration
-def read_hosts():
-    hosts = {'coordinator': [], 'segments': []}
-    if os.path.exists(HOSTS_FILE):
-        with open(HOSTS_FILE, 'r') as f:
-            content = f.read()
-            coord_match = re.search(r'##Coordinator hosts\n([\d.]+)\s+([\w-]+)', content)
-            if coord_match:
-                hosts['coordinator'] = [coord_match.group(1), coord_match.group(2)]
+def validate_hostname(hostname):
+    """Validate hostname format"""
+    return bool(hostname and HOSTNAME_PATTERN.match(hostname))
 
-            segment_section = re.search(r'##Segment hosts\n((?:[\d.]+)\s+([\w-]+)\n?)+', content)
-            if segment_section:
-                segment_lines = re.findall(r'([\d.]+)\s+([\w-]+)', segment_section.group(0))
-                for ip, hostname in segment_lines:
-                    hosts['segments'].append([ip, hostname])
-    return hosts
 
-# Save host configuration to file
-def write_hosts_file(hosts):
-    if os.path.exists(HOSTS_FILE):
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        backup_file = f'{HOSTS_FILE}.backup_{timestamp}'
-        shutil.copy2(HOSTS_FILE, backup_file)
-        print(f'Hosts file backed up as: {backup_file}')
+def validate_port(port):
+    """Validate port number"""
+    try:
+        p = int(port)
+        return 1 <= p <= 65535
+    except (ValueError, TypeError):
+        return False
 
-    with open(HOSTS_FILE, 'w') as f:
-        f.write('##Define hosts used for Hashdata\n')
-        f.write('#Hashdata hosts begin\n')
-        f.write('##Coordinator hosts\n')
-        if hosts['coordinator']:
-            f.write(f"{hosts['coordinator'][0]} {hosts['coordinator'][1]}\n")
-        f.write('##Segment hosts\n')
-        for segment in hosts['segments']:
-            f.write(f"{segment[0]} {segment[1]}\n")
-        f.write('#Hashdata hosts end\n')
 
-# Function to check if there's a running deployment process
-def is_deployment_running():
-    with DEPLOYMENT_LOCK:
-        if not DEPLOYMENT_STATUS['running']:
-            return False
+def validate_path(path):
+    """Validate file path (basic safety check)"""
+    if not path:
+        return False
+    # Block path traversal
+    if '..' in path or '\0' in path:
+        return False
+    return PATH_PATTERN.match(path) is not None
 
-        try:
-            for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
-                try:
-                    cmdline = ' '.join(proc.info['cmdline'] or [])
-                    if 'deploycluster.sh' in cmdline or 'run.sh' in cmdline:
-                        return True
-                except (psutil.NoSuchProcess, psutil.AccessDenied):
-                    continue
 
-            if DEPLOYMENT_STATUS['log_file'] and os.path.exists(DEPLOYMENT_STATUS['log_file']):
-                mtime = os.path.getmtime(DEPLOYMENT_STATUS['log_file'])
-                if time.time() - mtime < 30:
-                    return True
+def get_remote_connection():
+    """Create SSH connection to remote server"""
+    import paramiko
 
-            DEPLOYMENT_STATUS['running'] = False
-            return False
+    if not REMOTE_CONFIG.get('host'):
+        raise ValueError("Remote host not configured")
 
-        except Exception:
-            DEPLOYMENT_STATUS['running'] = False
-            return False
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-# Function to analyze log and determine current stage
-def analyze_deployment_progress(log_content):
-    stage_keywords = {
-        'preparing': ['starting deployment', 'beginning', 'preparing', 'checking', 'detecting database type'],
-        'ssh_setup': ['ssh', 'key', 'ssh-keygen', 'ssh-copy-id'],
-        'env_init_coordinator': ['init_env.sh', 'coordinator', 'mdw', 'master', 'start env init setting', 'step 1:', 'installing software'],
-        'env_init_segments': ['init_env_segment', 'segment', 'sdw', 'segments'],
-        'install_db': ['install', 'rpm', 'yum', 'software'],
-        'init_cluster': ['init_cluster', 'gpinitsystem', 'initializing cluster'],
-        'verifying': ['verify', 'check', 'validate', 'complete', 'success', 'finished']
-    }
+    try:
+        connect_kwargs = {
+            'hostname': REMOTE_CONFIG['host'],
+            'port': int(REMOTE_CONFIG['port']),
+            'username': REMOTE_CONFIG['username'],
+            'timeout': 30,
+        }
 
-    log_lower = log_content.lower()
-    current_stage = 'preparing'
-    max_weight = 0
+        if REMOTE_CONFIG.get('key_file') and os.path.isfile(REMOTE_CONFIG['key_file']):
+            import paramiko
+            key = paramiko.RSAKey.from_private_key_file(REMOTE_CONFIG['key_file'])
+            connect_kwargs['pkey'] = key
+        else:
+            connect_kwargs['password'] = REMOTE_CONFIG.get('password', '')
 
-    # Special check for deployment completion
-    completion_markers = ['deployment completed', 'finished deploy', 'deploy complete', 'successfully completed']
-    if any(marker in log_lower for marker in completion_markers):
-        return 'verifying', 100, len(DEPLOYMENT_STAGES)
+        ssh.connect(**connect_kwargs)
+        return ssh
+    except Exception as e:
+        raise ConnectionError(f"SSH connection failed: {str(e)}")
 
-    for i, stage in enumerate(DEPLOYMENT_STAGES):
-        stage_key = stage['key']
-        keywords = stage_keywords.get(stage_key, [])
-        for keyword in keywords:
-            if keyword in log_lower:
-                current_stage = stage_key
-                max_weight = i
-                # Don't break, continue to see if later stages also match
 
-    # If we have some content but no specific matches, make some progress
-    if max_weight == 0 and len(log_content) > 500:
-        max_weight = 1
-        current_stage = 'env_init_coordinator'
-    if max_weight == 1 and len(log_content) > 2000:
-        max_weight = 2
-        current_stage = 'env_init_coordinator'
+def remote_exec(ssh, command, get_pty=False):
+    """Execute command on remote server"""
+    stdin, stdout, stderr = ssh.exec_command(command, get_pty=get_pty)
+    return stdin, stdout, stderr
 
-    completed_weight = sum(s['weight'] for s in DEPLOYMENT_STAGES[:max_weight])
-    total_weight = sum(s['weight'] for s in DEPLOYMENT_STAGES)
-    progress = int((completed_weight / total_weight) * 100) if total_weight > 0 else 0
 
-    return current_stage, progress, max_weight
+def check_remote_connection():
+    """Check if remote connection is working"""
+    try:
+        ssh = get_remote_connection()
+        stdin, stdout, stderr = remote_exec(ssh, 'echo "connected"')
+        result = stdout.read().decode().strip()
+        ssh.close()
+        return result == "connected"
+    except Exception:
+        return False
 
-# Start background deployment
-def start_background_deployment(cluster_type='single'):
+
+def execute_remote_deployment():
+    """Execute deployment on remote server in background thread"""
     global DEPLOYMENT_STATUS
 
     with DEPLOYMENT_LOCK:
         if DEPLOYMENT_STATUS['running']:
-            return False, "Deployment is already running. Please wait for it to complete."
-
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        log_file = os.path.abspath(f'deploy_cluster_{timestamp}.log')
+            return
 
         DEPLOYMENT_STATUS['running'] = True
-        DEPLOYMENT_STATUS['log_file'] = log_file
-        DEPLOYMENT_STATUS['start_time'] = time.time()
-        DEPLOYMENT_STATUS['pid'] = None
         DEPLOYMENT_STATUS['success'] = None
-        DEPLOYMENT_STATUS['current_stage'] = 'preparing'
-        DEPLOYMENT_STATUS['stage_progress'] = 0
-        DEPLOYMENT_STATUS['total_stages'] = len(DEPLOYMENT_STAGES)
-        DEPLOYMENT_STATUS['completed_stages'] = 0
+        DEPLOYMENT_STATUS['log_content'] = ''
+        DEPLOYMENT_STATUS['start_time'] = time.time()
+        DEPLOYMENT_STATUS['remote_log_file'] = f'/tmp/cbdb_deploy_{int(time.time())}.log'
+
+    log_file = DEPLOYMENT_STATUS['remote_log_file']
 
     try:
-        process = subprocess.Popen(
-            ['sh', 'run.sh', cluster_type],
-            stdout=open(log_file, 'w'),
-            stderr=subprocess.STDOUT,
-            preexec_fn=os.setsid
-        )
+        ssh = get_remote_connection()
 
-        DEPLOYMENT_STATUS['pid'] = process.pid
+        deploy_type = DEPLOYMENT_STATUS.get('deploy_type', 'single')
+        # Sanitize deploy_type to prevent command injection
+        if deploy_type not in ('single', 'multi'):
+            deploy_type = 'single'
 
-        def monitor_process(process, log_file):
-            last_update_time = time.time()
+        deploy_path = shlex.quote(REMOTE_CONFIG['deploy_path'])
+        safe_log = shlex.quote(log_file)
 
-            while process.poll() is None:
-                time.sleep(2)
-                if os.path.exists(log_file):
-                    try:
-                        with open(log_file, 'r') as f:
-                            log_content = f.read()
-                            current_stage, progress, completed_count = analyze_deployment_progress(log_content)
-                            with DEPLOYMENT_LOCK:
-                                DEPLOYMENT_STATUS['current_stage'] = current_stage
-                                DEPLOYMENT_STATUS['stage_progress'] = progress
-                                DEPLOYMENT_STATUS['completed_stages'] = completed_count
-                    except Exception:
-                        pass
+        deploy_cmd = f'cd {deploy_path} && sh deploycluster.sh {deploy_type} >> {safe_log} 2>&1'
 
-            with DEPLOYMENT_LOCK:
-                DEPLOYMENT_STATUS['running'] = False
-                DEPLOYMENT_STATUS['stage_progress'] = 100
-                DEPLOYMENT_STATUS['completed_stages'] = len(DEPLOYMENT_STAGES)
-                try:
-                    with open(log_file, 'r') as f:
-                        log_content = f.read()
-                        log_lower = log_content.lower()
-                        DEPLOYMENT_STATUS['success'] = (
-                            'deployment completed successfully' in log_lower or
-                            'finished deploy cluster' in log_lower or
-                            'deployment complete' in log_lower or
-                            'deploy cluster complete' in log_lower or
-                            'successfully' in log_lower and 'complete' in log_lower
-                        )
-                        # Default to success if process exited with 0 and no obvious error
-                        if DEPLOYMENT_STATUS['success'] is None:
-                            DEPLOYMENT_STATUS['success'] = process.returncode == 0 and 'error' not in log_lower[-5000:]
-                except Exception as e:
-                    print(f"Error checking deployment success: {e}")
-                    DEPLOYMENT_STATUS['success'] = process.returncode == 0
+        log_msg = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Starting deployment on {REMOTE_CONFIG['host']}...\n"
+        remote_exec(ssh, f'echo {shlex.quote(log_msg)} >> {safe_log}')
 
-        monitor_thread = threading.Thread(target=monitor_process, args=(process, log_file))
-        monitor_thread.daemon = True
-        monitor_thread.start()
+        # Run deployment in background
+        remote_exec(ssh, f'nohup sh -c {shlex.quote(deploy_cmd)} > /dev/null 2>&1 &')
 
-        return True, f"Deployment started successfully. Log file: {log_file}"
+        # Monitor deployment
+        monitor_deployment(ssh, log_file)
+
+        ssh.close()
 
     except Exception as e:
+        with DEPLOYMENT_LOCK:
+            DEPLOYMENT_STATUS['log_content'] += f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Error: {str(e)}\n"
+            DEPLOYMENT_STATUS['success'] = False
+    finally:
         with DEPLOYMENT_LOCK:
             DEPLOYMENT_STATUS['running'] = False
-        return False, str(e)
 
-# Function to get deployment log content
-def get_deployment_log(log_file=None, lines=200):
-    if not log_file:
-        with DEPLOYMENT_LOCK:
-            log_file = DEPLOYMENT_STATUS['log_file']
 
-    if not log_file:
-        return "No log file specified."
+def monitor_deployment(ssh, log_file):
+    """Monitor deployment progress"""
+    global DEPLOYMENT_STATUS
 
-    if not os.path.exists(log_file):
-        return f"Log file not found: {log_file}"
+    check_count = 0
+    max_checks = 3600  # 1 hour max
+    safe_log = shlex.quote(log_file)
 
-    try:
-        with open(log_file, 'r') as f:
-            lines_content = f.readlines()
-            if len(lines_content) > lines:
-                lines_content = lines_content[-lines:]
-            return ''.join(lines_content)
-    except Exception as e:
-        return f"Error reading log file: {str(e)}"
+    while check_count < max_checks:
+        check_count += 1
+
+        try:
+            # Check if deployment process is still running
+            stdin, stdout, stderr = remote_exec(ssh, 'pgrep -f "deploycluster\\.sh" || true')
+            process_output = stdout.read().decode().strip()
+
+            # Get log content
+            stdin2, stdout2, stderr2 = remote_exec(ssh, f'cat {safe_log} 2>/dev/null || echo ""')
+            log_content = stdout2.read().decode()
+
+            with DEPLOYMENT_LOCK:
+                DEPLOYMENT_STATUS['log_content'] = log_content
+
+            # If no process running, deployment finished
+            if not process_output:
+                time.sleep(2)  # Brief wait for final log writes
+
+                # Read final log content
+                stdin3, stdout3, stderr3 = remote_exec(ssh, f'cat {safe_log} 2>/dev/null || echo ""')
+                log_content = stdout3.read().decode()
+
+                with DEPLOYMENT_LOCK:
+                    DEPLOYMENT_STATUS['log_content'] = log_content
+                    if 'Finished deploy' in log_content or 'gpinitsystem completed' in log_content:
+                        DEPLOYMENT_STATUS['success'] = True
+                    elif 'Error' in log_content or 'FAILED' in log_content:
+                        DEPLOYMENT_STATUS['success'] = False
+                    else:
+                        DEPLOYMENT_STATUS['success'] = True
+
+                break
+
+            time.sleep(2)
+
+        except Exception as e:
+            with DEPLOYMENT_LOCK:
+                DEPLOYMENT_STATUS['log_content'] += f"\nError monitoring: {str(e)}\n"
+            break
+
+    with DEPLOYMENT_LOCK:
+        DEPLOYMENT_STATUS['running'] = False
+
+
+# ==================== Flask Routes ====================
+
+def parse_segment_hosts(hosts_path=None):
+    """Parse segmenthosts.conf and return list of (ip, hostname) tuples for segment hosts."""
+    if hosts_path is None:
+        hosts_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'segmenthosts.conf')
+    segments = []
+    if not os.path.isfile(hosts_path):
+        return segments
+    in_segment_section = False
+    with open(hosts_path, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if line.startswith('##Segment hosts'):
+                in_segment_section = True
+                continue
+            if line.startswith('#') or not line:
+                if in_segment_section and line.startswith('#'):
+                    break
+                continue
+            if in_segment_section:
+                parts = line.split()
+                if len(parts) >= 2:
+                    segments.append((parts[0], parts[1]))
+                elif len(parts) == 1:
+                    segments.append((parts[0], ''))
+    return segments
+
 
 @app.route('/')
 def index():
-    params = read_parameters()
-    hosts = read_hosts()
-    deployment_info = {
-        'mode': params.get('DEPLOY_TYPE', 'single'),
-        'coordinator': hosts.get('coordinator', []),
-        'segment_hosts': hosts.get('segments', []),
-        'running': False,
-        'log_file': None,
-        'start_time': None
+    """Main page"""
+    file_config = parse_config_file()
+    segment_hosts = parse_segment_hosts()
+    return render_template('index.html',
+                           remote_config=REMOTE_CONFIG,
+                           deployment_status=DEPLOYMENT_STATUS,
+                           file_config=file_config,
+                           segment_hosts=segment_hosts)
+
+
+@app.route('/test_connection', methods=['POST'])
+def test_connection():
+    """Test SSH connection to remote server"""
+    global REMOTE_CONFIG
+
+    host = request.form.get('host', '').strip()
+    port = request.form.get('port', '22').strip()
+
+    if not validate_ip(host) and not validate_hostname(host):
+        return jsonify({'success': False, 'message': 'Invalid host address'})
+    if not validate_port(port):
+        return jsonify({'success': False, 'message': 'Invalid port number'})
+
+    REMOTE_CONFIG['host'] = host
+    REMOTE_CONFIG['port'] = int(port)
+    REMOTE_CONFIG['username'] = request.form.get('username', 'root').strip()
+    REMOTE_CONFIG['password'] = request.form.get('password', '')
+    REMOTE_CONFIG['key_file'] = request.form.get('key_file', '').strip()
+
+    # Handle key file upload
+    key_file = request.files.get('key_file_upload')
+    if key_file and key_file.filename:
+        key_path = os.path.join('/tmp', secure_filename(key_file.filename))
+        key_file.save(key_path)
+        os.chmod(key_path, 0o600)
+        REMOTE_CONFIG['key_file'] = key_path
+
+    try:
+        if check_remote_connection():
+            return jsonify({'success': True, 'message': 'Connection successful!'})
+        else:
+            return jsonify({'success': False, 'message': 'Connection failed'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+
+@app.route('/validate_rpm_path', methods=['POST'])
+def validate_rpm_path():
+    """Validate RPM file path on Coordinator server"""
+    global REMOTE_CONFIG
+
+    REMOTE_CONFIG['host'] = request.form.get('host', '').strip()
+    REMOTE_CONFIG['port'] = int(request.form.get('port', 22))
+    REMOTE_CONFIG['username'] = request.form.get('username', 'root').strip()
+    REMOTE_CONFIG['password'] = request.form.get('password', '')
+
+    key_file_text = request.form.get('key_file', '').strip()
+    if key_file_text:
+        REMOTE_CONFIG['key_file'] = key_file_text
+
+    # Handle key file upload
+    key_file = request.files.get('key_file_upload')
+    if key_file and key_file.filename:
+        key_path = os.path.join('/tmp', secure_filename(key_file.filename))
+        key_file.save(key_path)
+        os.chmod(key_path, 0o600)
+        REMOTE_CONFIG['key_file'] = key_path
+
+    rpm_path = request.form.get('rpm_path', '').strip()
+
+    if not rpm_path:
+        return jsonify({'valid': False, 'message': 'Please enter RPM path'})
+
+    if not validate_path(rpm_path):
+        return jsonify({'valid': False, 'message': 'Invalid path format'})
+
+    try:
+        ssh = get_remote_connection()
+        safe_path = shlex.quote(rpm_path)
+
+        stdin, stdout, stderr = remote_exec(ssh, f'test -f {safe_path} && echo "exists"')
+        result = stdout.read().decode().strip()
+
+        if result == 'exists':
+            stdin, stdout, stderr = remote_exec(ssh, f'ls -lh {safe_path} 2>/dev/null')
+            file_info = stdout.read().decode().strip()
+
+            stdin, stdout, stderr = remote_exec(ssh, f'stat -c %s {safe_path} 2>/dev/null')
+            file_size = stdout.read().decode().strip()
+
+            ssh.close()
+
+            return jsonify({
+                'valid': True,
+                'message': 'File exists',
+                'file_info': file_info,
+                'file_size': file_size
+            })
+        else:
+            ssh.close()
+            return jsonify({'valid': False, 'message': f'File not found: {rpm_path}'})
+
+    except Exception as e:
+        return jsonify({'valid': False, 'message': f'Validation failed: {str(e)}'})
+
+
+@app.route('/save_config', methods=['POST'])
+def save_config():
+    """Save deployment configuration"""
+    global REMOTE_CONFIG
+
+    REMOTE_CONFIG['host'] = request.form.get('host', '').strip()
+    REMOTE_CONFIG['port'] = int(request.form.get('port', 22))
+    REMOTE_CONFIG['username'] = request.form.get('username', 'root').strip()
+    REMOTE_CONFIG['password'] = request.form.get('password', '')
+    REMOTE_CONFIG['key_file'] = request.form.get('key_file', '').strip()
+
+    deploy_type = request.form.get('deploy_type', 'single')
+    if deploy_type not in ('single', 'multi'):
+        return jsonify({'success': False, 'message': 'Invalid deploy type'})
+
+    session['deploy_type'] = deploy_type
+
+    # Collect segment hosts for multi-node deployment
+    segment_ips = []
+    segment_hostnames = []
+
+    if deploy_type == 'multi':
+        for key, value in request.form.items():
+            if key.startswith('SEGMENT_IP_'):
+                idx = key.replace('SEGMENT_IP_', '')
+                ip = value.strip()
+                hostname = request.form.get(f'SEGMENT_HOSTNAME_{idx}', '').strip()
+                if ip:
+                    if not validate_ip(ip):
+                        return jsonify({'success': False, 'message': f'Invalid segment IP: {ip}'})
+                    if hostname and not validate_hostname(hostname):
+                        return jsonify({'success': False, 'message': f'Invalid hostname: {hostname}'})
+                    segment_ips.append(ip)
+                    segment_hostnames.append(hostname or f'sdw{int(idx) + 1}')
+
+    # Save deployment params
+    deploy_params = {
+        'ADMIN_USER': request.form.get('ADMIN_USER', 'gpadmin').strip(),
+        'ADMIN_USER_PASSWORD': request.form.get('ADMIN_USER_PASSWORD', ''),
+        'CLOUDBERRY_RPM': request.form.get('CLOUDBERRY_RPM', '').strip(),
+        'COORDINATOR_HOSTNAME': request.form.get('COORDINATOR_HOSTNAME', 'mdw').strip(),
+        'COORDINATOR_IP': request.form.get('COORDINATOR_IP', '').strip(),
+        'COORDINATOR_PORT': request.form.get('COORDINATOR_PORT', '5432').strip(),
+        'COORDINATOR_DIRECTORY': request.form.get('COORDINATOR_DIRECTORY', '/data0/database/coordinator').strip(),
+        'DATA_DIRECTORY': request.form.get('DATA_DIRECTORY', '/data0/database/primary').strip(),
+        'DEPLOY_TYPE': deploy_type,
+        'WITH_MIRROR': request.form.get('WITH_MIRROR', 'false'),
     }
 
-    with DEPLOYMENT_LOCK:
-        deployment_info['running'] = DEPLOYMENT_STATUS['running']
-        deployment_info['log_file'] = DEPLOYMENT_STATUS['log_file']
-        deployment_info['start_time'] = DEPLOYMENT_STATUS['start_time']
+    if deploy_type == 'multi' and segment_ips:
+        deploy_params['SEGMENT_IPS'] = ','.join(segment_ips)
+        deploy_params['SEGMENT_HOSTNAMES'] = ','.join(segment_hostnames)
+        deploy_params['SEGMENT_COUNT'] = str(len(segment_ips))
+        deploy_params['SEGMENT_ACCESS_METHOD'] = request.form.get('SEGMENT_ACCESS_METHOD', 'password')
+        deploy_params['SEGMENT_ACCESS_USER'] = request.form.get('SEGMENT_ACCESS_USER', 'root').strip()
+        deploy_params['SEGMENT_ACCESS_PASSWORD'] = request.form.get('SEGMENT_ACCESS_PASSWORD', '')
+        deploy_params['SEGMENT_ACCESS_KEYFILE'] = request.form.get('SEGMENT_ACCESS_KEYFILE', '').strip()
 
-    return render_template('index.html', params=params, hosts=hosts, deployment_info=deployment_info)
+    session['deploy_params'] = deploy_params
+    return jsonify({'success': True, 'message': 'Configuration saved!'})
 
-@app.route('/save', methods=['POST'])
-def save():
+
+@app.route('/upload_files', methods=['POST'])
+def upload_files():
+    """Upload RPM and key files to remote server"""
+    global REMOTE_CONFIG
+
+    host = request.form.get('host') or REMOTE_CONFIG.get('host')
+    port = int(request.form.get('port') or REMOTE_CONFIG.get('port', 22))
+    username = request.form.get('username') or REMOTE_CONFIG.get('username', 'root')
+    password = request.form.get('password') or REMOTE_CONFIG.get('password', '')
+    key_file = request.form.get('key_file') or REMOTE_CONFIG.get('key_file', '')
+
+    REMOTE_CONFIG['host'] = host
+    REMOTE_CONFIG['port'] = port
+    REMOTE_CONFIG['username'] = username
+    REMOTE_CONFIG['password'] = password
+    REMOTE_CONFIG['key_file'] = key_file
+
+    rpm_source = request.form.get('rpm_source', 'local')
+    files_uploaded = []
+    upload_errors = []
+
+    if 'deploy_params' not in session:
+        session['deploy_params'] = {}
+
     try:
-        params = request.form.to_dict()
-        save_parameters(params)
-        hosts = {
-            'coordinator': [request.form.get('coord_ip'), request.form.get('coord_hostname')],
-            'segments': []
-        }
-        segment_count = int(request.form.get('segment_count', 0))
-        for i in range(segment_count):
-            ip = request.form.get(f'segment_ip_{i}')
-            hostname = request.form.get(f'segment_hostname_{i}')
-            if ip and hostname:
-                hosts['segments'].append([ip, hostname])
-        write_hosts_file(hosts)
-        flash('Configuration saved successfully!')
-        return redirect(url_for('index'))
+        ssh = get_remote_connection()
+
+        if rpm_source == 'upload':
+            rpm_file = request.files.get('rpm_file')
+            if rpm_file and rpm_file.filename:
+                filename = secure_filename(rpm_file.filename)
+                local_path = os.path.join('/tmp', filename)
+                rpm_file.save(local_path)
+
+                upload_dir = request.form.get('RPM_UPLOAD_PATH', '/root/').strip()
+                if not validate_path(upload_dir.rstrip('/')):
+                    ssh.close()
+                    return jsonify({'success': False, 'message': 'Invalid upload path'})
+
+                if upload_dir.endswith('/'):
+                    remote_path = upload_dir + filename
+                else:
+                    remote_path = upload_dir
+
+                sftp = ssh.open_sftp()
+                sftp.put(local_path, remote_path)
+                sftp.close()
+
+                files_uploaded.append(f'RPM: {remote_path}')
+                session['deploy_params']['CLOUDBERRY_RPM'] = remote_path
+
+                os.remove(local_path)
+            else:
+                upload_errors.append('No RPM file selected')
+        else:
+            rpm_path = request.form.get('CLOUDBERRY_RPM', '').strip()
+            if rpm_path:
+                session['deploy_params']['CLOUDBERRY_RPM'] = rpm_path
+                files_uploaded.append(f'RPM (local): {rpm_path}')
+
+        # Handle SSH key file for coordinator access
+        key_file_upload = request.files.get('key_file_upload')
+        if key_file_upload and key_file_upload.filename:
+            key_path = os.path.join('/tmp', secure_filename(key_file_upload.filename))
+            key_file_upload.save(key_path)
+            os.chmod(key_path, 0o600)
+            files_uploaded.append(f'SSH key: {key_path}')
+
+        # Handle Segment access key file
+        segment_keyfile = request.files.get('segment_keyfile_upload')
+        if segment_keyfile and segment_keyfile.filename:
+            segment_key_path = os.path.join('/tmp', 'segment_' + secure_filename(segment_keyfile.filename))
+            segment_keyfile.save(segment_key_path)
+            os.chmod(segment_key_path, 0o600)
+
+            remote_segment_key = '/root/segment_keyfile'
+            sftp = ssh.open_sftp()
+            sftp.put(segment_key_path, remote_segment_key)
+            sftp.close()
+
+            files_uploaded.append(f'Segment key: {remote_segment_key}')
+            session['deploy_params']['SEGMENT_ACCESS_KEYFILE'] = remote_segment_key
+
+        ssh.close()
+
+        if upload_errors:
+            return jsonify({
+                'success': False,
+                'message': '; '.join(upload_errors),
+                'uploaded': files_uploaded
+            })
+
+        return jsonify({
+            'success': True,
+            'message': 'Files processed successfully',
+            'uploaded': files_uploaded
+        })
+
     except Exception as e:
-        flash(f'Error saving configuration: {str(e)}')
-        return redirect(url_for('index'))
+        return jsonify({'success': False, 'message': str(e)})
+
 
 @app.route('/deploy', methods=['POST'])
 def deploy():
-    if is_deployment_running():
-        return jsonify({
-            'success': False,
-            'message': 'Deployment is already running. Please wait for it to complete or check the logs for progress.'
-        })
+    """Start deployment on remote server"""
+    global DEPLOYMENT_STATUS, REMOTE_CONFIG
 
-    params = read_parameters()
-    deploy_type = params.get('DEPLOY_TYPE', 'single')
+    host = request.form.get('host') or REMOTE_CONFIG.get('host')
+    port = int(request.form.get('port') or REMOTE_CONFIG.get('port', 22))
+    username = request.form.get('username') or REMOTE_CONFIG.get('username', 'root')
+    password = request.form.get('password') or REMOTE_CONFIG.get('password', '')
+    key_file = request.form.get('key_file') or REMOTE_CONFIG.get('key_file', '')
 
-    success, message = start_background_deployment(deploy_type)
+    # Handle key file upload
+    key_file_upload = request.files.get('key_file_upload')
+    if key_file_upload and key_file_upload.filename:
+        key_path = os.path.join('/tmp', secure_filename(key_file_upload.filename))
+        key_file_upload.save(key_path)
+        os.chmod(key_path, 0o600)
+        key_file = key_path
 
-    if success:
-        log_file = message.split(': ')[-1] if ': ' in message else ''
+    REMOTE_CONFIG['host'] = host
+    REMOTE_CONFIG['port'] = port
+    REMOTE_CONFIG['username'] = username
+    REMOTE_CONFIG['password'] = password
+    REMOTE_CONFIG['key_file'] = key_file
+
+    if not host:
+        return jsonify({'success': False, 'message': 'Please configure remote server first'})
+
+    if DEPLOYMENT_STATUS.get('running', False):
+        return jsonify({'success': False, 'message': 'Deployment already in progress'})
+
+    rpm_source = request.form.get('rpm_source', 'local')
+    rpm_path = request.form.get('CLOUDBERRY_RPM', '').strip()
+
+    if not rpm_path:
+        return jsonify({'success': False, 'message': 'Please specify RPM path'})
+
+    if not validate_path(rpm_path):
+        return jsonify({'success': False, 'message': 'Invalid RPM path format'})
+
+    # Verify local file exists on Coordinator
+    if rpm_source != 'upload':
+        try:
+            ssh = get_remote_connection()
+            safe_path = shlex.quote(rpm_path)
+            stdin, stdout, stderr = remote_exec(ssh, f'test -f {safe_path} && echo "exists"')
+            result = stdout.read().decode().strip()
+            ssh.close()
+            if result != 'exists':
+                return jsonify({'success': False, 'message': f'RPM file not found: {rpm_path}'})
+        except Exception as e:
+            return jsonify({'success': False, 'message': f'RPM validation failed: {str(e)}'})
+
+    try:
+        ssh = get_remote_connection()
+        deploy_path = REMOTE_CONFIG['deploy_path']
+        safe_deploy_path = shlex.quote(deploy_path)
+
+        remote_exec(ssh, f'mkdir -p {safe_deploy_path}')
+
+        # Upload deployment scripts
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        scripts = [
+            'deploycluster.sh',
+            'deploycluster_parameter.sh',
+            'common.sh',
+            'init_env.sh',
+            'init_cluster.sh',
+            'init_env_segment.sh',
+            'run.sh',
+            'multissh.sh',
+            'multiscp.sh',
+            'segmenthosts.conf',
+            'sshpass-1.10.tar.gz',
+        ]
+
+        sftp = ssh.open_sftp()
+        for script in scripts:
+            local_path = os.path.join(script_dir, script)
+            if os.path.exists(local_path):
+                remote_path = f'{deploy_path}/{script}'
+                sftp.put(local_path, remote_path)
+        sftp.close()
+
+        # Get config from session or form
+        config_params = session.get('deploy_params', {})
+
+        if not config_params:
+            deploy_type = request.form.get('deploy_type', 'single')
+            if deploy_type not in ('single', 'multi'):
+                deploy_type = 'single'
+
+            config_params = {
+                'ADMIN_USER': request.form.get('ADMIN_USER', 'gpadmin').strip(),
+                'ADMIN_USER_PASSWORD': request.form.get('ADMIN_USER_PASSWORD', ''),
+                'CLOUDBERRY_RPM': rpm_path,
+                'COORDINATOR_HOSTNAME': request.form.get('COORDINATOR_HOSTNAME', 'mdw').strip(),
+                'COORDINATOR_IP': request.form.get('COORDINATOR_IP', '').strip(),
+                'COORDINATOR_PORT': request.form.get('COORDINATOR_PORT', '5432').strip(),
+                'COORDINATOR_DIRECTORY': request.form.get('COORDINATOR_DIRECTORY', '/data0/database/coordinator').strip(),
+                'DATA_DIRECTORY': request.form.get('DATA_DIRECTORY', '/data0/database/primary').strip(),
+                'DEPLOY_TYPE': deploy_type,
+                'WITH_MIRROR': request.form.get('WITH_MIRROR', 'false'),
+            }
+
+            if deploy_type == 'multi':
+                segment_ips = []
+                segment_hostnames = []
+                for key, value in request.form.items():
+                    if key.startswith('SEGMENT_IP_'):
+                        idx = key.replace('SEGMENT_IP_', '')
+                        ip = value.strip()
+                        hostname = request.form.get(f'SEGMENT_HOSTNAME_{idx}', '').strip()
+                        if ip:
+                            segment_ips.append(ip)
+                            segment_hostnames.append(hostname or f'sdw{int(idx) + 1}')
+                if segment_ips:
+                    config_params['SEGMENT_IPS'] = ','.join(segment_ips)
+                    config_params['SEGMENT_HOSTNAMES'] = ','.join(segment_hostnames)
+                    config_params['SEGMENT_COUNT'] = str(len(segment_ips))
+
+                config_params['SEGMENT_ACCESS_METHOD'] = request.form.get('SEGMENT_ACCESS_METHOD', 'password')
+                config_params['SEGMENT_ACCESS_USER'] = request.form.get('SEGMENT_ACCESS_USER', 'root').strip()
+                config_params['SEGMENT_ACCESS_PASSWORD'] = request.form.get('SEGMENT_ACCESS_PASSWORD', '')
+                config_params['SEGMENT_ACCESS_KEYFILE'] = request.form.get('SEGMENT_ACCESS_KEYFILE', '').strip()
+        else:
+            config_params['CLOUDBERRY_RPM'] = rpm_path
+
+        DEPLOYMENT_STATUS['deploy_type'] = config_params.get('DEPLOY_TYPE', 'single')
+        DEPLOYMENT_STATUS['deploy_params'] = config_params
+
+        config_content = generate_config_file(config_params)
+        remote_config_path = f'{deploy_path}/deploycluster_parameter.sh'
+
+        sftp = ssh.open_sftp()
+        with sftp.file(remote_config_path, 'w') as remote_file:
+            remote_file.write(config_content)
+
+        # Upload hosts file if multi-node
+        if config_params.get('DEPLOY_TYPE') == 'multi':
+            hosts_content = generate_hosts_file(config_params)
+            remote_hosts_path = f'{deploy_path}/segmenthosts.conf'
+            with sftp.file(remote_hosts_path, 'w') as remote_file:
+                remote_file.write(hosts_content)
+
+        sftp.close()
+        ssh.close()
+
+        # Start deployment in background thread
+        thread = threading.Thread(target=execute_remote_deployment)
+        thread.daemon = True
+        thread.start()
+
         return jsonify({
             'success': True,
-            'message': message,
-            'log_file': log_file
+            'log_file': DEPLOYMENT_STATUS.get('remote_log_file', '/tmp/cbdb_deploy.log')
         })
-    else:
-        return jsonify({
-            'success': False,
-            'message': message
-        })
+
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+
+def generate_config_file(params):
+    """Generate configuration file content"""
+    # Read the original config file to preserve defaults for variables not set by the web UI
+    original_config = parse_config_file()
+
+    # Defaults for internal variables required by init_cluster.sh and other scripts
+    defaults = {
+        'INIT_CONFIGFILE': '/tmp/gpinitsystem_config',
+        'MACHINE_LIST_FILE': '/tmp/hostfile_gpinitsystem',
+        'ARRAY_NAME': 'CBDB_SANDBOX',
+        'SEG_PREFIX': 'gpseg',
+        'PORT_BASE': '6000',
+        'TRUSTED_SHELL': 'ssh',
+        'CHECK_POINT_SEGMENTS': '8',
+        'ENCODING': 'UNICODE',
+        'DATABASE_NAME': 'gpadmin',
+        'MIRROR_PORT_BASE': '7000',
+        'MIRROR_DATA_DIRECTORY': '/data0/database/mirror /data0/database/mirror',
+        'INSTALL_DB_SOFTWARE': 'true',
+        'INIT_ENV_ONLY': 'false',
+        'WITH_STANDBY': 'false',
+        'MAUNAL_YUM_REPO': 'false',
+        'TIMEZONE': 'Asia/Shanghai',
+    }
+
+    # Merge: defaults < original config file < web UI params
+    merged = {}
+    merged.update(defaults)
+    merged.update(original_config)
+    merged.update({k: v for k, v in params.items() if v})
+
+    lines = [
+        '#!/bin/bash',
+        '# Auto-generated configuration file',
+        f'# Generated at: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}',
+        '',
+    ]
+
+    # Keys that should not be exported directly
+    skip_keys = {'SEGMENT_IPS', 'SEGMENT_HOSTNAMES', 'SEGMENT_COUNT'}
+
+    for key, value in merged.items():
+        if value and key not in skip_keys:
+            # Escape double quotes in values
+            safe_value = str(value).replace('"', '\\"')
+            lines.append(f'export {key}="{safe_value}"')
+
+    deploy_type = merged.get('DEPLOY_TYPE', 'single')
+    if deploy_type == 'multi':
+        segment_ips = params.get('SEGMENT_IPS', '')
+        segment_hostnames = params.get('SEGMENT_HOSTNAMES', '')
+
+        if segment_ips:
+            hostname_list = [h.strip() for h in segment_hostnames.split(',') if h.strip()]
+            ip_list = [ip.strip() for ip in segment_ips.split(',') if ip.strip()]
+
+            if not hostname_list:
+                hostname_list = [f'sdw{i+1}' for i in range(len(ip_list))]
+
+            segment_hosts = ','.join(hostname_list)
+            lines.append(f'\n# Segment hosts for gpinitsystem')
+            lines.append(f'export SEGMENT_HOSTS="{segment_hosts}"')
+
+    # log_time function MUST be at the end - deploycluster.sh truncates
+    # the file after "export -f log_time" and appends detected DB values
+    lines.append('')
+    lines.append('# Utility function for logging with timestamps')
+    lines.append('function log_time() {')
+    lines.append('  printf "[%s] %b\\n" "$(date \'+%Y-%m-%d %H:%M:%S\')" "$1"')
+    lines.append('}')
+    lines.append('export -f log_time')
+
+    return '\n'.join(lines) + '\n'
+
+
+def generate_hosts_file(params):
+    """Generate hosts file content for multi-node deployment"""
+    lines = [
+        '##Define hosts used for Hashdata',
+        '#Hashdata hosts begin',
+    ]
+
+    coord_ip = params.get('COORDINATOR_IP', '')
+    coord_host = params.get('COORDINATOR_HOSTNAME', 'mdw')
+    if coord_ip:
+        lines.append(f'##Coordinator hosts')
+        lines.append(f'{coord_ip} {coord_host}')
+
+    lines.append('##Segment hosts')
+    segment_ips = params.get('SEGMENT_IPS', '')
+    segment_hostnames = params.get('SEGMENT_HOSTNAMES', '')
+
+    ip_list = [ip.strip() for ip in segment_ips.split(',') if ip.strip()]
+    hostname_list = [host.strip() for host in segment_hostnames.split(',') if host.strip()]
+
+    for i, ip in enumerate(ip_list):
+        hostname = hostname_list[i] if i < len(hostname_list) else f'sdw{i + 1}'
+        lines.append(f'{ip} {hostname}')
+
+    lines.append('#Hashdata hosts end')
+    return '\n'.join(lines) + '\n'
+
 
 @app.route('/deployment_status')
 def deployment_status():
+    """Get current deployment status"""
     with DEPLOYMENT_LOCK:
-        elapsed_time = 0
-        if DEPLOYMENT_STATUS['start_time']:
-            elapsed_time = int(time.time() - DEPLOYMENT_STATUS['start_time'])
-
         return jsonify({
-            'running': DEPLOYMENT_STATUS['running'],
-            'log_file': DEPLOYMENT_STATUS['log_file'],
-            'start_time': DEPLOYMENT_STATUS['start_time'],
-            'success': DEPLOYMENT_STATUS['success'],
-            'current_stage': DEPLOYMENT_STATUS['current_stage'],
-            'stage_progress': DEPLOYMENT_STATUS['stage_progress'],
-            'total_stages': DEPLOYMENT_STATUS['total_stages'],
-            'completed_stages': DEPLOYMENT_STATUS['completed_stages'],
-            'stages': DEPLOYMENT_STAGES,
-            'elapsed_time': elapsed_time
+            'running': DEPLOYMENT_STATUS.get('running', False),
+            'success': DEPLOYMENT_STATUS.get('success'),
+            'log': DEPLOYMENT_STATUS.get('log_content', '')
         })
+
 
 @app.route('/deployment_logs')
 def deployment_logs():
-    log_file = request.args.get('log_file')
-    lines = int(request.args.get('lines', 200))
-    log_content = get_deployment_log(log_file, lines)
-    return jsonify({'logs': log_content})
+    """Get deployment logs"""
+    with DEPLOYMENT_LOCK:
+        return jsonify({
+            'logs': DEPLOYMENT_STATUS.get('log_content', ''),
+            'running': DEPLOYMENT_STATUS.get('running', False),
+            'success': DEPLOYMENT_STATUS.get('success')
+        })
 
-@app.route('/save_params', methods=['POST'])
-def save_params():
-    try:
-        params = request.form.to_dict()
 
-        if 'CLOUDBERRY_RPM' in params and params['CLOUDBERRY_RPM']:
-            if os.path.exists(params['CLOUDBERRY_RPM']):
-                print(f'Using uploaded RPM file: {params["CLOUDBERRY_RPM"]}')
-            else:
-                flash(f'Warning: RPM file path does not exist: {params["CLOUDBERRY_RPM"]}')
+@app.route('/reset', methods=['POST'])
+def reset():
+    """Reset deployment status"""
+    global DEPLOYMENT_STATUS
 
-        if 'SEGMENT_ACCESS_KEYFILE' in params and params['SEGMENT_ACCESS_KEYFILE']:
-            deploy_type = params.get('DEPLOY_TYPE', 'single')
-            segment_access_method = params.get('SEGMENT_ACCESS_METHOD', '')
-            if deploy_type == 'multi' and segment_access_method == 'keyfile':
-                if os.path.exists(params['SEGMENT_ACCESS_KEYFILE']):
-                    print(f'Using uploaded Key file: {params["SEGMENT_ACCESS_KEYFILE"]}')
-                else:
-                    flash(f'Warning: Key file path does not exist: {params["SEGMENT_ACCESS_KEYFILE"]}')
-            else:
-                print(f'Skipping key file check for {deploy_type} deployment with {segment_access_method} access')
-
-        save_parameters(params)
-        flash('Configuration parameters saved successfully!')
-
-        deploy_type = params.get('DEPLOY_TYPE', 'single')
-        return redirect(url_for('index_with_tab', tab='hosts' if deploy_type == 'multi' else 'deploy'))
-    except Exception as e:
-        flash(f'Error saving parameters: {str(e)}')
-        return redirect(url_for('index'))
-
-@app.route('/save_hosts', methods=['POST'])
-def save_hosts():
-    try:
-        hosts = {
-            'coordinator': [request.form.get('coord_ip'), request.form.get('coord_hostname')],
-            'segments': []
+    with DEPLOYMENT_LOCK:
+        DEPLOYMENT_STATUS = {
+            'running': False,
+            'success': None,
+            'log_content': '',
+            'start_time': None,
+            'remote_log_file': None,
+            'deploy_type': 'single',
+            'deploy_params': {}
         }
-        segment_count = int(request.form.get('segment_count', 0))
-        for i in range(segment_count):
-            ip = request.form.get(f'segment_ip_{i}')
-            hostname = request.form.get(f'segment_hostname_{i}')
-            if ip and hostname:
-                hosts['segments'].append([ip, hostname])
-        write_hosts_file(hosts)
-        flash('Host configuration saved successfully!')
-        return redirect(url_for('index_with_tab', tab='deploy'))
-    except Exception as e:
-        flash(f'Error saving hosts: {str(e)}')
-        return redirect(url_for('index'))
 
-@app.route('/save_hosts_only', methods=['POST'])
-def save_hosts_only():
-    try:
-        hosts = {
-            'coordinator': [request.form.get('coord_ip'), request.form.get('coord_hostname')],
-            'segments': []
-        }
-        segment_count = int(request.form.get('segment_count', 0))
-        for i in range(segment_count):
-            ip = request.form.get(f'segment_ip_{i}')
-            hostname = request.form.get(f'segment_hostname_{i}')
-            if ip and hostname:
-                hosts['segments'].append([ip, hostname])
-        write_hosts_file(hosts)
-        flash('Host configuration saved successfully!')
-        return redirect(url_for('index_with_tab', tab='deploy'))
-    except Exception as e:
-        flash(f'Error saving hosts: {str(e)}')
-        return redirect(url_for('index'))
+    return jsonify({'success': True})
 
-@app.route('/<tab>')
-def index_with_tab(tab):
-    params = read_parameters()
-    hosts = read_hosts()
-    deployment_info = {
-        'mode': params.get('DEPLOY_TYPE', 'single'),
-        'coordinator': hosts.get('coordinator', []),
-        'segment_hosts': hosts.get('segments', []),
-        'running': False,
-        'log_file': None,
-        'start_time': None
-    }
-    if tab == 'deploy':
-        with DEPLOYMENT_LOCK:
-            deployment_info['running'] = DEPLOYMENT_STATUS['running']
-            deployment_info['log_file'] = DEPLOYMENT_STATUS['log_file']
-            deployment_info['start_time'] = DEPLOYMENT_STATUS['start_time']
 
-    return render_template('index.html', params=params, hosts=hosts, active_tab=tab, deployment_info=deployment_info)
+@app.route('/stream_logs')
+def stream_logs():
+    """Server-sent events for real-time log streaming"""
+    def generate():
+        last_pos = 0
+        while True:
+            with DEPLOYMENT_LOCK:
+                log_content = DEPLOYMENT_STATUS.get('log_content', '')
+                running = DEPLOYMENT_STATUS.get('running', False)
 
-@app.route('/get_deployment_params')
-def get_deployment_params():
-    params = read_parameters()
-    hosts = read_hosts()
+            if log_content and len(log_content) > last_pos:
+                new_content = log_content[last_pos:]
+                last_pos = len(log_content)
+                yield f"data: {new_content}\n\n"
 
-    data_dirs = params.get('DATA_DIRECTORY', '').split() if params.get('DATA_DIRECTORY') else []
-    mirror_dirs = params.get('MIRROR_DATA_DIRECTORY', '').split() if params.get('MIRROR_DATA_DIRECTORY') else []
+            if not running:
+                yield f"data: [DONE]\n\n"
+                break
 
-    return jsonify({
-        'params': params,
-        'hosts': hosts,
-        'data_dirs': data_dirs,
-        'mirror_dirs': mirror_dirs
-    })
+            time.sleep(1)
 
-UPLOAD_FOLDER = '/tmp/uploads'
-ALLOWED_RPM_EXTENSIONS = {'rpm'}
+    return Response(generate(), mimetype='text/event-stream')
 
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-def allowed_file(filename, file_type):
-    if file_type == 'rpm':
-        return '.' in filename and \
-               filename.rsplit('.', 1)[1].lower() in ALLOWED_RPM_EXTENSIONS
-    elif file_type == 'key':
-        return True
-    return False
-
-@app.route('/upload_file', methods=['POST'])
-def upload_file():
-    try:
-        if 'file' not in request.files:
-            return jsonify({'success': False, 'message': 'No file part'})
-
-        file = request.files['file']
-        file_type = request.form.get('type', '')
-        upload_path = request.form.get('upload_path', '/tmp/uploads')
-
-        if file.filename == '':
-            return jsonify({'success': False, 'message': 'No selected file'})
-
-        if file and allowed_file(file.filename, file_type):
-            os.makedirs(upload_path, exist_ok=True)
-            os.chmod(upload_path, 0o755)
-
-            filename = secure_filename(file.filename)
-            file_path = os.path.join(upload_path, filename)
-
-            try:
-                file.save(file_path)
-                os.chmod(file_path, 0o644)
-                return jsonify({'success': True, 'file_path': file_path})
-            except Exception as e:
-                return jsonify({'success': False, 'message': f'Failed to save file: {str(e)}'})
-
-        return jsonify({'success': False, 'message': f'Invalid file type for {file_type}. {"Allowed types: " + str(ALLOWED_RPM_EXTENSIONS) if file_type == "rpm" else "No restrictions for key files"}'})
-    except Exception as e:
-        return jsonify({'success': False, 'message': f'Server error: {str(e)}'})
-
-@app.route('/verify_file')
-def verify_file():
-    file_path = request.args.get('file_path')
-    if not file_path:
-        return jsonify({'exists': False, 'message': 'No file path provided'})
-
-    try:
-        return jsonify({'exists': os.path.exists(file_path), 'file_path': file_path})
-    except Exception as e:
-        return jsonify({'exists': False, 'message': str(e)})
 
 if __name__ == '__main__':
-    if not os.path.exists('templates'):
-        os.makedirs('templates')
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    try:
+        import paramiko
+    except ImportError:
+        print("Installing required package: paramiko")
+        import subprocess
+        subprocess.run(['pip', 'install', 'paramiko'], check=True)
+
+    app.run(host='0.0.0.0', port=5000, debug=True, threaded=True)

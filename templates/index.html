@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CBDB Cluster Deployment</title>
+    <title>CBDB 集群部署工具</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -13,1489 +13,702 @@
         }
 
         :root {
-            --primary: #6366f1;
-            --primary-dark: #4f46e5;
-            --primary-light: #818cf8;
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
             --success: #10b981;
-            --success-dark: #059669;
-            --warning: #f59e0b;
             --danger: #ef4444;
-            --info: #3b82f6;
+            --warning: #f59e0b;
             --gray-50: #f9fafb;
             --gray-100: #f3f4f6;
             --gray-200: #e5e7eb;
             --gray-300: #d1d5db;
-            --gray-400: #9ca3af;
             --gray-500: #6b7280;
-            --gray-600: #4b5563;
             --gray-700: #374151;
-            --gray-800: #1f2937;
             --gray-900: #111827;
-            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-            --radius-sm: 0.375rem;
-            --radius: 0.5rem;
-            --radius-md: 0.75rem;
-            --radius-lg: 1rem;
-            --radius-xl: 1.5rem;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
             min-height: 100vh;
-            color: var(--gray-800);
-            line-height: 1.6;
+            color: var(--gray-900);
+            padding: 20px;
         }
 
-        .app-container {
-            max-width: 1400px;
+        .container {
+            max-width: 1200px;
             margin: 0 auto;
-            padding: 1.5rem;
         }
 
-        header {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border-radius: var(--radius-xl);
-            padding: 1.5rem 2rem;
-            margin-bottom: 1.5rem;
-            box-shadow: var(--shadow-xl);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .logo {
-            width: 56px;
-            height: 56px;
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            border-radius: var(--radius-lg);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 1.5rem;
-            font-weight: 700;
-            box-shadow: var(--shadow-md);
-        }
-
-        .header-title h1 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--gray-900);
-            margin-bottom: 0.125rem;
-        }
-
-        .header-title p {
-            color: var(--gray-500);
-            font-size: 0.875rem;
-        }
-
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .status-badge {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            background: var(--gray-100);
-            border-radius: var(--radius-lg);
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-
-        .status-badge.ready {
-            background: #d1fae5;
-            color: #065f46;
-        }
-
-        .status-badge.running {
-            background: #dbeafe;
-            color: #1e40af;
-            animation: pulse 2s infinite;
-        }
-
-        .status-badge.success {
-            background: #d1fae5;
-            color: #065f46;
-        }
-
-        .status-badge.error {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: currentColor;
-        }
-
-        .status-badge.running .status-dot {
-            animation: blink 1s infinite;
-        }
-
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-
-        .main-content {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border-radius: var(--radius-xl);
-            box-shadow: var(--shadow-xl);
-            overflow: hidden;
-        }
-
-        .tabs {
-            display: flex;
-            background: var(--gray-50);
-            padding: 0.75rem;
-            gap: 0.5rem;
-            border-bottom: 1px solid var(--gray-200);
-        }
-
-        .tab {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            padding: 0.75rem 1rem;
-            background: transparent;
-            border: none;
-            border-radius: var(--radius);
-            font-size: 0.9375rem;
-            font-weight: 500;
-            color: var(--gray-600);
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .tab:hover {
-            background: var(--gray-100);
-            color: var(--gray-800);
-        }
-
-        .tab.active {
+        .header {
             background: white;
-            color: var(--primary);
-            box-shadow: var(--shadow-sm);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
-        .tab i {
-            font-size: 1rem;
-        }
-
-        .tab-number {
-            width: 24px;
-            height: 24px;
-            background: var(--gray-200);
-            color: var(--gray-600);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        .tab.active .tab-number {
-            background: var(--primary);
-            color: white;
-        }
-
-        .tab-content {
-            display: none;
-            padding: 2rem;
-            animation: fadeIn 0.3s ease;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .section-header {
-            margin-bottom: 1.5rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid var(--gray-200);
-        }
-
-        .section-header h2 {
-            font-size: 1.25rem;
-            font-weight: 600;
+        .header h1 {
+            font-size: 24px;
             color: var(--gray-900);
-            margin-bottom: 0.25rem;
-        }
-
-        .section-header p {
-            color: var(--gray-500);
-            font-size: 0.875rem;
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .form-group {
-            margin-bottom: 1.25rem;
-        }
-
-        .form-group.full-width {
-            grid-column: 1 / -1;
-        }
-
-        label {
-            display: block;
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: var(--gray-700);
-            margin-bottom: 0.375rem;
-        }
-
-        label .required {
-            color: var(--danger);
-            margin-left: 0.125rem;
-        }
-
-        .input-wrapper {
-            position: relative;
-        }
-
-        .input-wrapper i {
-            position: absolute;
-            left: 0.875rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--gray-400);
-            pointer-events: none;
-        }
-
-        input[type="text"],
-        input[type="password"],
-        input[type="number"],
-        select,
-        textarea {
-            width: 100%;
-            padding: 0.625rem 1rem;
-            padding-left: 2.5rem;
-            border: 1.5px solid var(--gray-300);
-            border-radius: var(--radius);
-            font-size: 0.9375rem;
-            color: var(--gray-800);
-            background: white;
-            transition: all 0.2s ease;
-            font-family: inherit;
-        }
-
-        input[type="text"]:focus,
-        input[type="password"]:focus,
-        input[type="number"]:focus,
-        select:focus,
-        textarea:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-        }
-
-        textarea {
-            padding-left: 1rem;
-            resize: vertical;
-            min-height: 100px;
-        }
-
-        .input-hint {
-            font-size: 0.75rem;
-            color: var(--gray-500);
-            margin-top: 0.25rem;
-        }
-
-        .file-upload {
-            position: relative;
-        }
-
-        .file-upload input[type="file"] {
-            position: absolute;
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .file-upload-label {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            padding: 0.75rem 1rem;
-            border: 2px dashed var(--gray-300);
-            border-radius: var(--radius);
-            background: var(--gray-50);
-            cursor: pointer;
-            transition: all 0.2s ease;
+            gap: 12px;
         }
 
-        .file-upload-label:hover {
-            border-color: var(--primary);
-            background: rgba(99, 102, 241, 0.05);
-        }
-
-        .file-upload-label i {
-            font-size: 1.25rem;
+        .header h1 i {
             color: var(--primary);
-        }
-
-        .file-upload-text {
-            flex: 1;
-        }
-
-        .file-upload-text span {
-            display: block;
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: var(--gray-700);
-        }
-
-        .file-upload-text small {
-            color: var(--gray-500);
-            font-size: 0.75rem;
-        }
-
-        .file-name {
-            display: none;
-            margin-top: 0.5rem;
-            padding: 0.5rem 0.75rem;
-            background: #dcfce7;
-            color: #166534;
-            border-radius: var(--radius);
-            font-size: 0.8125rem;
-            display: none;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .file-name.show {
-            display: flex;
-        }
-
-        .radio-group,
-        .checkbox-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.75rem;
-        }
-
-        .radio-option,
-        .checkbox-option {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            cursor: pointer;
-        }
-
-        .radio-option input,
-        .checkbox-option input {
-            width: 18px;
-            height: 18px;
-            accent-color: var(--primary);
         }
 
         .card {
-            background: var(--gray-50);
-            border-radius: var(--radius-lg);
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .card-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 1rem;
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
         .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--gray-900);
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            font-weight: 600;
-            color: var(--gray-800);
+            gap: 8px;
         }
 
         .card-title i {
             color: var(--primary);
         }
 
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group label {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--gray-700);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 10px 14px;
+            border: 1px solid var(--gray-300);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .form-group input[type="password"] {
+            font-family: monospace;
+        }
+
         .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            padding: 0.625rem 1.25rem;
+            padding: 10px 20px;
             border: none;
-            border-radius: var(--radius);
-            font-size: 0.9375rem;
+            border-radius: 8px;
+            font-size: 14px;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s ease;
-            font-family: inherit;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .btn-primary {
             background: var(--primary);
             color: white;
-            box-shadow: 0 1px 3px rgba(99, 102, 241, 0.3);
         }
 
         .btn-primary:hover {
             background: var(--primary-dark);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
-        }
-
-        .btn-secondary {
-            background: white;
-            color: var(--gray-700);
-            border: 1.5px solid var(--gray-300);
-        }
-
-        .btn-secondary:hover {
-            background: var(--gray-50);
-            border-color: var(--gray-400);
         }
 
         .btn-success {
             background: var(--success);
             color: white;
-            box-shadow: 0 1px 3px rgba(16, 185, 129, 0.3);
-        }
-
-        .btn-success:hover {
-            background: var(--success-dark);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none !important;
-        }
-
-        .btn-sm {
-            padding: 0.375rem 0.75rem;
-            font-size: 0.8125rem;
-        }
-
-        .btn-lg {
-            padding: 0.875rem 1.75rem;
-            font-size: 1rem;
-        }
-
-        .form-actions {
-            display: flex;
-            gap: 0.75rem;
-            justify-content: flex-end;
-            margin-top: 1.5rem;
-            padding-top: 1.5rem;
-            border-top: 1px solid var(--gray-200);
-        }
-
-        .host-list {
-            background: white;
-            border-radius: var(--radius);
-            overflow: hidden;
-            border: 1.5px solid var(--gray-200);
-        }
-
-        .host-item {
-            display: grid;
-            grid-template-columns: 1fr 1fr auto;
-            gap: 0.75rem;
-            padding: 0.75rem;
-            border-bottom: 1px solid var(--gray-200);
-            align-items: center;
-        }
-
-        .host-item:last-child {
-            border-bottom: none;
-        }
-
-        .host-item.header {
-            background: var(--gray-50);
-            font-weight: 600;
-            font-size: 0.8125rem;
-            color: var(--gray-600);
-            padding: 0.5rem 0.75rem;
-        }
-
-        .host-item input {
-            padding: 0.5rem 0.75rem;
-            font-size: 0.875rem;
-        }
-
-        .host-item .btn-icon {
-            width: 36px;
-            height: 36px;
-            padding: 0;
-            border-radius: var(--radius);
         }
 
         .btn-danger {
-            background: #fee2e2;
-            color: var(--danger);
-        }
-
-        .btn-danger:hover {
             background: var(--danger);
             color: white;
         }
 
-        .add-host-btn {
-            margin-top: 0.75rem;
-            width: 100%;
-            padding: 0.75rem;
-            border: 2px dashed var(--gray-300);
-            background: transparent;
-            color: var(--gray-600);
-            border-radius: var(--radius);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            font-size: 0.875rem;
-            font-weight: 500;
-            transition: all 0.2s ease;
-        }
-
-        .add-host-btn:hover {
-            border-color: var(--primary);
-            color: var(--primary);
-            background: rgba(99, 102, 241, 0.05);
-        }
-
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .summary-card {
-            background: white;
-            border-radius: var(--radius-lg);
-            padding: 1.25rem;
-            border: 1.5px solid var(--gray-200);
-        }
-
-        .summary-card h3 {
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--gray-500);
-            margin-bottom: 0.75rem;
-        }
-
-        .summary-value {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--gray-900);
-        }
-
-        .summary-list {
-            list-style: none;
-        }
-
-        .summary-list li {
-            padding: 0.375rem 0;
-            font-size: 0.875rem;
-            color: var(--gray-700);
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .summary-list li span:first-child {
-            color: var(--gray-500);
-        }
-
-        .progress-section {
-            background: white;
-            border-radius: var(--radius-lg);
-            padding: 1.5rem;
-            border: 1.5px solid var(--gray-200);
-            margin-bottom: 1.5rem;
-        }
-
-        .progress-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 1rem;
-        }
-
-        .progress-title {
-            font-weight: 600;
-            color: var(--gray-900);
-        }
-
-        .progress-percent {
-            font-weight: 700;
-            color: var(--primary);
-        }
-
-        .progress-bar {
-            height: 12px;
+        .btn-secondary {
             background: var(--gray-100);
-            border-radius: 999px;
-            overflow: hidden;
-            margin-bottom: 1rem;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--primary), var(--primary-light));
-            border-radius: 999px;
-            transition: width 0.5s ease;
-        }
-
-        .progress-fill.success {
-            background: linear-gradient(90deg, var(--success), #34d399);
-        }
-
-        .progress-fill.error {
-            background: linear-gradient(90deg, var(--danger), #f87171);
-        }
-
-        .stages {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-        }
-
-        .stage {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 0.75rem;
-            border-radius: var(--radius);
-            background: var(--gray-50);
-            transition: all 0.2s ease;
-        }
-
-        .stage.active {
-            background: rgba(99, 102, 241, 0.1);
-            border: 1.5px solid var(--primary);
-        }
-
-        .stage.completed {
-            background: rgba(16, 185, 129, 0.1);
-        }
-
-        .stage-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--gray-200);
-            color: var(--gray-500);
-            flex-shrink: 0;
-        }
-
-        .stage.active .stage-icon {
-            background: var(--primary);
-            color: white;
-            animation: pulse 1.5s infinite;
-        }
-
-        .stage.completed .stage-icon {
-            background: var(--success);
-            color: white;
-        }
-
-        .stage-content {
-            flex: 1;
-        }
-
-        .stage-name {
-            font-weight: 500;
             color: var(--gray-700);
-            font-size: 0.875rem;
         }
 
-        .stage.active .stage-name {
-            color: var(--gray-900);
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
 
-        .stage-desc {
-            font-size: 0.75rem;
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .status-idle {
+            background: var(--gray-100);
             color: var(--gray-500);
+        }
+
+        .status-running {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .status-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-error {
+            background: #fee2e2;
+            color: #991b1b;
         }
 
         .log-container {
-            background: var(--gray-900);
-            border-radius: var(--radius-lg);
-            padding: 1rem;
-            margin-top: 1.5rem;
-        }
-
-        .log-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 0.75rem;
-            padding-bottom: 0.75rem;
-            border-bottom: 1px solid var(--gray-700);
-        }
-
-        .log-title {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: var(--gray-300);
-            font-weight: 500;
-            font-size: 0.875rem;
-        }
-
-        .log-content {
-            font-family: 'SF Mono', 'Fira Code', 'Fira Mono', monospace;
-            font-size: 0.8125rem;
-            line-height: 1.7;
-            color: var(--gray-100);
-            max-height: 400px;
+            background: #1e1e2e;
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+            color: #a5b3ce;
+            height: 400px;
             overflow-y: auto;
-            padding: 0.5rem;
-        }
-
-        .log-content::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .log-content::-webkit-scrollbar-track {
-            background: var(--gray-800);
-            border-radius: 4px;
-        }
-
-        .log-content::-webkit-scrollbar-thumb {
-            background: var(--gray-600);
-            border-radius: 4px;
+            line-height: 1.6;
         }
 
         .log-line {
-            padding: 0.125rem 0;
+            white-space: pre-wrap;
+            word-break: break-all;
         }
 
-        .log-line .timestamp {
-            color: var(--gray-500);
-        }
-
-        .log-line .info {
-            color: #60a5fa;
-        }
-
-        .log-line .success {
-            color: #34d399;
-        }
-
-        .log-line .error {
+        .log-line.error {
             color: #f87171;
         }
 
-        .log-line .warning {
+        .log-line.success {
+            color: #34d399;
+        }
+
+        .log-line.info {
+            color: #60a5fa;
+        }
+
+        .log-line.warning {
             color: #fbbf24;
         }
 
-        .alert {
-            padding: 1rem 1.25rem;
-            border-radius: var(--radius);
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: flex-start;
-            gap: 0.75rem;
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin: 24px 0 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--gray-200);
         }
 
-        .alert-info {
-            background: #dbeafe;
-            color: #1e40af;
-            border: 1px solid #93c5fd;
+        .section-title:first-child {
+            margin-top: 0;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
         }
 
         .alert-success {
-            background: #dcfce7;
-            color: #166534;
-            border: 1px solid #86efac;
-        }
-
-        .alert-warning {
-            background: #fef9c3;
-            color: #854d0e;
-            border: 1px solid #fde047;
+            background: #d1fae5;
+            color: #065f46;
         }
 
         .alert-error {
             background: #fee2e2;
             color: #991b1b;
-            border: 1px solid #fca5a5;
         }
 
-        .alert i {
-            margin-top: 0.125rem;
+        .alert-warning {
+            background: #fef3c7;
+            color: #92400e;
         }
 
-        .deploy-actions {
+        .tabs {
             display: flex;
-            gap: 1rem;
-            justify-content: center;
-            margin-top: 1.5rem;
+            gap: 4px;
+            margin-bottom: 20px;
+            background: var(--gray-100);
+            padding: 4px;
+            border-radius: 8px;
         }
 
-        .deploy-actions .btn {
-            min-width: 200px;
-        }
-
-        .time-display {
-            font-size: 0.8125rem;
+        .tab {
+            flex: 1;
+            padding: 10px 16px;
+            border: none;
+            background: transparent;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
             color: var(--gray-500);
-            display: flex;
-            align-items: center;
-            gap: 0.375rem;
+            transition: all 0.2s;
         }
 
-        .conditional-section {
+        .tab.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .tab-content {
             display: none;
         }
 
-        .conditional-section.show {
+        .tab-content.active {
             display: block;
         }
 
-        @media (max-width: 768px) {
-            .app-container {
-                padding: 1rem;
-            }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
 
-            header {
-                flex-direction: column;
-                gap: 1rem;
-                text-align: center;
-            }
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
 
-            .tabs {
-                flex-wrap: wrap;
-            }
+        .file-input-wrapper {
+            position: relative;
+            min-height: 50px;
+        }
 
-            .tab {
-                flex: 1 1 calc(50% - 0.25rem);
-            }
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+            z-index: 10;
+        }
 
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
+        .file-input-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 14px;
+            border: 2px dashed var(--gray-300);
+            border-radius: 8px;
+            color: var(--gray-500);
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 50px;
+        }
 
-            .summary-grid {
-                grid-template-columns: 1fr;
-            }
+        .file-input-label:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--gray-50);
+        }
 
-            .host-item {
-                grid-template-columns: 1fr;
-            }
+        .file-input-label.has-file {
+            border-color: var(--success);
+            color: var(--success);
+            background: #d1fae5;
+        }
 
-            .host-item.header {
-                display: none;
-            }
+        .hidden {
+            display: none !important;
+        }
+
+        code {
+            background: var(--gray-100);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+        }
+
+        .rpm-section {
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 12px;
         }
     </style>
 </head>
 <body>
-    <div class="app-container">
-        <header>
-            <div class="header-left">
-                <div class="logo">
-                    <i class="fas fa-database"></i>
-                </div>
-                <div class="header-title">
-                    <h1>CBDB Cluster Deployment</h1>
-                    <p>部署 Cloudberry / Greenplum / HashData 数据库集群</p>
-                </div>
-            </div>
-            <div class="header-right">
-                <div id="status-badge" class="status-badge ready">
-                    <span class="status-dot"></span>
-                    <span id="status-text">准备就绪</span>
-                </div>
-            </div>
-        </header>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-server"></i> CBDB 集群部署工具</h1>
+            <p style="color: var(--gray-500); margin-top: 8px;">
+                通过 SSH 连接到远程服务器部署 Cloudberry / Greenplum / HashData 集群
+            </p>
+        </div>
 
-        <div class="main-content">
-            <div class="tabs">
-                <button class="tab active" data-tab="config">
-                    <span class="tab-number">1</span>
-                    <i class="fas fa-cog"></i>
-                    配置
-                </button>
-                <button class="tab" data-tab="hosts">
-                    <span class="tab-number">2</span>
-                    <i class="fas fa-server"></i>
-                    主机
-                </button>
-                <button class="tab" data-tab="deploy">
-                    <span class="tab-number">3</span>
-                    <i class="fas fa-rocket"></i>
-                    部署
-                </button>
-            </div>
+        <!-- Messages -->
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-success">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
 
-            <!-- Configuration Tab -->
-            <div id="config-tab" class="tab-content active">
-                <div class="section-header">
-                    <h2>集群配置</h2>
-                    <p>配置数据库集群的基本参数</p>
+        <!-- Connection Test Result -->
+        <div id="connection-result" class="hidden"></div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" data-tab="connection">
+                <i class="fas fa-plug"></i> 1. 连接 Coordinator
+            </button>
+            <button class="tab" data-tab="config">
+                <i class="fas fa-cog"></i> 2. 集群配置
+            </button>
+            <button class="tab" data-tab="deploy">
+                <i class="fas fa-rocket"></i> 3. 执行部署
+            </button>
+        </div>
+
+        <!-- Connection Tab -->
+        <div id="tab-connection" class="tab-content active">
+            <div class="card">
+                <div class="card-title">
+                    <i class="fas fa-server"></i> 连接 Coordinator 服务器
                 </div>
 
-                <form id="config-form" action="{{ url_for('save_params') }}" method="POST">
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">
-                                <i class="fas fa-layer-group"></i>
-                                部署模式
-                            </div>
+                <form id="connection-form">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>服务器 IP / 主机名</label>
+                            <input type="text" name="host" placeholder="例如: 192.168.1.100" required>
                         </div>
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label>部署类型 <span class="required">*</span></label>
-                                <div class="radio-group">
-                                    <label class="radio-option">
-                                        <input type="radio" name="DEPLOY_TYPE" value="single" {{ 'checked' if params.get('DEPLOY_TYPE', 'single') == 'single' else '' }} onchange="toggleDeployType(this)">
-                                        <span><i class="fas fa-laptop"></i> 单节点</span>
-                                    </label>
-                                    <label class="radio-option">
-                                        <input type="radio" name="DEPLOY_TYPE" value="multi" {{ 'checked' if params.get('DEPLOY_TYPE') == 'multi' else '' }} onchange="toggleDeployType(this)">
-                                        <span><i class="fas fa-network-wired"></i> 多节点</span>
-                                    </label>
+
+                        <div class="form-group">
+                            <label>SSH 端口</label>
+                            <input type="number" name="port" value="22" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>用户名</label>
+                            <input type="text" name="username" value="root" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>认证方式</label>
+                            <select name="auth_method" id="auth-method" onchange="toggleAuthFields()">
+                                <option value="password">密码认证</option>
+                                <option value="key">SSH 密钥</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" id="password-field">
+                            <label>密码</label>
+                            <input type="password" name="password" placeholder="服务器 root 密码">
+                        </div>
+
+                        <div class="form-group hidden" id="key-field">
+                            <label>SSH 密钥文件</label>
+                            <input type="text" name="key_file" placeholder="本地密钥文件路径，例如: ~/.ssh/id_rsa">
+                        </div>
+
+                        <div class="form-group" id="key-upload-field" style="display: none;">
+                            <label>上传密钥文件</label>
+                            <div class="file-input-wrapper">
+                                <div class="file-input-label" id="key-file-label">
+                                    <i class="fas fa-upload"></i> 点击选择密钥文件
                                 </div>
+                                <input type="file" name="key_file_upload" id="key-file-upload" accept="*" onchange="handleKeyFileSelect(this)">
                             </div>
+                            <small style="color: var(--gray-500); margin-top: 4px;">支持 id_rsa, *.pem, *.ppk 等所有密钥文件</small>
                         </div>
                     </div>
 
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">
-                                <i class="fas fa-user-shield"></i>
-                                管理员账户
-                            </div>
-                        </div>
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label>管理员用户名 <span class="required">*</span></label>
-                                <div class="input-wrapper">
-                                    <i class="fas fa-user"></i>
-                                    <input type="text" name="ADMIN_USER" value="{{ params.get('ADMIN_USER', 'gpadmin') }}" required>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>管理员密码 <span class="required">*</span></label>
-                                <div class="input-wrapper">
-                                    <i class="fas fa-lock"></i>
-                                    <input type="password" name="ADMIN_USER_PASSWORD" value="{{ params.get('ADMIN_USER_PASSWORD', 'Cbdb@1234') }}" required>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">
-                                <i class="fas fa-box"></i>
-                                安装包
-                            </div>
-                        </div>
-                        <div class="form-grid">
-                            <div class="form-group full-width">
-                                <label>RPM 安装包路径 <span class="required">*</span></label>
-                                <div class="file-upload">
-                                    <input type="file" id="rpm-file" accept=".rpm" onchange="handleFileUpload(this, 'rpm')">
-                                    <label for="rpm-file" class="file-upload-label">
-                                        <i class="fas fa-cloud-upload-alt"></i>
-                                        <div class="file-upload-text">
-                                            <span>点击上传 RPM 文件</span>
-                                            <small>或将文件拖放到此处</small>
-                                        </div>
-                                    </label>
-                                </div>
-                                <div id="rpm-file-name" class="file-name">
-                                    <i class="fas fa-check-circle"></i>
-                                    <span></span>
-                                </div>
-                                <div class="input-wrapper" style="margin-top: 0.75rem;">
-                                    <i class="fas fa-folder-open"></i>
-                                    <input type="text" name="CLOUDBERRY_RPM" id="cloudberry-rpm" value="{{ params.get('CLOUDBERRY_RPM', '') }}" placeholder="/path/to/cloudberry.rpm" required>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">
-                                <i class="fas fa-sliders-h"></i>
-                                安装选项
-                            </div>
-                        </div>
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <div class="checkbox-option">
-                                    <input type="checkbox" name="INSTALL_DB_SOFTWARE" value="true" id="install-db" {{ 'checked' if params.get('INSTALL_DB_SOFTWARE') != 'false' else '' }}>
-                                    <label for="install-db">安装数据库软件</label>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <div class="checkbox-option">
-                                    <input type="checkbox" name="INIT_ENV_ONLY" value="true" id="init-env-only" {{ 'checked' if params.get('INIT_ENV_ONLY') == 'true' else '' }}>
-                                    <label for="init-env-only">仅初始化环境</label>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <div class="checkbox-option">
-                                    <input type="checkbox" name="MAUNAL_YUM_REPO" value="true" id="manual-yum" {{ 'checked' if params.get('MAUNAL_YUM_REPO') == 'true' else '' }}>
-                                    <label for="manual-yum">手动配置 YUM 源</label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">
-                                <i class="fas fa-database"></i>
-                                Coordinator 配置
-                            </div>
-                        </div>
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label>Coordinator 主机名</label>
-                                <div class="input-wrapper">
-                                    <i class="fas fa-hashtag"></i>
-                                    <input type="text" name="COORDINATOR_HOSTNAME" value="{{ params.get('COORDINATOR_HOSTNAME', 'mdw') }}">
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>Coordinator IP 地址</label>
-                                <div class="input-wrapper">
-                                    <i class="fas fa-network-wired"></i>
-                                    <input type="text" name="COORDINATOR_IP" value="{{ params.get('COORDINATOR_IP', '') }}" placeholder="192.168.1.100">
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>数据库端口</label>
-                                <div class="input-wrapper">
-                                    <i class="fas fa-plug"></i>
-                                    <input type="number" name="COORDINATOR_PORT" value="{{ params.get('COORDINATOR_PORT', '5432') }}">
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>数据目录</label>
-                                <div class="input-wrapper">
-                                    <i class="fas fa-folder"></i>
-                                    <input type="text" name="COORDINATOR_DIRECTORY" value="{{ params.get('COORDINATOR_DIRECTORY', '/data0/database/coordinator') }}">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">
-                                <i class="fas fa-cluster"></i>
-                                集群配置
-                            </div>
-                        </div>
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label>集群名称</label>
-                                <div class="input-wrapper">
-                                    <i class="fas fa-tag"></i>
-                                    <input type="text" name="ARRAY_NAME" value="{{ params.get('ARRAY_NAME', 'CBDB_SANDBOX') }}">
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>数据库编码</label>
-                                <div class="input-wrapper">
-                                    <i class="fas fa-code"></i>
-                                    <select name="ENCODING">
-                                        <option value="UNICODE" {{ 'selected' if params.get('ENCODING') == 'UNICODE' else '' }}>UNICODE (UTF-8)</option>
-                                        <option value="SQL_ASCII" {{ 'selected' if params.get('ENCODING') == 'SQL_ASCII' else '' }}>SQL_ASCII</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>Segment 端口起始</label>
-                                <div class="input-wrapper">
-                                    <i class="fas fa-plug"></i>
-                                    <input type="number" name="PORT_BASE" value="{{ params.get('PORT_BASE', '6000') }}">
-                                </div>
-                            </div>
-                            <div class="form-group full-width">
-                                <label>数据目录（多个目录用空格分隔）</label>
-                                <div class="input-wrapper">
-                                    <i class="fas fa-hdd"></i>
-                                    <input type="text" name="DATA_DIRECTORY" value="{{ params.get('DATA_DIRECTORY', '/data0/database/primary') }}" placeholder="/data0/database/primary /data1/database/primary">
-                                </div>
-                                <p class="input-hint">多个目录将在每台主机上创建多个 Primary Segment</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">
-                                <i class="fas fa-copy"></i>
-                                Mirror 配置
-                            </div>
-                        </div>
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <div class="checkbox-option">
-                                    <input type="checkbox" name="WITH_MIRROR" value="true" id="with-mirror" {{ 'checked' if params.get('WITH_MIRROR') == 'true' else '' }} onchange="toggleMirrorConfig()">
-                                    <label for="with-mirror">启用 Mirror Segment</label>
-                                </div>
-                            </div>
-                            <div id="mirror-config" class="conditional-section full-width {{ 'show' if params.get('WITH_MIRROR') == 'true' else '' }}">
-                                <div class="form-grid" style="margin-top: 1rem;">
-                                    <div class="form-group">
-                                        <label>Mirror 端口起始</label>
-                                        <div class="input-wrapper">
-                                            <i class="fas fa-plug"></i>
-                                            <input type="number" name="MIRROR_PORT_BASE" value="{{ params.get('MIRROR_PORT_BASE', '7000') }}">
-                                        </div>
-                                    </div>
-                                    <div class="form-group full-width">
-                                        <label>Mirror 数据目录</label>
-                                        <div class="input-wrapper">
-                                            <i class="fas fa-hdd"></i>
-                                            <input type="text" name="MIRROR_DATA_DIRECTORY" value="{{ params.get('MIRROR_DATA_DIRECTORY', '/data0/database/mirror') }}" placeholder="/data0/database/mirror /data1/database/mirror">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="multi-node-config" class="card conditional-section {{ 'show' if params.get('DEPLOY_TYPE') == 'multi' else '' }}">
-                        <div class="card-header">
-                            <div class="card-title">
-                                <i class="fas fa-key"></i>
-                                节点访问配置
-                            </div>
-                        </div>
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label>访问方式</label>
-                                <div class="radio-group">
-                                    <label class="radio-option">
-                                        <input type="radio" name="SEGMENT_ACCESS_METHOD" value="keyfile" {{ 'checked' if params.get('SEGMENT_ACCESS_METHOD', 'keyfile') == 'keyfile' else '' }} onchange="toggleAccessMethod(this)">
-                                        <span><i class="fas fa-key"></i> SSH Key</span>
-                                    </label>
-                                    <label class="radio-option">
-                                        <input type="radio" name="SEGMENT_ACCESS_METHOD" value="password" {{ 'checked' if params.get('SEGMENT_ACCESS_METHOD') == 'password' else '' }} onchange="toggleAccessMethod(this)">
-                                        <span><i class="fas fa-lock"></i> 密码</span>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>SSH 用户名</label>
-                                <div class="input-wrapper">
-                                    <i class="fas fa-user"></i>
-                                    <input type="text" name="SEGMENT_ACCESS_USER" value="{{ params.get('SEGMENT_ACCESS_USER', 'root') }}">
-                                </div>
-                            </div>
-                            <div id="keyfile-config" class="form-group conditional-section {{ 'show' if params.get('SEGMENT_ACCESS_METHOD', 'keyfile') == 'keyfile' else '' }}">
-                                <label>SSH Key 文件</label>
-                                <div class="file-upload">
-                                    <input type="file" id="key-file" onchange="handleFileUpload(this, 'key')">
-                                    <label for="key-file" class="file-upload-label">
-                                        <i class="fas fa-key"></i>
-                                        <div class="file-upload-text">
-                                            <span>点击上传 SSH Key</span>
-                                            <small>支持各种格式的密钥文件</small>
-                                        </div>
-                                    </label>
-                                </div>
-                                <div id="key-file-name" class="file-name">
-                                    <i class="fas fa-check-circle"></i>
-                                    <span></span>
-                                </div>
-                                <div class="input-wrapper" style="margin-top: 0.75rem;">
-                                    <i class="fas fa-folder-open"></i>
-                                    <input type="text" name="SEGMENT_ACCESS_KEYFILE" id="segment-keyfile" value="{{ params.get('SEGMENT_ACCESS_KEYFILE', '') }}" placeholder="/path/to/private_key">
-                                </div>
-                            </div>
-                            <div id="password-config" class="form-group conditional-section {{ 'show' if params.get('SEGMENT_ACCESS_METHOD') == 'password' else '' }}">
-                                <label>SSH 密码</label>
-                                <div class="input-wrapper">
-                                    <i class="fas fa-lock"></i>
-                                    <input type="password" name="SEGMENT_ACCESS_PASSWORD" value="{{ params.get('SEGMENT_ACCESS_PASSWORD', '') }}">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" onclick="resetForm()">
-                            <i class="fas fa-undo"></i>
-                            重置
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-primary" onclick="testConnection()">
+                            <i class="fas fa-plug"></i> 测试连接
                         </button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i>
-                            保存并继续
+                        <button type="button" class="btn btn-success" onclick="saveConnectionAndNext()">
+                            <i class="fas fa-arrow-right"></i> 保存并下一步
                         </button>
                     </div>
                 </form>
             </div>
+        </div>
 
-            <!-- Hosts Tab -->
-            <div id="hosts-tab" class="tab-content">
-                <div class="section-header">
-                    <h2>主机配置</h2>
-                    <p>配置集群中的所有节点</p>
+        <!-- Config Tab -->
+        <div id="tab-config" class="tab-content">
+            <div class="card">
+                <div class="card-title">
+                    <i class="fas fa-cog"></i> 集群配置
                 </div>
 
-                <div id="hosts-single-message" class="alert alert-info" style="display: none;">
-                    <i class="fas fa-info-circle"></i>
-                    <div>
-                        <strong>单节点模式</strong>
-                        <p>单节点部署不需要配置额外的 Segment 主机，直接进入部署即可。</p>
+                <form id="config-form">
+                    <div class="section-title">部署类型</div>
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <select name="deploy_type" id="deploy-type" onchange="toggleDeployType()">
+                            <option value="single" {{ 'selected' if file_config.get('DEPLOY_TYPE', 'single') == 'single' }}>单节点部署</option>
+                            <option value="multi" {{ 'selected' if file_config.get('DEPLOY_TYPE', 'single') == 'multi' }}>多节点部署</option>
+                        </select>
                     </div>
-                </div>
 
-                <form id="hosts-form" action="{{ url_for('save_hosts') }}" method="POST">
-                    <div id="multi-node-hosts" style="display: block;">
-                        <div class="card">
-                            <div class="card-header">
-                                <div class="card-title">
-                                    <i class="fas fa-chess-king"></i>
-                                    Coordinator 主机
-                                </div>
-                            </div>
-                            <div class="form-grid">
-                                <div class="form-group">
-                                    <label>IP 地址 <span class="required">*</span></label>
-                                    <div class="input-wrapper">
-                                        <i class="fas fa-network-wired"></i>
-                                        <input type="text" name="coord_ip" value="{{ hosts.coordinator[0] if hosts.coordinator else '' }}" placeholder="192.168.1.100" required>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label>主机名 <span class="required">*</span></label>
-                                    <div class="input-wrapper">
-                                        <i class="fas fa-hashtag"></i>
-                                        <input type="text" name="coord_hostname" value="{{ hosts.coordinator[1] if hosts.coordinator else '' }}" placeholder="mdw" required>
-                                    </div>
-                                </div>
-                            </div>
+                    <div class="section-title">基本配置</div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>管理员用户名</label>
+                            <input type="text" name="ADMIN_USER" value="{{ file_config.get('ADMIN_USER', 'gpadmin') }}">
                         </div>
 
-                        <div class="card">
-                            <div class="card-header">
-                                <div class="card-title">
-                                    <i class="fas fa-chess-pawn"></i>
-                                    Segment 主机
-                                </div>
-                            </div>
-                            <div class="host-list" id="segment-hosts">
-                                <div class="host-item header">
-                                    <span>IP 地址</span>
-                                    <span>主机名</span>
-                                    <span>操作</span>
-                                </div>
-                            </div>
-                            <button type="button" class="add-host-btn" onclick="addSegmentHost()">
-                                <i class="fas fa-plus"></i>
-                                添加 Segment 主机
-                            </button>
-                        </div>
-
-                        <input type="hidden" name="segment_count" id="segment-count" value="0">
-
-                        <div class="form-actions">
-                            <button type="button" class="btn btn-secondary" onclick="goToTab('config')">
-                                <i class="fas fa-arrow-left"></i>
-                                上一步
-                            </button>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i>
-                                保存并继续
-                            </button>
+                        <div class="form-group">
+                            <label>管理员密码</label>
+                            <input type="password" name="ADMIN_USER_PASSWORD" value="{{ file_config.get('ADMIN_USER_PASSWORD', '') }}" placeholder="gpadmin 用户密码">
                         </div>
                     </div>
 
-                    <div id="single-node-actions" class="form-actions" style="display: none;">
-                        <button type="button" class="btn btn-secondary" onclick="goToTab('config')">
-                            <i class="fas fa-arrow-left"></i>
-                            返回配置
-                        </button>
-                        <button type="button" class="btn btn-primary" onclick="goToTab('deploy')">
-                            前往部署
-                            <i class="fas fa-arrow-right"></i>
+                    <div class="section-title">数据库安装包</div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>RPM 来源</label>
+                            <select name="rpm_source" id="rpm-source" onchange="toggleRpmSource()">
+                                <option value="local">Coordinator 本地文件</option>
+                                <option value="upload">从本地上传</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Coordinator本地文件路径 -->
+                    <div id="rpm-local-section" class="rpm-section">
+                        <div class="form-grid">
+                            <div class="form-group" style="flex: 3;">
+                                <label>RPM 包路径 (Coordinator上的绝对路径)</label>
+                                <input type="text" name="CLOUDBERRY_RPM" id="rpm-local-path" value="{{ file_config.get('CLOUDBERRY_RPM', '') }}" placeholder="/root/cloudberry-db-1.6.0.rpm">
+                            </div>
+                            <div class="form-group" style="flex: 1; display: flex; align-items: flex-end;">
+                                <button type="button" class="btn btn-secondary" onclick="validateRpmPath()" id="validate-rpm-btn">
+                                    <i class="fas fa-check"></i> 验证
+                                </button>
+                            </div>
+                        </div>
+                        <div id="rpm-validation-result" style="margin-top: 8px;"></div>
+                    </div>
+
+                    <!-- 上传RPM文件 -->
+                    <div id="rpm-upload-section" class="rpm-section hidden">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>上传 RPM 文件</label>
+                                <div class="file-input-wrapper">
+                                    <div class="file-input-label" id="rpm-file-label">
+                                        <i class="fas fa-upload"></i> 点击上传 RPM
+                                    </div>
+                                    <input type="file" name="rpm_file" id="rpm-file-input" accept=".rpm" onchange="handleRpmFileSelect(this)">
+                                </div>
+                                <small style="color: var(--gray-500); margin-top: 4px; display: block;">
+                                    上传后将保存到 Coordinator 的 <code>/root/</code> 目录
+                                </small>
+                            </div>
+                            <div class="form-group">
+                                <label>上传目标路径</label>
+                                <input type="text" name="RPM_UPLOAD_PATH" id="rpm-upload-path" value="/root/" placeholder="/root/">
+                                <small style="color: var(--gray-500); margin-top: 4px; display: block;">
+                                    可自定义上传到 Coordinator 的目标目录
+                                </small>
+                            </div>
+                        </div>
+                        <div style="margin-top: 12px;">
+                            <button type="button" class="btn btn-primary" onclick="uploadFiles()">
+                                <i class="fas fa-cloud-upload-alt"></i> 上传 RPM 到 Coordinator
+                            </button>
+                        </div>
+                        <div id="rpm-upload-progress" class="hidden" style="margin-top: 12px;">
+                            <div style="background: var(--gray-200); border-radius: 4px; height: 20px; overflow: hidden;">
+                                <div id="upload-progress-bar" style="background: var(--primary); height: 100%; width: 0%; transition: width 0.3s;"></div>
+                            </div>
+                            <div id="upload-progress-text" style="text-align: center; margin-top: 4px; font-size: 12px; color: var(--gray-500);">准备上传...</div>
+                        </div>
+                    </div>
+
+                    <div class="section-title">Coordinator 配置</div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Coordinator 主机名</label>
+                            <input type="text" name="COORDINATOR_HOSTNAME" value="{{ file_config.get('COORDINATOR_HOSTNAME', 'mdw') }}">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Coordinator IP</label>
+                            <input type="text" name="COORDINATOR_IP" value="{{ file_config.get('COORDINATOR_IP', '') }}" placeholder="例如: 192.168.1.100">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Coordinator 端口</label>
+                            <input type="number" name="COORDINATOR_PORT" value="{{ file_config.get('COORDINATOR_PORT', '5432') }}">
+                        </div>
+
+                        <div class="form-group">
+                            <label>数据目录</label>
+                            <input type="text" name="COORDINATOR_DIRECTORY" value="{{ file_config.get('COORDINATOR_DIRECTORY', '/data0/database/coordinator') }}">
+                        </div>
+
+                        <div class="form-group">
+                            <label>主数据目录</label>
+                            <input type="text" name="DATA_DIRECTORY" value="{{ file_config.get('DATA_DIRECTORY', '/data0/database/primary') }}">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="checkbox-group">
+                                <input type="checkbox" name="WITH_MIRROR" value="true" {{ 'checked' if file_config.get('WITH_MIRROR', 'false') == 'true' }}>
+                                启用 Mirror
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Multi-node Segment Configuration -->
+                    <div class="section-title" id="segment-section-title" style="display: none;">Segment 主机配置</div>
+                    <div id="segment-config" style="display: none;">
+                        <!-- Segment Access Configuration -->
+                        <div class="form-grid" style="margin-bottom: 16px;">
+                            <div class="form-group">
+                                <label>Segment 访问方式</label>
+                                <select name="SEGMENT_ACCESS_METHOD" id="segment-access-method" onchange="toggleSegmentAccessFields()">
+                                    <option value="password" {{ 'selected' if file_config.get('SEGMENT_ACCESS_METHOD', 'password') == 'password' }}>密码认证</option>
+                                    <option value="keyfile" {{ 'selected' if file_config.get('SEGMENT_ACCESS_METHOD', 'password') == 'keyfile' }}>SSH 密钥</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Segment 访问用户</label>
+                                <input type="text" name="SEGMENT_ACCESS_USER" value="{{ file_config.get('SEGMENT_ACCESS_USER', 'root') }}">
+                            </div>
+
+                            <div class="form-group" id="segment-password-field">
+                                <label>Segment 访问密码</label>
+                                <input type="password" name="SEGMENT_ACCESS_PASSWORD" value="{{ file_config.get('SEGMENT_ACCESS_PASSWORD', '') }}" placeholder="root 用户密码">
+                            </div>
+
+                            <div class="form-group hidden" id="segment-keyfile-field">
+                                <label>Segment 访问密钥</label>
+                                <input type="text" name="SEGMENT_ACCESS_KEYFILE" value="{{ file_config.get('SEGMENT_ACCESS_KEYFILE', '') }}" placeholder="密钥文件路径">
+                            </div>
+
+                            <div class="form-group hidden" id="segment-keyfile-upload-field">
+                                <label>上传 Segment 访问密钥</label>
+                                <div class="file-input-wrapper">
+                                    <div class="file-input-label" id="segment-keyfile-label">
+                                        <i class="fas fa-upload"></i> 点击上传密钥
+                                    </div>
+                                    <input type="file" name="segment_keyfile_upload" accept="*" onchange="handleSegmentKeyFileSelect(this)">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="background: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 12px; margin-bottom: 16px; border-radius: 4px;">
+                            <strong>说明：</strong>多机部署时，Coordinator 需要通过 SSH 访问 Segment 节点进行环境配置和 RPM 安装。
+                            请确保所有 Segment 节点的访问凭证一致（相同的密码或密钥）。
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Segment 主机数量</label>
+                                <input type="number" name="SEGMENT_COUNT" id="segment-count" value="{{ segment_hosts|length or 2 }}" min="1" max="16" onchange="updateSegmentHosts()">
+                            </div>
+                        </div>
+
+                        <div id="segment-hosts-container" style="margin-top: 16px;">
+                            <!-- Dynamic segment host rows will be added here -->
+                        </div>
+
+                        <div style="margin-top: 12px;">
+                            <button type="button" class="btn btn-secondary" onclick="addSegmentHost()">
+                                <i class="fas fa-plus"></i> 添加主机
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-success" onclick="goToDeploy()">
+                            <i class="fas fa-arrow-right"></i> 保存并下一步
                         </button>
                     </div>
                 </form>
             </div>
+        </div>
 
-            <!-- Deploy Tab -->
-            <div id="deploy-tab" class="tab-content">
-                <div class="section-header">
-                    <h2>部署确认</h2>
-                    <p>检查配置并开始部署</p>
+        <!-- Deploy Tab -->
+        <div id="tab-deploy" class="tab-content">
+            <div class="card">
+                <div class="card-title">
+                    <i class="fas fa-rocket"></i> 执行部署
+                    <span id="status-badge" class="status-badge status-idle">
+                        <i class="fas fa-circle"></i>
+                        <span id="status-text">等待部署</span>
+                    </span>
                 </div>
 
-                <div id="deployment-summary">
-                    <div class="summary-grid">
-                        <div class="summary-card">
-                            <h3><i class="fas fa-layer-group"></i> 部署模式</h3>
-                            <div class="summary-value" id="summary-mode">-</div>
+                <div id="deploy-info" class="hidden" style="margin-bottom: 20px;">
+                    <div class="form-grid">
+                        <div>
+                            <strong>目标服务器:</strong> <span id="info-host">-</span>
                         </div>
-                        <div class="summary-card">
-                            <h3><i class="fas fa-server"></i> 节点数量</h3>
-                            <div class="summary-value" id="summary-nodes">-</div>
-                        </div>
-                        <div class="summary-card">
-                            <h3><i class="fas fa-database"></i> 集群名称</h3>
-                            <div class="summary-value" id="summary-cluster">-</div>
-                        </div>
-                        <div class="summary-card">
-                            <h3><i class="fas fa-copy"></i> Mirror</h3>
-                            <div class="summary-value" id="summary-mirror">-</div>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">
-                                <i class="fas fa-list-check"></i>
-                                配置详情
-                            </div>
-                        </div>
-                        <div class="summary-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
-                            <div class="summary-card" style="margin-bottom: 0;">
-                                <h3>管理员配置</h3>
-                                <ul class="summary-list">
-                                    <li><span>用户名</span><span id="detail-user">-</span></li>
-                                    <li><span>端口</span><span id="detail-port">-</span></li>
-                                </ul>
-                            </div>
-                            <div class="summary-card" style="margin-bottom: 0;">
-                                <h3>Coordinator</h3>
-                                <ul class="summary-list">
-                                    <li><span>主机名</span><span id="detail-coord-host">-</span></li>
-                                    <li><span>IP</span><span id="detail-coord-ip">-</span></li>
-                                </ul>
-                            </div>
-                            <div class="summary-card" style="margin-bottom: 0;">
-                                <h3>存储</h3>
-                                <ul class="summary-list">
-                                    <li><span>Primary</span><span id="detail-primary-dir">-</span></li>
-                                    <li><span>Mirror</span><span id="detail-mirror-dir">-</span></li>
-                                </ul>
-                            </div>
+                        <div>
+                            <strong>部署类型:</strong> <span id="info-type">-</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Progress Section -->
-                <div id="progress-section" style="display: none;">
-                    <div class="progress-section">
-                        <div class="progress-header">
-                            <span class="progress-title" id="progress-title">正在部署...</span>
-                            <span class="progress-percent" id="progress-percent">0%</span>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
-                        </div>
-                        <div class="time-display" id="time-display">
-                            <i class="fas fa-clock"></i>
-                            <span>已运行: <span id="elapsed-time">0:00</span></span>
-                        </div>
-                        <div class="stages" id="stages-container">
-                        </div>
-                    </div>
-
-                    <div class="log-container">
-                        <div class="log-header">
-                            <span class="log-title">
-                                <i class="fas fa-terminal"></i>
-                                部署日志
-                            </span>
-                            <div style="display: flex; gap: 0.5rem;">
-                                <button class="btn btn-secondary btn-sm" onclick="scrollToBottom()">
-                                    <i class="fas fa-arrow-down"></i>
-                                    到底部
-                                </button>
-                                <button class="btn btn-secondary btn-sm" onclick="downloadLog()">
-                                    <i class="fas fa-download"></i>
-                                    下载
-                                </button>
-                            </div>
-                        </div>
-                        <div class="log-content" id="log-content">
-                            <div class="log-line">等待部署开始...</div>
-                        </div>
-                    </div>
+                <div class="log-container" id="log-container">
+                    <div class="log-line">等待部署开始...</div>
                 </div>
 
-                <div id="deploy-actions" class="deploy-actions">
-                    <button type="button" class="btn btn-secondary" onclick="goToTab('hosts')">
-                        <i class="fas fa-arrow-left"></i>
-                        返回
-                    </button>
+                <div class="btn-group">
                     <button type="button" class="btn btn-success btn-lg" id="deploy-btn" onclick="startDeployment()">
-                        <i class="fas fa-rocket"></i>
-                        开始部署
+                        <i class="fas fa-rocket"></i> 开始部署
                     </button>
-                </div>
-
-                <div id="post-deploy-actions" class="deploy-actions" style="display: none;">
-                    <button type="button" class="btn btn-secondary" onclick="refreshPage()">
-                        <i class="fas fa-redo"></i>
-                        重新部署
+                    <button type="button" class="btn btn-secondary" onclick="refreshLogs()">
+                        <i class="fas fa-sync"></i> 刷新日志
                     </button>
-                    <button type="button" class="btn btn-primary" onclick="goToTab('config')">
-                        <i class="fas fa-cog"></i>
-                        修改配置
+                    <button type="button" class="btn btn-danger" onclick="resetDeployment()">
+                        <i class="fas fa-redo"></i> 重置
                     </button>
                 </div>
             </div>
@@ -1503,385 +716,475 @@
     </div>
 
     <script>
-        let currentTab = 'config';
-        let segmentHosts = [];
-        let deploymentInterval = null;
-        let startTime = null;
-        let currentLogFile = null;
+        // Tab switching
+        function switchToTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelector('[data-tab="' + tabName + '"]').classList.add('active');
+            document.getElementById('tab-' + tabName).classList.add('active');
+        }
 
-        const stages = [
-            { key: 'preparing', name: '准备环境', description: '检查并准备部署环境' },
-            { key: 'ssh_setup', name: '配置 SSH', description: '设置 SSH 密钥和访问' },
-            { key: 'env_init_coordinator', name: '初始化 Coordinator', description: '配置 Coordinator 节点' },
-            { key: 'env_init_segments', name: '初始化 Segments', description: '配置 Segment 节点' },
-            { key: 'install_db', name: '安装数据库', description: '安装数据库软件' },
-            { key: 'init_cluster', name: '初始化集群', description: '初始化数据库集群' },
-            { key: 'verifying', name: '验证部署', description: '检查部署结果' }
-        ];
-
-        // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            const activeTab = '{{ active_tab or "config" }}';
-            goToTab(activeTab);
-
-            // Initialize segment hosts from template data
-            const existingHosts = {{ hosts.segments | tojson }};
-            if (existingHosts && existingHosts.length > 0) {
-                segmentHosts = existingHosts.map(h => ({ ip: h[0], hostname: h[1] }));
-                renderSegmentHosts();
-            }
-
-            loadDeploymentSummary();
-            checkDeploymentStatus();
-            initStages();
-        });
-
-        // Tab Navigation
         document.querySelectorAll('.tab').forEach(tab => {
-            tab.addEventListener('click', function() {
-                goToTab(this.dataset.tab);
+            tab.addEventListener('click', () => {
+                switchToTab(tab.dataset.tab);
             });
         });
 
-        function goToTab(tabName) {
-            currentTab = tabName;
-            document.querySelectorAll('.tab').forEach(t => {
-                t.classList.toggle('active', t.dataset.tab === tabName);
+        function toggleAuthFields() {
+            const method = document.getElementById('auth-method').value;
+            if (method === 'password') {
+                document.getElementById('password-field').style.display = 'flex';
+                document.getElementById('key-field').style.display = 'none';
+                document.getElementById('key-upload-field').style.display = 'none';
+            } else {
+                document.getElementById('password-field').style.display = 'none';
+                document.getElementById('key-field').style.display = 'flex';
+                document.getElementById('key-upload-field').style.display = 'flex';
+            }
+        }
+
+        function handleKeyFileSelect(input) {
+            const label = document.getElementById('key-file-label');
+            if (input.files && input.files[0]) {
+                const filename = input.files[0].name;
+                label.innerHTML = '<i class="fas fa-check-circle"></i> 已选择: ' + filename;
+                label.classList.add('has-file');
+            } else {
+                label.innerHTML = '<i class="fas fa-upload"></i> 点击选择密钥文件';
+                label.classList.remove('has-file');
+            }
+        }
+
+        function handleRpmFileSelect(input) {
+            const label = document.getElementById('rpm-file-label');
+            if (input.files && input.files[0]) {
+                const filename = input.files[0].name;
+                const filesize = formatFileSize(input.files[0].size);
+                label.innerHTML = '<i class="fas fa-check-circle"></i> 已选择: ' + escapeHtml(filename) + ' (' + escapeHtml(filesize) + ')';
+                label.classList.add('has-file');
+                const uploadPath = document.getElementById('rpm-upload-path');
+                uploadPath.value = '/root/' + filename;
+            } else {
+                label.innerHTML = '<i class="fas fa-upload"></i> 点击上传 RPM';
+                label.classList.remove('has-file');
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function toggleRpmSource() {
+            const source = document.getElementById('rpm-source').value;
+            const localSection = document.getElementById('rpm-local-section');
+            const uploadSection = document.getElementById('rpm-upload-section');
+
+            if (source === 'local') {
+                localSection.classList.remove('hidden');
+                uploadSection.classList.add('hidden');
+            } else {
+                localSection.classList.add('hidden');
+                uploadSection.classList.remove('hidden');
+            }
+        }
+
+        function validateRpmPath() {
+            const rpmPath = document.getElementById('rpm-local-path').value;
+            const resultDiv = document.getElementById('rpm-validation-result');
+            const btn = document.getElementById('validate-rpm-btn');
+
+            if (!rpmPath) {
+                resultDiv.innerHTML = '<div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> 请输入 RPM 路径</div>';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 验证中...';
+            resultDiv.innerHTML = '<div style="color: var(--gray-500);"><i class="fas fa-spinner fa-spin"></i> 正在验证文件...</div>';
+
+            const formData = new FormData(document.getElementById('connection-form'));
+            formData.append('rpm_path', rpmPath);
+
+            fetch('/validate_rpm_path', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.valid) {
+                    resultDiv.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle"></i> ' + escapeHtml(data.message) + '<br><small>' + escapeHtml(data.file_info) + '</small></div>';
+                } else {
+                    resultDiv.innerHTML = '<div class="alert alert-error"><i class="fas fa-times-circle"></i> ' + escapeHtml(data.message) + '</div>';
+                }
+            })
+            .catch(err => {
+                resultDiv.innerHTML = '<div class="alert alert-error"><i class="fas fa-times-circle"></i> 验证失败: ' + escapeHtml(String(err)) + '</div>';
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check"></i> 验证';
             });
-            document.querySelectorAll('.tab-content').forEach(c => {
-                c.classList.toggle('active', c.id === tabName + '-tab');
+        }
+
+        function handleSegmentKeyFileSelect(input) {
+            const label = document.getElementById('segment-keyfile-label');
+            if (input.files && input.files[0]) {
+                const filename = input.files[0].name;
+                label.innerHTML = '<i class="fas fa-check-circle"></i> 已选择: ' + escapeHtml(filename);
+                label.classList.add('has-file');
+            } else {
+                label.innerHTML = '<i class="fas fa-upload"></i> 点击上传密钥';
+                label.classList.remove('has-file');
+            }
+        }
+
+        function toggleSegmentAccessFields() {
+            const method = document.getElementById('segment-access-method').value;
+            const passwordField = document.getElementById('segment-password-field');
+            const keyfileField = document.getElementById('segment-keyfile-field');
+            const keyfileUploadField = document.getElementById('segment-keyfile-upload-field');
+
+            if (method === 'password') {
+                passwordField.style.display = 'flex';
+                passwordField.classList.remove('hidden');
+                keyfileField.style.display = 'none';
+                keyfileField.classList.add('hidden');
+                keyfileUploadField.style.display = 'none';
+                keyfileUploadField.classList.add('hidden');
+            } else {
+                passwordField.style.display = 'none';
+                passwordField.classList.add('hidden');
+                keyfileField.style.display = 'flex';
+                keyfileField.classList.remove('hidden');
+                keyfileUploadField.style.display = 'flex';
+                keyfileUploadField.classList.remove('hidden');
+            }
+        }
+
+        function toggleDeployType() {
+            const deployType = document.getElementById('deploy-type').value;
+            const segmentSection = document.getElementById('segment-config');
+            const segmentTitle = document.getElementById('segment-section-title');
+
+            if (deployType === 'multi') {
+                segmentSection.style.display = 'block';
+                segmentTitle.style.display = 'block';
+                updateSegmentHosts();
+            } else {
+                segmentSection.style.display = 'none';
+                segmentTitle.style.display = 'none';
+            }
+        }
+
+        function updateSegmentHosts() {
+            const count = parseInt(document.getElementById('segment-count').value) || 2;
+            const container = document.getElementById('segment-hosts-container');
+
+            // Get existing values
+            const existingHosts = [];
+            container.querySelectorAll('.segment-host-row').forEach(row => {
+                existingHosts.push({
+                    ip: row.querySelector('.segment-ip').value,
+                    hostname: row.querySelector('.segment-hostname').value
+                });
             });
 
-            if (tabName === 'hosts') {
-                updateHostsTabView();
-            }
-            if (tabName === 'deploy') {
-                loadDeploymentSummary();
-            }
-        }
+            // Clear container
+            container.innerHTML = '';
 
-        function updateHostsTabView() {
-            const deployType = document.querySelector('input[name="DEPLOY_TYPE"]:checked')?.value || 'single';
-            const singleMessage = document.getElementById('hosts-single-message');
-            const multiHosts = document.getElementById('multi-node-hosts');
-            const singleActions = document.getElementById('single-node-actions');
+            // Generate rows
+            for (let i = 0; i < count; i++) {
+                const ip = existingHosts[i] ? existingHosts[i].ip : '';
+                const hostname = existingHosts[i] ? existingHosts[i].hostname : `sdw${i + 1}`;
 
-            if (deployType === 'single') {
-                singleMessage.style.display = 'flex';
-                multiHosts.style.display = 'none';
-                singleActions.style.display = 'flex';
-            } else {
-                singleMessage.style.display = 'none';
-                multiHosts.style.display = 'block';
-                singleActions.style.display = 'none';
-            }
-        }
-
-        function toggleDeployType(radio) {
-            const multiConfig = document.getElementById('multi-node-config');
-            if (radio.value === 'multi') {
-                multiConfig.classList.add('show');
-            } else {
-                multiConfig.classList.remove('show');
+                const row = document.createElement('div');
+                row.className = 'segment-host-row';
+                row.style.cssText = 'display: flex; gap: 12px; margin-bottom: 12px; align-items: flex-end;';
+                row.innerHTML = `
+                    <div class="form-group" style="flex: 2;">
+                        <label>Segment ${i + 1} IP</label>
+                        <input type="text" class="segment-ip" name="SEGMENT_IP_${i}" placeholder="例如: 192.168.1.10${i}" maxlength="45">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>主机名</label>
+                        <input type="text" class="segment-hostname" name="SEGMENT_HOSTNAME_${i}" placeholder="sdw1" maxlength="63">
+                    </div>
+                    <button type="button" class="btn btn-danger" onclick="removeSegmentHost(this)" style="padding: 10px;">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+                // Set values safely via DOM properties (not innerHTML) to prevent XSS
+                row.querySelector('.segment-ip').value = ip;
+                row.querySelector('.segment-hostname').value = hostname;
+                container.appendChild(row);
             }
         }
 
-        function toggleMirrorConfig() {
-            const checkbox = document.getElementById('with-mirror');
-            const config = document.getElementById('mirror-config');
-            config.classList.toggle('show', checkbox.checked);
+        function addSegmentHost() {
+            const countInput = document.getElementById('segment-count');
+            countInput.value = parseInt(countInput.value) + 1;
+            updateSegmentHosts();
         }
 
-        function toggleAccessMethod(radio) {
-            const keyfileConfig = document.getElementById('keyfile-config');
-            const passwordConfig = document.getElementById('password-config');
-
-            if (radio.value === 'keyfile') {
-                keyfileConfig.classList.add('show');
-                passwordConfig.classList.remove('show');
-            } else {
-                keyfileConfig.classList.remove('show');
-                passwordConfig.classList.add('show');
+        function removeSegmentHost(btn) {
+            const row = btn.closest('.segment-host-row');
+            const container = document.getElementById('segment-hosts-container');
+            if (container.querySelectorAll('.segment-host-row').length > 1) {
+                row.remove();
+                // Update segment count
+                document.getElementById('segment-count').value = container.querySelectorAll('.segment-host-row').length;
             }
         }
 
-        function handleFileUpload(input, type) {
-            const file = input.files[0];
-            if (!file) return;
+        function showAlert(message, type = 'success') {
+            const result = document.getElementById('connection-result');
+            const validTypes = ['success', 'error', 'warning'];
+            result.className = 'alert alert-' + (validTypes.includes(type) ? type : 'success');
+            result.textContent = message;
+            result.classList.remove('hidden');
+            setTimeout(() => result.classList.add('hidden'), 5000);
+        }
 
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('type', type);
+        function testConnection() {
+            const formData = new FormData(document.getElementById('connection-form'));
 
-            fetch('{{ url_for('upload_file') }}', {
+            fetch('/test_connection', {
                 method: 'POST',
                 body: formData
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    const fileNameEl = document.getElementById(type + '-file-name');
-                    const inputEl = document.getElementById(type === 'rpm' ? 'cloudberry-rpm' : 'segment-keyfile');
-
-                    fileNameEl.querySelector('span').textContent = file.name;
-                    fileNameEl.classList.add('show');
-                    inputEl.value = data.file_path;
+                    showAlert('连接成功! ' + data.message, 'success');
+                    // Auto-advance to config tab after successful connection
+                    setTimeout(() => switchToTab('config'), 1000);
                 } else {
-                    alert('上传失败: ' + data.message);
+                    showAlert('连接失败: ' + data.message, 'error');
                 }
             })
-            .catch(err => {
-                alert('上传错误: ' + err.message);
-            });
+            .catch(err => showAlert('连接错误: ' + err, 'error'));
         }
 
-        function addSegmentHost() {
-            segmentHosts.push({ ip: '', hostname: '' });
-            renderSegmentHosts();
-        }
+        function saveConfig() {
+            const formData = new FormData(document.getElementById('connection-form'));
+            formData.append('deploy_type', document.getElementById('deploy-type').value);
 
-        function removeSegmentHost(index) {
-            segmentHosts.splice(index, 1);
-            renderSegmentHosts();
-        }
-
-        function renderSegmentHosts() {
-            const container = document.getElementById('segment-hosts');
-            const header = container.querySelector('.header');
-            container.innerHTML = '';
-            container.appendChild(header);
-
-            segmentHosts.forEach((host, index) => {
-                const div = document.createElement('div');
-                div.className = 'host-item';
-                div.innerHTML = `
-                    <div class="input-wrapper">
-                        <i class="fas fa-network-wired" style="left: 0.625rem; font-size: 0.8125rem;"></i>
-                        <input type="text" style="padding-left: 2rem;"
-                            value="${host.ip}"
-                            placeholder="192.168.1.101"
-                            onchange="updateSegmentHost(${index}, 'ip', this.value)">
-                    </div>
-                    <div class="input-wrapper">
-                        <i class="fas fa-hashtag" style="left: 0.625rem; font-size: 0.8125rem;"></i>
-                        <input type="text" style="padding-left: 2rem;"
-                            value="${host.hostname}"
-                            placeholder="sdw1"
-                            onchange="updateSegmentHost(${index}, 'hostname', this.value)">
-                    </div>
-                    <button type="button" class="btn btn-danger btn-icon" onclick="removeSegmentHost(${index})">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                `;
-                container.appendChild(div);
-            });
-
-            document.getElementById('segment-count').value = segmentHosts.length;
-        }
-
-        function updateSegmentHost(index, field, value) {
-            segmentHosts[index][field] = value;
-        }
-
-        function resetForm() {
-            if (confirm('确定要重置所有配置吗？')) {
-                location.reload();
+            // Add config form data
+            const configForm = document.getElementById('config-form');
+            const configData = new FormData(configForm);
+            for (let [key, value] of configData.entries()) {
+                formData.append(key, value);
             }
-        }
 
-        function loadDeploymentSummary() {
-            fetch('{{ url_for('get_deployment_params') }}')
-                .then(response => response.json())
-                .then(data => {
-                    const params = data.params;
-                    const hosts = data.hosts;
-
-                    document.getElementById('summary-mode').textContent = params.DEPLOY_TYPE === 'multi' ? '多节点' : '单节点';
-                    const totalNodes = 1 + (hosts.segments ? hosts.segments.length : 0);
-                    document.getElementById('summary-nodes').textContent = totalNodes;
-                    document.getElementById('summary-cluster').textContent = params.ARRAY_NAME || '-';
-                    document.getElementById('summary-mirror').textContent = params.WITH_MIRROR === 'true' ? '已启用' : '未启用';
-
-                    document.getElementById('detail-user').textContent = params.ADMIN_USER || '-';
-                    document.getElementById('detail-port').textContent = params.COORDINATOR_PORT || '-';
-                    document.getElementById('detail-coord-host').textContent = params.COORDINATOR_HOSTNAME || '-';
-                    document.getElementById('detail-coord-ip').textContent = params.COORDINATOR_IP || '-';
-                    document.getElementById('detail-primary-dir').textContent = (params.DATA_DIRECTORY || '').split(' ')[0] || '-';
-                    document.getElementById('detail-mirror-dir').textContent = params.WITH_MIRROR === 'true' ? ((params.MIRROR_DATA_DIRECTORY || '').split(' ')[0] || '-') : 'N/A';
-                });
-        }
-
-        function initStages() {
-            const container = document.getElementById('stages-container');
-            container.innerHTML = stages.map((stage, index) => `
-                <div class="stage" data-stage="${stage.key}" id="stage-${index}">
-                    <div class="stage-icon">
-                        <span>${index + 1}</span>
-                    </div>
-                    <div class="stage-content">
-                        <div class="stage-name">${stage.name}</div>
-                        <div class="stage-desc">${stage.description}</div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function checkDeploymentStatus() {
-            fetch('{{ url_for('deployment_status') }}')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.running) {
-                        showProgress();
-                        updateStatus('running');
-                        currentLogFile = data.log_file;
-                        startDeploymentMonitoring();
-                    } else if (data.success !== null) {
-                        if (data.success) {
-                            updateStatus('success');
-                        } else {
-                            updateStatus('error');
-                        }
-                    }
-                });
-        }
-
-        function startDeployment() {
-            const btn = document.getElementById('deploy-btn');
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 启动中...';
-
-            fetch('{{ url_for('deploy') }}', {
+            return fetch('/save_config', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+                body: formData
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    currentLogFile = data.log_file;
-                    showProgress();
-                    updateStatus('running');
-                    startDeploymentMonitoring();
+                    showAlert('配置已保存!', 'success');
+                    return true;
                 } else {
-                    alert(data.message);
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fas fa-rocket"></i> 开始部署';
+                    showAlert('保存失败: ' + (data.message || ''), 'error');
+                    return false;
                 }
             })
             .catch(err => {
-                alert('启动部署失败: ' + err);
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-rocket"></i> 开始部署';
+                showAlert('保存失败: ' + err, 'error');
+                return false;
             });
         }
 
-        function showProgress() {
-            document.getElementById('deployment-summary').style.display = 'none';
-            document.getElementById('deploy-actions').style.display = 'none';
-            document.getElementById('progress-section').style.display = 'block';
-            startTime = Date.now();
+        function saveConnectionAndNext() {
+            saveConfig().then(success => {
+                if (success) {
+                    switchToTab('config');
+                }
+            });
         }
 
-        function startDeploymentMonitoring() {
-            if (deploymentInterval) clearInterval(deploymentInterval);
+        function uploadFiles() {
+            // Collect both connection and config form data
+            const connectionForm = document.getElementById('connection-form');
+            const formData = new FormData(connectionForm);
 
-            deploymentInterval = setInterval(() => {
-                updateDeploymentStatus();
-            }, 2000);
-
-            updateDeploymentStatus();
-        }
-
-        function updateDeploymentStatus() {
-            fetch('{{ url_for('deployment_status') }}')
-                .then(response => response.json())
-                .then(data => {
-                    const progressBar = document.getElementById('progress-fill');
-                    const progressPercent = document.getElementById('progress-percent');
-                    const progressTitle = document.getElementById('progress-title');
-
-                    progressPercent.textContent = data.stage_progress + '%';
-                    progressBar.style.width = data.stage_progress + '%';
-
-                    if (data.elapsed_time !== undefined) {
-                        const mins = Math.floor(data.elapsed_time / 60);
-                        const secs = data.elapsed_time % 60;
-                        document.getElementById('elapsed-time').textContent =
-                            `${mins}:${secs.toString().padStart(2, '0')}`;
-                    }
-
-                    stages.forEach((stage, index) => {
-                        const stageEl = document.getElementById('stage-' + index);
-                        const iconEl = stageEl.querySelector('.stage-icon');
-
-                        stageEl.classList.remove('active', 'completed');
-
-                        if (index < data.completed_stages) {
-                            stageEl.classList.add('completed');
-                            iconEl.innerHTML = '<i class="fas fa-check"></i>';
-                        } else if (stage.key === data.current_stage) {
-                            stageEl.classList.add('active');
-                            iconEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                            progressTitle.textContent = stage.name + '...';
-                        } else {
-                            iconEl.innerHTML = '<span>' + (index + 1) + '</span>';
-                        }
-                    });
-
-                    if (!data.running) {
-                        clearInterval(deploymentInterval);
-
-                        if (data.success) {
-                            progressBar.classList.add('success');
-                            progressTitle.textContent = '部署完成！';
-                            updateStatus('success');
-                        } else {
-                            progressBar.classList.add('error');
-                            progressTitle.textContent = '部署失败';
-                            updateStatus('error');
-                        }
-
-                        document.getElementById('post-deploy-actions').style.display = 'flex';
-                    }
-
-                    updateDeploymentLogs();
-                });
-        }
-
-        function updateDeploymentLogs() {
-            const url = currentLogFile
-                ? `{{ url_for('deployment_logs') }}?log_file=${encodeURIComponent(currentLogFile)}`
-                : '{{ url_for('deployment_logs') }}';
-
-            fetch(url)
-                .then(response => response.json())
-                .then(data => {
-                    const logContent = document.getElementById('log-content');
-                    logContent.innerHTML = formatLog(data.logs);
-                    logContent.scrollTop = logContent.scrollHeight;
-                });
-        }
-
-        function formatLog(logs) {
-            if (!logs || logs === 'No log file specified.') {
-                return '<div class="log-line">等待日志...</div>';
+            const configForm = document.getElementById('config-form');
+            const configData = new FormData(configForm);
+            for (let [key, value] of configData.entries()) {
+                formData.append(key, value);
             }
 
-            return logs.split('\n').map(line => {
-                let className = '';
-                const lowerLine = line.toLowerCase();
+            // Add rpm_source
+            const rpmSource = document.getElementById('rpm-source').value;
+            formData.append('rpm_source', rpmSource);
 
-                if (lowerLine.includes('error') || lowerLine.includes('failed')) {
-                    className = 'error';
-                } else if (lowerLine.includes('success') || lowerLine.includes('completed') || lowerLine.includes('finished')) {
-                    className = 'success';
-                } else if (lowerLine.includes('warning')) {
-                    className = 'warning';
-                } else if (lowerLine.includes('info')) {
-                    className = 'info';
+            // Show progress for upload mode
+            if (rpmSource === 'upload') {
+                const progressDiv = document.getElementById('rpm-upload-progress');
+                progressDiv.classList.remove('hidden');
+            }
+
+            fetch('/upload_files', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide progress
+                const progressDiv = document.getElementById('rpm-upload-progress');
+                progressDiv.classList.add('hidden');
+
+                if (data.success) {
+                    const uploadedList = data.uploaded ? data.uploaded.map(f => escapeHtml(f)).join(', ') : '';
+                    showAlert('文件处理成功! ' + uploadedList, 'success');
+                } else {
+                    showAlert('处理失败: ' + (data.message || ''), 'error');
                 }
+            })
+            .catch(err => {
+                document.getElementById('rpm-upload-progress').classList.add('hidden');
+                showAlert('上传错误: ' + err, 'error');
+            });
+        }
 
-                return `<div class="log-line"><span class="${className}">${escapeHtml(line)}</span></div>`;
-            }).join('');
+        function goToDeploy() {
+            // Save config first, then switch tab on success
+            saveConfig().then(success => {
+                if (success) {
+                    switchToTab('deploy');
+
+                    // Update deploy info
+                    const formData = new FormData(document.getElementById('connection-form'));
+                    document.getElementById('info-host').textContent = formData.get('host');
+                    document.getElementById('info-type').textContent = document.getElementById('deploy-type').value === 'single' ? '单节点' : '多节点';
+                    document.getElementById('deploy-info').classList.remove('hidden');
+                }
+            });
+        }
+
+        let isDeploying = false;
+        let logInterval = null;
+
+        function startDeployment() {
+            if (isDeploying) {
+                alert('部署正在进行中');
+                return;
+            }
+
+            const btn = document.getElementById('deploy-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 部署中...';
+
+            // Update status
+            updateStatus('running', '部署中...');
+
+            // Collect connection config from form
+            const connectionForm = document.getElementById('connection-form');
+            const formData = new FormData(connectionForm);
+
+            // Also include config form data
+            const configForm = document.getElementById('config-form');
+            const configData = new FormData(configForm);
+            for (let [key, value] of configData.entries()) {
+                formData.append(key, value);
+            }
+
+            // Add rpm_source
+            const rpmSource = document.getElementById('rpm-source').value;
+            formData.append('rpm_source', rpmSource);
+
+            // Get the correct RPM path based on source
+            if (rpmSource === 'local') {
+                formData.set('CLOUDBERRY_RPM', document.getElementById('rpm-local-path').value);
+            } else {
+                formData.set('CLOUDBERRY_RPM', document.getElementById('rpm-upload-path').value);
+            }
+
+            fetch('/deploy', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    isDeploying = true;
+                    // Start polling logs
+                    logInterval = setInterval(fetchLogs, 2000);
+                } else {
+                    showAlert('部署启动失败: ' + data.message, 'error');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-rocket"></i> 开始部署';
+                    updateStatus('idle', '等待部署');
+                }
+            })
+            .catch(err => {
+                showAlert('部署错误: ' + err, 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-rocket"></i> 开始部署';
+                updateStatus('idle', '等待部署');
+            });
+        }
+
+        function fetchLogs() {
+            fetch('/deployment_logs')
+                .then(response => response.json())
+                .then(data => {
+                    const logContainer = document.getElementById('log-container');
+                    logContainer.innerHTML = '<div class="log-line">' + escapeHtml(data.logs) + '</div>';
+                    logContainer.scrollTop = logContainer.scrollHeight;
+
+                    if (!data.running && isDeploying) {
+                        isDeploying = false;
+                        clearInterval(logInterval);
+
+                        const btn = document.getElementById('deploy-btn');
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fas fa-rocket"></i> 再次部署';
+
+                        if (data.success) {
+                            updateStatus('success', '部署成功');
+                        } else {
+                            updateStatus('error', '部署失败');
+                        }
+                    }
+                });
+        }
+
+        function refreshLogs() {
+            fetchLogs();
+        }
+
+        function updateStatus(status, text) {
+            const badge = document.getElementById('status-badge');
+            const statusText = document.getElementById('status-text');
+
+            badge.className = 'status-badge status-' + status;
+            statusText.textContent = text;
+        }
+
+        function resetDeployment() {
+            if (confirm('确定要重置部署状态吗?')) {
+                fetch('/reset', { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        isDeploying = false;
+                        if (logInterval) clearInterval(logInterval);
+
+                        document.getElementById('log-container').innerHTML = '<div class="log-line">等待部署开始...</div>';
+                        document.getElementById('deploy-info').classList.add('hidden');
+
+                        const btn = document.getElementById('deploy-btn');
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fas fa-rocket"></i> 开始部署';
+
+                        updateStatus('idle', '等待部署');
+                    });
+            }
         }
 
         function escapeHtml(text) {
@@ -1890,49 +1193,50 @@
             return div.innerHTML;
         }
 
-        function updateStatus(status) {
-            const badge = document.getElementById('status-badge');
-            const text = document.getElementById('status-text');
+        // Pre-populate from config files on page load
+        (function initFromConfig() {
+            // Segment hosts from segmenthosts.conf
+            const initialSegmentHosts = {{ segment_hosts | tojson }};
 
-            badge.className = 'status-badge ' + status;
+            // Show/hide multi-node section based on config
+            toggleDeployType();
 
-            const statusTexts = {
-                ready: '准备就绪',
-                running: '部署中...',
-                success: '部署成功',
-                error: '部署失败'
-            };
+            // Show/hide segment access fields based on config
+            toggleSegmentAccessFields();
 
-            text.textContent = statusTexts[status] || status;
-        }
+            // Pre-fill segment host rows if we have data
+            if (initialSegmentHosts.length > 0) {
+                const container = document.getElementById('segment-hosts-container');
+                const count = initialSegmentHosts.length;
+                document.getElementById('segment-count').value = count;
+                container.innerHTML = '';
 
-        function scrollToBottom() {
-            const logContent = document.getElementById('log-content');
-            logContent.scrollTop = logContent.scrollHeight;
-        }
+                for (let i = 0; i < count; i++) {
+                    const ip = initialSegmentHosts[i][0] || '';
+                    const hostname = initialSegmentHosts[i][1] || `sdw${i + 1}`;
 
-        function downloadLog() {
-            if (!currentLogFile) {
-                alert('没有可用的日志文件');
-                return;
+                    const row = document.createElement('div');
+                    row.className = 'segment-host-row';
+                    row.style.cssText = 'display: flex; gap: 12px; margin-bottom: 12px; align-items: flex-end;';
+                    row.innerHTML = `
+                        <div class="form-group" style="flex: 2;">
+                            <label>Segment ${i + 1} IP</label>
+                            <input type="text" class="segment-ip" name="SEGMENT_IP_${i}" placeholder="例如: 192.168.1.10${i}" maxlength="45">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label>主机名</label>
+                            <input type="text" class="segment-hostname" name="SEGMENT_HOSTNAME_${i}" placeholder="sdw1" maxlength="63">
+                        </div>
+                        <button type="button" class="btn btn-danger" onclick="removeSegmentHost(this)" style="padding: 10px;">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    `;
+                    row.querySelector('.segment-ip').value = ip;
+                    row.querySelector('.segment-hostname').value = hostname;
+                    container.appendChild(row);
+                }
             }
-
-            fetch('{{ url_for('deployment_logs') }}?log_file=' + encodeURIComponent(currentLogFile) + '&lines=10000')
-                .then(response => response.json())
-                .then(data => {
-                    const blob = new Blob([data.logs], { type: 'text/plain' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'deployment.log';
-                    a.click();
-                    URL.revokeObjectURL(url);
-                });
-        }
-
-        function refreshPage() {
-            location.reload();
-        }
+        })();
     </script>
 </body>
 </html>

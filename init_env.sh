@@ -1,602 +1,232 @@
 #!/bin/bash
+set -o pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 VARS_FILE="deploycluster_parameter.sh"
 
-source ./${VARS_FILE}
+source "${SCRIPT_DIR}/${VARS_FILE}"
+source "${SCRIPT_DIR}/common.sh"
 
 working_dir="/tmp/${SEGMENT_ACCESS_USER}"
 
-# Check if the working directory exists, if yes delete it, if no create it
-if [ -d "${working_dir}" ]; then
-  rm -rf ${working_dir}
-fi
-mkdir -p ${working_dir}
-chmod 777 ${working_dir}
+# Clean and recreate working directory
+rm -rf "${working_dir}"
+mkdir -p "${working_dir}"
+chmod 777 "${working_dir}"
 
-if [ "${1}" == "single" ] || [ "${1}" == "multi" ]; then  
-  cluster_type="${1}"  
-else  
+if [ "${1}" = "single" ] || [ "${1}" = "multi" ]; then
+  cluster_type="${1}"
+else
   cluster_type="${DEPLOY_TYPE}"
-fi  
+fi
 
-change_hostname() {
-    local new_hostname="$1"
-    
-    # Validate root privileges
-    if [[ $EUID -ne 0 ]]; then
-        echo "Error: This operation requires root privileges." >&2
-        return 1
-    fi
-    
-    # Validate hostname format
-    if [[ ! "$new_hostname" =~ ^[a-zA-Z0-9][a-zA-Z0-9-]{0,62}$ ]]; then
-        echo "Error: Invalid hostname. Must start/end with alphanumeric and can contain hyphens." >&2
-        return 1
-    fi
-    
-    local current_hostname=$(hostname)
-    echo "Changing hostname from $current_hostname to $new_hostname..."
-    
-    # Detect OS type
-    if [[ -f /etc/os-release ]]; then
-        source /etc/os-release
-        
-        case "$ID" in
-            ubuntu|debian)
-                echo "$new_hostname" > /etc/hostname
-                sed -i "s/127.0.1.1[[:space:]]*$current_hostname/127.0.1.1\t$new_hostname/g" /etc/hosts
-                hostnamectl set-hostname "$new_hostname"
-                ;;
-                
-            centos|rhel|fedora)
-                echo "$new_hostname" > /etc/hostname
-                sed -i "s/127.0.0.1[[:space:]]*$current_hostname/127.0.0.1\t$new_hostname/g" /etc/hosts
-                hostnamectl set-hostname "$new_hostname"
-                ;;
-                
-            *)
-                if [[ -f /etc/hostname ]]; then
-                    echo "$new_hostname" > /etc/hostname
-                fi
-                if [[ -f /etc/hosts ]]; then
-                    sed -i "s/127.0.1.1[[:space:]]*$current_hostname/127.0.1.1\t$new_hostname/g" /etc/hosts
-                fi
-                if command -v hostnamectl &>/dev/null; then
-                    hostnamectl set-hostname "$new_hostname"
-                else
-                    hostname "$new_hostname"
-                    echo "Warning: Hostname change may not be persistent after reboot." >&2
-                fi
-                ;;
-        esac
-        
-    elif [[ "$(uname)" == "Darwin" ]]; then
-        scutil --set HostName "$new_hostname"
-        scutil --set LocalHostName "$new_hostname"
-        scutil --set ComputerName "$new_hostname"
-        dscacheutil -flushcache
-        
-    else
-        echo "Error: Unsupported operating system." >&2
-        return 1
-    fi
-    
-    echo "Hostname changed to: $(hostname)"
-    return 0
-}    
-
-
-function config_hostsfile()
-{
+function config_hostsfile() {
   log_time "Setting up /etc/hosts on coordinator..."
-  
-  # First clear any existing Hashdata hosts entries
+
+  # Clear existing entries
   sed -i '/#Hashdata hosts begin/,/#Hashdata hosts end/d' /etc/hosts
-  # Remove empty lines from the bottom of the file
   sed -i -e :a -e '/^\n*$/{$d;N;ba' -e '}' /etc/hosts
-  
-  # Create a temporary file for the new hosts entries
-  temp_hosts="${working_dir}/hostsfile"
-  
-  # Start the Hashdata hosts section
-  echo "#Hashdata hosts begin" > $temp_hosts
-  echo "##Coordinator hosts" >> $temp_hosts
-  
-  # Extract and add the coordinator entry - using grep to ensure only valid IP lines
-  sed -n '/##Coordinator hosts/,/##Segment hosts/p' segmenthosts.conf | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' >> $temp_hosts
-  
-  # Add segment hosts header
-  echo "##Segment hosts" >> $temp_hosts
-  
-  # Extract and add the segment entries - using grep to ensure only valid IP lines
-  sed -n '/##Segment hosts/,/#Hashdata hosts end/p' segmenthosts.conf | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' >> $temp_hosts
-  
-  # Close the Hashdata hosts section
-  echo "#Hashdata hosts end" >> $temp_hosts
-  
-  # Append the new hosts entries to /etc/hosts
-  cat $temp_hosts >> /etc/hosts
-  
-  log_time "Completed setting up /etc/hosts"
+
+  local temp_hosts="${working_dir}/hostsfile"
+
+  echo "#Hashdata hosts begin" > "$temp_hosts"
+  echo "##Coordinator hosts" >> "$temp_hosts"
+  sed -n '/##Coordinator hosts/,/##Segment hosts/p' "${SCRIPT_DIR}/segmenthosts.conf" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' >> "$temp_hosts"
+  echo "##Segment hosts" >> "$temp_hosts"
+  sed -n '/##Segment hosts/,/#Hashdata hosts end/p' "${SCRIPT_DIR}/segmenthosts.conf" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' >> "$temp_hosts"
+  echo "#Hashdata hosts end" >> "$temp_hosts"
+
+  cat "$temp_hosts" >> /etc/hosts
+
+  log_time "Completed /etc/hosts setup"
 }
 
-function copyfile_segment()
-{ 
-  log_time "copy init_env_segment.sh id_rsa.pub Cloudberry rpms to segment hosts"
-  HOSTS_FILE="${working_dir}/segment_hosts.txt"
-  if [ "${SEGMENT_ACCESS_METHOD}" = "keyfile" ]; then
-    echo "sh multissh.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} \"rm -rf ${working_dir};mkdir -p ${working_dir}\""
-    sh multissh.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} "rm -rf ${working_dir};mkdir -p ${working_dir}"
-    echo "sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} init_env_segment.sh ${working_dir}"
-    echo "sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} deploycluster_parameter.sh ${working_dir}"
-    echo "sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${working_dir}/hostsfile ${working_dir}"
-    echo "sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /home/${ADMIN_USER}/.ssh/id_rsa.pub ${working_dir}"
-    echo "sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${CLOUDBERRY_RPM} ${working_dir}"
-    sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} init_env_segment.sh ${working_dir}
-    sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} deploycluster_parameter.sh ${working_dir}
-    sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${working_dir}/hostsfile ${working_dir}
-    sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /home/${ADMIN_USER}/.ssh/id_rsa.pub ${working_dir}
-    sh multiscp.sh -v -k ${SEGMENT_ACCESS_KEYFILE} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${CLOUDBERRY_RPM} ${working_dir}
-  else
-    echo "sh multissh.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} \"rm -rf ${working_dir};mkdir -p ${working_dir}\""
-    sh multissh.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} "rm -rf ${working_dir};mkdir -p ${working_dir}"
-    echo "sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} init_env_segment.sh ${working_dir}"
-    echo "sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} deploycluster_parameter.sh ${working_dir}"
-    echo "sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${working_dir}/hostsfile ${working_dir}"
-    echo "sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /home/${ADMIN_USER}/.ssh/id_rsa.pub ${working_dir}"
-    echo "sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${CLOUDBERRY_RPM} ${working_dir}"
-    sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} init_env_segment.sh ${working_dir}
-    sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} deploycluster_parameter.sh ${working_dir}
-    sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${working_dir}/hostsfile ${working_dir}
-    sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} /home/${ADMIN_USER}/.ssh/id_rsa.pub ${working_dir}
-    sh multiscp.sh -v -p ${SEGMENT_ACCESS_PASSWORD} -f $HOSTS_FILE -u ${SEGMENT_ACCESS_USER} ${CLOUDBERRY_RPM} ${working_dir}
-  fi
-  log_time "Finished copy init_env_segment.sh id_rsa.pub Cloudberry rpms to segment hosts"
-}
-
-function init_segment()
-{
-  log_time "Start init configuration on segment hosts"
-  logfilename=$(date +%Y%m%d)_$(date +%H%M%S)
+function copyfile_segment() {
+  log_time "Copying deployment files to segment hosts..."
+  local hosts_file="${working_dir}/segment_hosts.txt"
+  local access_opts
 
   if [ "${SEGMENT_ACCESS_METHOD}" = "keyfile" ]; then
-    for i in $(cat ${working_dir}/segment_hosts.txt); do
-      echo "ssh -n -q -i ${SEGMENT_ACCESS_KEYFILE} ${SEGMENT_ACCESS_USER}@${i} \"bash -c 'sudo sh ${working_dir}/init_env_segment.sh ${i} ${working_dir} &> ${working_dir}/init_env_segment_${i}_$logfilename.log'\""
-      ssh -n -q -i ${SEGMENT_ACCESS_KEYFILE} ${SEGMENT_ACCESS_USER}@${i} "bash -c 'sudo sh ${working_dir}/init_env_segment.sh ${i} ${working_dir} &> ${working_dir}/init_env_segment_${i}_$logfilename.log'" &
-    done
-    wait
+    access_opts="-k ${SEGMENT_ACCESS_KEYFILE}"
   else
-    for i in $(cat ${working_dir}/segment_hosts.txt); do
-      echo "sshpass -p ${SEGMENT_ACCESS_PASSWORD} ssh -n -q ${SEGMENT_ACCESS_USER}@${i} \"bash -c 'sudo sh ${working_dir}/init_env_segment.sh ${i} ${working_dir} &> ${working_dir}/init_env_segment_${i}_$logfilename.log'\""
-      sshpass -p ${SEGMENT_ACCESS_PASSWORD} ssh -n -q ${SEGMENT_ACCESS_USER}@${i} "bash -c 'sudo sh ${working_dir}/init_env_segment.sh ${i} ${working_dir} &> ${working_dir}/init_env_segment_${i}_$logfilename.log'" &
-    done
-    wait
+    access_opts="-p ${SEGMENT_ACCESS_PASSWORD}"
   fi
-  log_time "Finished init configuration on segment hosts"
+
+  local common_args="-v ${access_opts} -f ${hosts_file} -u ${SEGMENT_ACCESS_USER}"
+
+  # Create working directory on segments
+  sh "${SCRIPT_DIR}/multissh.sh" ${common_args} "rm -rf ${working_dir}; mkdir -p ${working_dir}"
+
+  # Copy required files
+  local files_to_copy=(
+    "init_env_segment.sh"
+    "deploycluster_parameter.sh"
+    "common.sh"
+    "${working_dir}/hostsfile"
+    "/home/${ADMIN_USER}/.ssh/id_rsa.pub"
+    "${CLOUDBERRY_RPM}"
+  )
+
+  for f in "${files_to_copy[@]}"; do
+    local src="$f"
+    # If it's a script name without path, prefix with SCRIPT_DIR
+    if [[ "$f" != /* ]] && [[ "$f" != "${working_dir}"/* ]]; then
+      src="${SCRIPT_DIR}/${f}"
+    fi
+    log_time "Copying ${src} to segments..."
+    sh "${SCRIPT_DIR}/multiscp.sh" ${common_args} "${src}" "${working_dir}"
+  done
+
+  log_time "Finished copying files to segment hosts."
 }
 
-#Setup the env setting on Linux OS for Hashdata database
+function init_segment() {
+  log_time "Initializing segment hosts..."
+  local logfilename
+  logfilename="$(date +%Y%m%d_%H%M%S)"
+  local hosts_file="${working_dir}/segment_hosts.txt"
+
+  for i in $(cat "${hosts_file}"); do
+    local log_file="${working_dir}/init_env_segment_${i}_${logfilename}.log"
+    if [ "${SEGMENT_ACCESS_METHOD}" = "keyfile" ]; then
+      log_time "Initializing segment: ${i}"
+      ssh -n -q -i "${SEGMENT_ACCESS_KEYFILE}" "${SEGMENT_ACCESS_USER}@${i}" \
+        "bash -c 'sudo sh ${working_dir}/init_env_segment.sh ${i} ${working_dir} &> ${log_file}'" &
+    else
+      sshpass -p "${SEGMENT_ACCESS_PASSWORD}" ssh -n -q "${SEGMENT_ACCESS_USER}@${i}" \
+        "bash -c 'sudo sh ${working_dir}/init_env_segment.sh ${i} ${working_dir} &> ${log_file}'" &
+    fi
+  done
+  wait
+
+  log_time "Finished segment host initialization."
+}
+
+# ==================== Main Execution ====================
+
 log_time "Start env init setting on coordinator..."
 
 #Step 1: Installing Software Dependencies
 log_time "Step 1: Installing Software Dependencies..."
-
-
-if [ "${MAUNAL_YUM_REPO}" != "true" ]; then
-  # Check if the /etc/os-release file exists
-  log_time "Check os-release version and make proper settings for YUM sources"
-  
-  if [ -f /etc/os-release ]; then
-      # Source the /etc/os-release file to get the system information
-      source /etc/os-release
-  
-      # Checking for Oracle Linux
-      IS_ORACLE_LINUX=0
-      if [[ "$ID" == "ol" || "$NAME" == *"Oracle Linux"* ]]; then
-          IS_ORACLE_LINUX=1
-          echo "This is Oracle Linux"
-      fi
-  
-      # Extract the first digit of the VERSION_ID
-      first_digit=$(echo "$VERSION_ID" | cut -c1)
-  
-      # Execute different operations based on the first digit of the VERSION_ID
-      case "$first_digit" in
-          7)
-              # Operation in 7
-              echo "This is a operating system with version ID starting with 7."
-              rm -rf /etc/yum.repos.d/*
-              curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.huaweicloud.com/repository/conf/CentOS-7-anon.repo
-              yum clean all
-              yum makecache
-              yum install -y libcgroup-tools
-              
-              # You can add specific commands for Operation A here, for example, setting up the environment on the coordinator node
-              # sh init_env.sh single
-              ;;
-          8)
-              # Operation in 8
-              echo "This is a operating system with version ID starting with 8."
-              if [ $IS_ORACLE_LINUX -ne 1 ]; then
-                rm -rf /etc/yum.repos.d/*
-                curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.huaweicloud.com/repository/conf/CentOS-8-anon.repo
-                yum clean all
-                yum makecache
-              else
-                log_time "Skip set yum repo for Oracle Linux."
-              fi
-              # You can add specific commands for Operation B here
-              ;;
-          9)
-              # Operation in 9
-              echo "This is a operating system with version ID starting with 9. Executing Operation C."
-              # You can add specific commands for Operation C here, such as starting the database cluster deployment
-              # bash run.sh multi
-              ;;
-          *)
-              echo "Unsupported OS version ID starting with: $first_digit"
-              ;;
-      esac
-  else
-      echo "/etc/os-release file not found. Unable to determine the operating system version."
-  fi
-else
-  log_time "Please make sure YUM repo are correctly configured for all hosts manually."
-fi
-
-echo "cat /usr/share/zoneinfo/Asia/Macau > /usr/share/zoneinfo/Asia/Shanghai"
-
-cat /usr/share/zoneinfo/Asia/Macau > /usr/share/zoneinfo/Asia/Shanghai
-
-yum install -y epel-release
-
-log_time "Install necessary tools: sshpass."
-
-# Check if sshpass is already installed
-if ! command -v sshpass &> /dev/null; then
-    echo "sshpass could not be found, installing..."
-    yum install -y sshpass
-    if [ $? -ne 0 ]; then
-        echo "Try to build from source code."
-        yum install -y tar gcc make
-        tar -zxvf sshpass-1.10.tar.gz
-        cd sshpass-1.10
-        ./configure
-        make
-        make install
-        if [ $? -ne 0 ]; then
-            echo "Failed to install sshpass from source code."
-        exit 1
-        fi
-    fi
-    echo "sshpass installed successfully."
-else
-    echo "sshpass is already installed."
-fi
-
-log_time "Install necessary dependencies."
-yum install -y apr apr-util bash bzip2 curl iproute krb5-devel libcurl libevent libuuid libuv libxml2 libyaml libzstd openldap openssh openssh-clients openssh-server openssl openssl-libs perl python3 python3-psycopg2 python3-psutil python3-pyyaml python3-setuptools python3-devel python39 readline rsync sed tar which zip zlib lz4 keyutils
-yum install -y git passwd wget net-tools nmon libicu
+configure_yum_repo
+configure_timezone "${TIMEZONE:-Asia/Shanghai}"
+install_sshpass
+install_dependencies
 
 #Step 2: Turn off firewalls
 log_time "Step 2: Turn off firewalls..."
-
-systemctl stop firewalld.service
-systemctl disable firewalld.service
-
-sed s/^SELINUX=.*$/SELINUX=disabled/ -i /etc/selinux/config
-setenforce 0
-
+disable_firewall
 
 #Step 3: Configuring system parameters
 log_time "Step 3: Configuring system parameters..."
+configure_sysctl
+configure_limits
+configure_sshd
+configure_logind
 
-timedatectl set-timezone Asia/Macau
-
-shmall=$(expr $(getconf _PHYS_PAGES) / 2)
-shmmax=$(expr $(getconf _PHYS_PAGES) / 2 \* $(getconf PAGE_SIZE))
-min_free_kbytes=$(awk 'BEGIN {OFMT = "%.0f";} /MemTotal/ {print $2 * .03;}' /proc/meminfo)
-
-# Clean up previous HashData sysctl configuration - remove all instances from first BEGIN to last END
-# Use a loop to ensure all HashData configuration blocks are removed
-while grep -q '# BEGIN HashData sysctl CONFIG' /etc/sysctl.conf; do
-    sed -i '/# BEGIN HashData sysctl CONFIG/,/# END HashData sysctl CONFIG/d' /etc/sysctl.conf
-done
-
-echo "# BEGIN HashData sysctl CONFIG
-######################
-# HashData CONFIG PARAMS #
-######################
-
-kernel.shmall = _SHMALL
-kernel.shmmax = _SHMMAX
-kernel.shmmni = 32768
-vm.overcommit_memory = 2
-vm.overcommit_ratio = 95
-vm.min_free_kbytes = _MIN_FREE_KBYTES
-net.ipv4.ip_local_port_range = 10000 65535
-kernel.sem = 32000 1048576000 1000 32768
-kernel.sysrq = 1
-kernel.core_uses_pid = 1
-kernel.msgmnb = 65536
-kernel.msgmax = 65536
-kernel.msgmni = 32768
-net.ipv4.tcp_syncookies = 1
-net.ipv4.conf.default.accept_source_route = 0
-net.ipv4.tcp_max_syn_backlog = 4096
-net.ipv4.conf.all.arp_filter = 1
-net.ipv4.ipfrag_high_thresh = 536870912
-net.ipv4.ipfrag_low_thresh = 429496730
-net.ipv4.ipfrag_time = 60
-net.core.netdev_max_backlog = 10000
-net.core.rmem_max = 16777216
-net.core.wmem_max = 16777216
-vm.swappiness = 1
-vm.zone_reclaim_mode = 0
-vm.dirty_expire_centisecs = 500
-vm.dirty_writeback_centisecs = 100
-vm.dirty_background_bytes = 1610612736
-vm.dirty_background_ratio = 0
-vm.dirty_ratio = 0
-vm.dirty_bytes = 4294967296
-kernel.core_pattern=/var/core/core.%h.%t
-# END HashData sysctl CONFIG" |sed s/_SHMALL/${shmall}/ | sed s/_SHMMAX/${shmmax}/ | sed s/_MIN_FREE_KBYTES/${min_free_kbytes}/ >> /etc/sysctl.conf
-
-# Use a loop to ensure all HashData limits configuration blocks are removed
-while grep -q '# BEGIN HashData limits CONFIG' /etc/security/limits.conf; do
-    sed -i '/# BEGIN HashData limits CONFIG/,/# END HashData limits CONFIG/d' /etc/security/limits.conf
-done
-
-echo "# BEGIN HashData limits CONFIG
-######################
-# HashData CONFIG PARAMS #
-######################
-
-* soft nofile 524288
-* hard nofile 524288
-* soft nproc 131072
-* hard nproc 131072
-* soft  core unlimited
-# END HashData limits CONFIG" >> /etc/security/limits.conf
-
-cat /usr/share/zoneinfo/Asia/Shanghai > /etc/localtime 
-
-sysctl -p
-log_time "More optimization parameters need to be configured manually for production purpose, please refer to documentation..."
-
-# Use a loop to ensure all HashData sshd configuration blocks are removed
-while grep -q '# BEGIN HashData sshd CONFIG' /etc/ssh/sshd_config; do
-    sed -i '/# BEGIN HashData sshd CONFIG/,/# END HashData sshd CONFIG/d' /etc/ssh/sshd_config
-done
-
-echo "# BEGIN HashData sshd CONFIG
-######################
-# HashData SSH PARAMS #
-######################
-
-ClientAliveInterval 60
-ClientAliveCountMax 9999
-MaxStartups 1000:30:3000
-MaxSessions 3000
-# END HashData sshd CONFIG" >> /etc/ssh/sshd_config
-
-systemctl restart sshd
-
-# Configure systemd logind to disable RemoveIPC for Greenplum Database
-log_time "Configuring systemd logind to disable RemoveIPC..."
-if [ -f /etc/systemd/logind.conf ]; then
-    # Remove any existing RemoveIPC configuration
-    sed -i '/^#*RemoveIPC=/d' /etc/systemd/logind.conf
-    
-    # Add RemoveIPC=no configuration
-    echo "RemoveIPC=no" >> /etc/systemd/logind.conf
-    
-    log_time "RemoveIPC=no has been set in /etc/systemd/logind.conf"
-    log_time "Note: systemd-logind service restart is required for this setting to take effect"
-    
-    # Restart systemd-logind service to apply the change
-    if systemctl restart systemd-logind; then
-        log_time "systemd-logind service restarted successfully"
-    else
-        log_time "Warning: Failed to restart systemd-logind service. Manual restart may be required."
-        log_time "Run 'systemctl restart systemd-logind' or reboot the system to apply RemoveIPC setting"
-    fi
-else
-    log_time "Warning: /etc/systemd/logind.conf not found. RemoveIPC configuration skipped."
-fi
+log_time "Note: Additional tuning may be required for production. Refer to documentation."
 
 #Step 4: Create database admin user
 log_time "Step 4: Create database user ${ADMIN_USER}..."
-
-if ! id "$ADMIN_USER" &>/dev/null; then
-  groupadd ${ADMIN_USER} 
-  useradd ${ADMIN_USER} -r -m -g ${ADMIN_USER}
-else 
-  # Combine all patterns to be cleaned, using regex OR condition to match multiple keywords
-  if grep -qE 'COORDINATOR_DATA_DIRECTORY|MASTER_DATA_DIRECTORY|greenplum_path.sh|cluster_env.sh|synxdb_path.sh|cloudberry-env.sh|PGPORT' /home/${ADMIN_USER}/.bashrc; then
-    echo "Found environment variable settings to clean up, creating backup and removing them..."
-    # Backup .bashrc before modification
-    cp /home/${ADMIN_USER}/.bashrc /home/${ADMIN_USER}/bashrc.backup.$(date +%Y%m%d%H%M%S)
-    # Use extended regex to match all target patterns and delete lines (macOS compatible syntax)
-    sed -i -E '/COORDINATOR_DATA_DIRECTORY|MASTER_DATA_DIRECTORY|greenplum_path.sh|cluster_env.sh|synxdb_path.sh|cloudberry-env.sh|PGPORT/d' /home/${ADMIN_USER}/.bashrc
-  fi
-fi
-
-usermod -aG wheel ${ADMIN_USER}
-echo ${ADMIN_USER_PASSWORD}|passwd --stdin ${ADMIN_USER}
-# Add sudoers configuration only if it doesn't exist
-if ! grep -q "%wheel ALL=(ALL) NOPASSWD: ALL" /etc/sudoers; then
-    echo "%wheel ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-fi
-chown -R ${ADMIN_USER}:${ADMIN_USER} /home/${ADMIN_USER}
+create_admin_user "${ADMIN_USER}" "${ADMIN_USER_PASSWORD}"
 
 #Step 5: Setup user no-password access
-log_time "Step 5: Setup user no-password access..."
+log_time "Step 5: Setup user no-password SSH access..."
 
-echo "Configure Coordinator hostname."
-
-# First clear any existing Hashdata hosts entries
+# Configure coordinator in /etc/hosts
 sed -i '/#Hashdata hosts begin/,/#Hashdata hosts end/d' /etc/hosts
-# Remove empty lines from the bottom of the file
 sed -i -e :a -e '/^\n*$/{$d;N;ba' -e '}' /etc/hosts
+echo -e '#Hashdata hosts begin\n'"${COORDINATOR_IP} ${COORDINATOR_HOSTNAME}"'\n#Hashdata hosts end' >> /etc/hosts
 
-echo -e '#Hashdata hosts begin\n'"$COORDINATOR_IP $COORDINATOR_HOSTNAME"'\n#Hashdata hosts end' >> /etc/hosts
+change_hostname "${COORDINATOR_HOSTNAME}"
 
-change_hostname ${COORDINATOR_HOSTNAME}
+rm -f "/home/${ADMIN_USER}/.ssh/id_rsa.pub"
+rm -f "/home/${ADMIN_USER}/.ssh/id_rsa"
+rm -f "/home/${ADMIN_USER}/.ssh/authorized_keys"
+rm -f "/home/${ADMIN_USER}/.ssh/known_hosts"
 
-rm -f /home/${ADMIN_USER}/.ssh/id_rsa.pub
-rm -f /home/${ADMIN_USER}/.ssh/id_rsa
-rm -f /home/${ADMIN_USER}/.ssh/authorized_keys
-rm -f /home/${ADMIN_USER}/.ssh/known_hosts
+su "${ADMIN_USER}" -l -c "ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ''"
+su "${ADMIN_USER}" -l -c "sshpass -p '${ADMIN_USER_PASSWORD}' ssh -o StrictHostKeyChecking=no ${ADMIN_USER}@${COORDINATOR_HOSTNAME} 'cat /home/${ADMIN_USER}/.ssh/id_rsa.pub >> /home/${ADMIN_USER}/.ssh/authorized_keys'"
+su "${ADMIN_USER}" -l -c "chmod 600 /home/${ADMIN_USER}/.ssh/authorized_keys"
+su "${ADMIN_USER}" -l -c "chmod 644 /home/${ADMIN_USER}/.ssh/known_hosts"
 
-su ${ADMIN_USER} -l -c "ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ''"
-su ${ADMIN_USER} -l -c "sshpass -p '${ADMIN_USER_PASSWORD}' ssh -o StrictHostKeyChecking=no ${ADMIN_USER}@${COORDINATOR_HOSTNAME} 'cat /home/${ADMIN_USER}/.ssh/id_rsa.pub >> /home/${ADMIN_USER}/.ssh/authorized_keys'"
-su ${ADMIN_USER} -l -c "chmod 600 /home/${ADMIN_USER}/.ssh/authorized_keys"
-su ${ADMIN_USER} -l -c "chmod 644 /home/${ADMIN_USER}/.ssh/known_hosts"
+#Step 6: Installing database software
+install_db_software "${CLOUDBERRY_RPM}" "${DB_KEYWORD}" "${CLOUDBERRY_BINARY_PATH}"
 
-if [ "${INSTALL_DB_SOFTWARE}" != "false" ]; then
-  #Step 6: Installing database software
-  log_time "Step 6: Installing database software..."
+#Step 7: Create data directories
+create_data_directories
 
-  rpmfile=$(ls ${CLOUDBERRY_RPM} 2>/dev/null)
-    
-  if [ -z "$rpmfile" ]; then
-    log_time "RPM package does not exist, trying to download database software from ${CLOUDBERRY_RPM_URL}..."
-    log_time "Executing command: wget ${CLOUDBERRY_RPM_URL} -O ${CLOUDBERRY_RPM}"
-    wget ${CLOUDBERRY_RPM_URL} -O ${CLOUDBERRY_RPM}
-    # Check if download is successful
-    if [ $? -ne 0 ]; then
-      log_time "Error: Failed to download RPM package from ${CLOUDBERRY_RPM_URL}"
-      exit 1
-    fi
-    log_time "RPM package ${CLOUDBERRY_RPM} downloaded successfully."
-  fi
+log_time "Finished env init setting on coordinator."
 
-  keyword=$DB_KEYWORD
-  soft_link=$CLOUDBERRY_BINARY_PATH
-  
-  if [ "${keyword}" != "unknown" ]; then
-    if find /usr/local -maxdepth 1 -type d -name "*${keyword}*" -print -quit | grep -q .; then
-          echo "Previous installation found, will try to remove and reinstall."
-          # Check if the soft link exists
-          if [ -L "$soft_link" ]; then
-          # Remove the soft link
-            rm -f "$soft_link"
-            echo "Soft link $soft_link has been removed."
-          else
-            echo "Soft link $soft_link does not exist."
-          fi
-          echo "Operation completed!"
-          # Try RPM installation first
-          if ! rpm -ivh ${CLOUDBERRY_RPM} --force; then
-              echo "RPM installation failed, trying yum install..."
-              yum install -y ${CLOUDBERRY_RPM}
-          fi
-      else
-          echo "No previous installation found, will try to install with YUM."
-          yum install -y "${CLOUDBERRY_RPM}"
-      fi
-    # Change directory ownership
-    chown -R ${ADMIN_USER}:${ADMIN_USER} /usr/local/${keyword}*
-    chown -R ${ADMIN_USER}:${ADMIN_USER} ${soft_link}*
-    echo "The directory /usr/local/${keyword}* has been changed to ${ADMIN_USER}:${ADMIN_USER}."
-    echo "The directory ${soft_link}* has been changed to ${ADMIN_USER}:${ADMIN_USER}."
-  else
-      echo "Unknown database software version, will try to install with YUM."
-      yum install -y ${CLOUDBERRY_RPM}
-  fi
-  log_time "Finished database software installation on coordinator."
-else
-  log_time "INSTALL_DB_SOFTWARE set to false, skip database software installation."
-fi
-
-if [ "${INIT_ENV_ONLY}" != "true" ]; then
-
-  #Step 7: Create folders needed for the cluster
-  log_time "Step 7: Create folders needed..."
-  rm -rf ${COORDINATOR_DIRECTORY} ${DATA_DIRECTORY}
-  mkdir -p ${COORDINATOR_DIRECTORY} ${DATA_DIRECTORY}
-  chown -R ${ADMIN_USER}:${ADMIN_USER} ${COORDINATOR_DIRECTORY} ${DATA_DIRECTORY}
-
-  if [ "${WITH_MIRROR}" = "true" ]; then
-    rm -rf ${MIRROR_DATA_DIRECTORY}
-    mkdir -p ${MIRROR_DATA_DIRECTORY}
-    chown -R ${ADMIN_USER}:${ADMIN_USER} ${MIRROR_DATA_DIRECTORY}
-  fi
-  log_time "Finished cluster folders creation."
-else
-  log_time "INI_ENV_ONLY mode, skip cluster folders creation."
-fi
-
-log_time "Finished env init setting on coordinator..."
-
+# ==================== Multi-node setup ====================
 if [ "$cluster_type" = "multi" ]; then
-  #Step 8: Setup env on segment nodes.
-  log_time "Step 8: Setup env on segment nodes."
-  
+  log_time "Step 8: Setup env on segment nodes..."
+
   if [ "${SEGMENT_ACCESS_METHOD}" = "keyfile" ]; then
-    chmod 600 ${SEGMENT_ACCESS_KEYFILE}
+    chmod 600 "${SEGMENT_ACCESS_KEYFILE}"
   fi
 
-  echo "sed -n '/##Segment hosts/,/#Hashdata hosts end/p' segmenthosts.conf|awk '/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/ {print \$2}' > ${working_dir}/segment_hosts.txt"
-  sed -n '/##Segment hosts/,/#Hashdata hosts end/p' segmenthosts.conf|awk '/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/ {print $2}' > ${working_dir}/segment_hosts.txt
-  
+  # Extract segment hostnames
+  sed -n '/##Segment hosts/,/#Hashdata hosts end/p' "${SCRIPT_DIR}/segmenthosts.conf" | \
+    awk '/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/ {print $2}' > "${working_dir}/segment_hosts.txt"
+
   config_hostsfile
 
-  for i in $(cat ${working_dir}/segment_hosts.txt); do
-    ssh-keyscan ${i} >> ~/.ssh/known_hosts
+  # Add segment hosts to known_hosts for root
+  for i in $(cat "${working_dir}/segment_hosts.txt"); do
+    ssh-keyscan "$i" >> ~/.ssh/known_hosts 2>/dev/null
   done
 
   copyfile_segment
   init_segment
 
-  #Step 9: Setup no-password access for all nodes...
+  #Step 9: Setup no-password access for all nodes
   log_time "Step 9: Setup no-password access for all nodes..."
 
-  # Collect all key types (RSA, ECDSA, ED25519) explicitly
-  for i in $(cat ${working_dir}/segment_hosts.txt); do
-    su ${ADMIN_USER} -l -c "ssh-keyscan -t rsa,ecdsa,ed25519 ${i} >> ~/.ssh/known_hosts" 
-    # Also collect keys using IP address
-    ip_addr=$(getent hosts ${i} | awk '{print $1}')
-    if [ ! -z "$ip_addr" ]; then
-      su ${ADMIN_USER} -l -c "ssh-keyscan -t rsa,ecdsa,ed25519 ${ip_addr} >> ~/.ssh/known_hosts"
+  # Collect host keys for admin user
+  for i in $(cat "${working_dir}/segment_hosts.txt"); do
+    su "${ADMIN_USER}" -l -c "ssh-keyscan -t rsa,ecdsa,ed25519 ${i} >> ~/.ssh/known_hosts 2>/dev/null"
+    local ip_addr
+    ip_addr=$(getent hosts "$i" | awk '{print $1}')
+    if [ -n "$ip_addr" ]; then
+      su "${ADMIN_USER}" -l -c "ssh-keyscan -t rsa,ecdsa,ed25519 ${ip_addr} >> ~/.ssh/known_hosts 2>/dev/null"
     fi
   done
 
-  # Collect the coordinator node's public key  
-  export COORDINATOR_HOSTNAME=$(sed -n '/##Coordinator hosts/,/##Segment hosts/p' segmenthosts.conf|sed '1d;$d'|awk '{print $2}')
-  change_hostname ${COORDINATOR_HOSTNAME}
+  # Get coordinator hostname from segmenthosts.conf
+  export COORDINATOR_HOSTNAME=$(sed -n '/##Coordinator hosts/,/##Segment hosts/p' "${SCRIPT_DIR}/segmenthosts.conf" | sed '1d;$d' | awk '{print $2}')
+  change_hostname "${COORDINATOR_HOSTNAME}"
 
-  awk '/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/ {print $2}' segmenthosts.conf > ${working_dir}/all_hosts.txt
-  
-  mkdir -p ${working_dir}/ssh_keys
+  # Build list of all hosts
+  awk '/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/ {print $2}' "${SCRIPT_DIR}/segmenthosts.conf" > "${working_dir}/all_hosts.txt"
 
-  # Use sshpass to collect public keys from all nodes
-  for node in $(cat ${working_dir}/all_hosts.txt); do
-    sshpass -p "${ADMIN_USER_PASSWORD}" scp -o StrictHostKeyChecking=no ${ADMIN_USER}@${node}:/home/${ADMIN_USER}/.ssh/id_rsa.pub ${working_dir}/ssh_keys/${node}.pub
+  mkdir -p "${working_dir}/ssh_keys"
+
+  # Collect public keys from all nodes
+  for node in $(cat "${working_dir}/all_hosts.txt"); do
+    sshpass -p "${ADMIN_USER_PASSWORD}" scp -o StrictHostKeyChecking=no \
+      "${ADMIN_USER}@${node}:/home/${ADMIN_USER}/.ssh/id_rsa.pub" \
+      "${working_dir}/ssh_keys/${node}.pub"
   done
-  
-  # Distribute public keys to all nodes
-  for target in $(cat ${working_dir}/all_hosts.txt); do
-    # Clear the authorized_keys file on the target node
-    sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no ${ADMIN_USER}@${target} "echo '' > /home/${ADMIN_USER}/.ssh/authorized_keys"
-    
-    # Add all nodes' public keys to the target node's authorized_keys file
-    for keyfile in ${working_dir}/ssh_keys/*.pub; do
-      cat ${keyfile} | sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no ${ADMIN_USER}@${target} "cat >> /home/${ADMIN_USER}/.ssh/authorized_keys"
+
+  # Distribute public keys and known_hosts to all nodes
+  for target in $(cat "${working_dir}/all_hosts.txt"); do
+    sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no \
+      "${ADMIN_USER}@${target}" "echo '' > /home/${ADMIN_USER}/.ssh/authorized_keys"
+
+    for keyfile in "${working_dir}"/ssh_keys/*.pub; do
+      cat "$keyfile" | sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no \
+        "${ADMIN_USER}@${target}" "cat >> /home/${ADMIN_USER}/.ssh/authorized_keys"
     done
-    
-    # Copy mdw's known_hosts file to the target node
-    cat /home/${ADMIN_USER}/.ssh/known_hosts | sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no ${ADMIN_USER}@${target} "cat > /home/${ADMIN_USER}/.ssh/known_hosts"
 
-    # Set correct permissions
-    sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no ${ADMIN_USER}@${target} "chmod 700 /home/${ADMIN_USER}/.ssh && chmod 600 /home/${ADMIN_USER}/.ssh/authorized_keys && chmod 644 /home/${ADMIN_USER}/.ssh/known_hosts"
+    cat "/home/${ADMIN_USER}/.ssh/known_hosts" | sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no \
+      "${ADMIN_USER}@${target}" "cat > /home/${ADMIN_USER}/.ssh/known_hosts"
+
+    sshpass -p "${ADMIN_USER_PASSWORD}" ssh -o StrictHostKeyChecking=no \
+      "${ADMIN_USER}@${target}" "chmod 700 /home/${ADMIN_USER}/.ssh && chmod 600 /home/${ADMIN_USER}/.ssh/authorized_keys && chmod 644 /home/${ADMIN_USER}/.ssh/known_hosts"
   done
-  log_time "Finished env init setting on coordinator and all segment nodes"
+
+  log_time "Finished env init setting on coordinator and all segment nodes."
 else
-  log_time "Single mode, no need to setup env on segment nodes..."
+  log_time "Single mode, no segment node setup needed."
 fi
-
-
-
-
