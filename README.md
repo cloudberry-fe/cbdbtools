@@ -1,44 +1,28 @@
 # CBDBTools
 
-CBDBTools is a suite of scripts designed to automate the deployment and initialization of Cloudberry clusters. It also supports Greenplum and Cloudberry-based MPP databases, such as HashData Lightning and SynxDB.
+CBDBTools is a suite of scripts designed to automate the deployment and initialization of MPP database clusters. It supports Cloudberry, Greenplum, HashData Lightning, and SynxDB.
 
 The tool provides two deployment methods:
-1. **Web UI deployment** - Modern approach using a web-based interface
+1. **Web UI deployment** - 4-step wizard interface for guided deployment
 2. **Command-line deployment** - Traditional approach using shell scripts
 
+Both methods run on the **coordinator node** and execute the same underlying deployment scripts.
 
 ---
 
 ## Table of Contents
 
-- [CBDBTools](#cbdbtools)
-  - [Table of Contents](#table-of-contents)
-  - [Repository Structure](#repository-structure)
-  - [Prerequisites](#prerequisites)
-  - [Deployment Methods](#deployment-methods)
-    - [Web UI Deployment](#web-ui-deployment)
-      - [Starting the Web UI](#starting-the-web-ui)
-      - [Using the Web UI](#using-the-web-ui)
-    - [Command-line Deployment](#command-line-deployment)
-      - [For Single-Node Deployment](#for-single-node-deployment)
-      - [For Multi-Node Deployment](#for-multi-node-deployment)
-      - [1. Configure Parameters](#1-configure-parameters)
-        - [Additional Parameters for Multi-Node Deployment](#additional-parameters-for-multi-node-deployment)
-        - [Optional Parameters](#optional-parameters)
-        - [Advanced Cluster Parameters](#advanced-cluster-parameters)
-      - [2. Define Hosts](#2-define-hosts)
-      - [3. Start Deployment](#3-start-deployment)
-  - [Features](#features)
-  - [Scripts Overview](#scripts-overview)
-  - [Utility Scripts](#utility-scripts)
-    - [multissh.sh](#multisshsh)
-    - [multiscp.sh](#multiscpsh)
-  - [Examples](#examples)
-    - [multissh.sh Examples](#multisshsh-examples)
-    - [multiscp.sh Examples](#multiscpsh-examples)
-  - [Notes](#notes)
-  - [Troubleshooting](#troubleshooting)
-  - [Support](#support)
+- [Repository Structure](#repository-structure)
+- [Supported Platforms](#supported-platforms)
+- [Prerequisites](#prerequisites)
+- [Deployment Methods](#deployment-methods)
+  - [Web UI Deployment](#web-ui-deployment)
+  - [Command-line Deployment](#command-line-deployment)
+- [System Tuning](#system-tuning)
+- [Features](#features)
+- [Scripts Overview](#scripts-overview)
+- [Utility Scripts](#utility-scripts)
+- [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -46,319 +30,202 @@ The tool provides two deployment methods:
 
 ```
 .
-├── deploycluster.sh             # Main script to deploy the cluster
-├── deploycluster_parameter.sh   # Main configuration file with environment variables
-├── init_cluster.sh              # Script to initialize the database cluster
-├── init_env.sh                  # Sets up the environment on the coordinator node
-├── init_env_segment.sh          # Sets up the environment on segment nodes
-├── multiscp.sh                  # Utility: parallel file copy to multiple hosts
-├── multissh.sh                  # Utility: parallel command execution on multiple hosts
-├── run.sh                       # Entry point script to start deployment
-├── segmenthosts.conf            # Host/IP configuration for coordinator and segments
-├── README.md                    # Project documentation
-├── cluster_deploy_web.py        # Web UI application for cluster deployment
-├── start_web.sh                 # Script to start the Web UI
-├── wsgi.py                      # WSGI entry point for the web application
-└── templates/
-    └── index.html               # Web UI template
+├── run.sh                       # CLI entry point
+├── deploycluster.sh             # Main orchestration script
+├── deploycluster_parameter.sh   # Central configuration file
+├── init_env.sh                  # Coordinator environment setup
+├── init_env_segment.sh          # Segment node environment setup
+├── init_cluster.sh              # Database cluster initialization
+├── common.sh                    # Shared function library
+├── multissh.sh                  # Parallel SSH command execution
+├── multiscp.sh                  # Parallel file distribution
+├── segmenthosts.conf            # Host/IP configuration
+├── mirrorlessfailover.sh        # Segment failover utility (no mirrors)
+├── cluster_deploy_web.py        # Flask web application
+├── start_web.sh                 # Web UI startup script
+├── wsgi.py                      # WSGI entry point
+├── templates/
+│   └── index.html               # Web UI (single-page application)
+├── test_web.py                  # Web application tests
+└── sshpass-1.10.tar.gz          # sshpass source (offline fallback)
 ```
 
-**Key files:**
-- `deploycluster.sh`: Orchestrates the full deployment process.
-- `deploycluster_parameter.sh`: Central place for all deployment parameters.
-- `init_env.sh` / `init_env_segment.sh`: Prepare OS, users, directories, and dependencies.
-- `init_cluster.sh`: Initializes the database cluster after environment setup.
-- `multissh.sh` / `multiscp.sh`: Utilities for parallel SSH and SCP operations.
-- `segmenthosts.conf`: List of all cluster nodes and their roles.
-- `run.sh`: Main entry point for launching the deployment workflow.
-- `cluster_deploy_web.py`: Flask web application providing a UI for cluster deployment.
-- `start_web.sh`: Script to start the web UI application.
-- `templates/index.html`: HTML template for the web UI.
+---
 
-> **Note:** Additional scripts, logs, or temporary files may be created during deployment or troubleshooting.
+## Supported Platforms
+
+### Operating Systems
+
+| OS | Versions | Package Format |
+|----|----------|---------------|
+| CentOS / RHEL | 7, 8, 9 | RPM |
+| Rocky Linux | 8, 9 | RPM |
+| Oracle Linux | 8 | RPM |
+| Ubuntu | 20.04, 22.04, 24.04 | DEB |
+
+### Databases
+
+| Database | Versions | Install Path |
+|----------|----------|-------------|
+| Cloudberry DB | 1.x, 2.x | `/usr/local/cloudberry-db` |
+| Greenplum | 5.x, 6.x, 7.x | `/usr/local/greenplum-db` |
+| HashData Lightning | 1.x, 2.x | `/usr/local/hashdata-lightning` |
+| SynxDB | 1.x, 2.x, 4.x | `/usr/local/synxdb` or `/usr/local/synxdb4` |
 
 ---
 
 ## Prerequisites
 
-1. **Operating System:**  
-   - CentOS/RHEL 7, 8, or 9 with YUM repo configured correctly.
-   - The tool will try to update alternative YUM repo for Centos7/8 automatically by default, save your yum repo settings if necessary. 
-   - If you don't want YUM repo to be updated automatically, set MAUNAL_YUM_REPO="true" in `deploycluster_parameter.sh`.
+1. **Environment:**
+   - The tool must be executed on the **coordinator** server
+   - `root` user access is required (supports both password and keyfile authentication)
+   - Disks formatted with XFS filesystem, mounted with `noatime,inode64` recommended
+   - Sufficient RAM and CPU per database documentation
 
-2. **Supported Database Versions:**  
-   - HashData Lightning  
-   - Cloudberry 1.x / 2.x  
-   - Greenplum 5.x / 6.x / 7.x
+2. **Dependencies (auto-installed):**
+   - `sshpass` (via package manager or compiled from bundled source)
+   - `python3`, `pip`, `flask`, `gunicorn` (for Web UI)
+   - `chrony` or `ntpd` (for time synchronization)
 
-3. **Dependencies:**  
-   - `sshpass` (automatically installed via `yum`; if installation fails, the tool will attempt to build from source using `sshpass-1.10.tar.gz`)
-   - `gcc` and `make` (required for building `sshpass` from source if needed)
-   - `python3` and `pip` (required for Web UI deployment)
-
-4. **Environment:**  
-   - The tool must be executed on the **coordinator** server.
-   - `root` user access is required for all servers (supports both password and keyfile authentication).
-   - Update `segmenthosts.conf` with the correct IP addresses and hostnames.
-   - Disks must be formatted with the XFS file system and mounted with sufficient space for database installation and data.
-   - Ensure adequate system resources (RAM, CPU) as per HashData requirements.
+3. **Network:**
+   - All cluster nodes must be reachable from the coordinator
+   - Port 5000 accessible for Web UI (firewall is disabled during deployment)
 
 ---
 
 ## Deployment Methods
 
-CBDBTools supports two deployment methods: command-line and Web UI. Both methods use the same underlying scripts but provide different user interfaces.
-
 ### Web UI Deployment
 
-Modern deployment method using a web-based interface that simplifies the configuration and deployment process.
-
-#### Starting the Web UI
-
-To start the Web UI, run the `start_web.sh` script:
+Start the web service on the coordinator:
 
 ```bash
 sh start_web.sh
 ```
 
-This script will:
-1. Turn off firewalls
-2. Install required packages (python3, pip)
-3. Create and activate a Python virtual environment
-4. Install Flask and other required Python packages
-5. Start the web application using Gunicorn on port 5000
+Then open `http://<coordinator-ip>:5000` in a browser.
 
-After starting, you can access the Web UI by opening a browser and navigating to `http://<server-ip>:5000`.
+The Web UI is a 4-step wizard:
 
-#### Using the Web UI
-
-The Web UI provides a user-friendly interface for configuring and deploying your CBDB cluster:
-
-1. **Configuration Tab**
-   - Select deployment mode (Single Node or Multi Node)
-   - Configure mandatory options (Admin User, Password, RPM path, etc.)
-   - Set cluster initialization parameters (Coordinator port, directories, etc.)
-   - Configure mirror settings if needed
-   - Set multi-node specific parameters (Segment access method, key files, etc.)
-   - Upload RPM and key files directly through the UI
-   - Save configuration with the "Save Configuration" button
-
-2. **Hosts Tab** (Multi Node mode only)
-   - Configure coordinator host IP and hostname
-   - Add/remove segment hosts with their IPs and hostnames
-   - Save host configuration with the "Save Hosts" button
-
-3. **Deploy Tab**
-   - Review all deployment configuration details
-   - See warnings about data directories being deleted and recreated
-   - Check configuration consistency between tabs
-   - Start deployment with the "Deploy Cluster" button
-
-The Web UI provides several advantages over command-line deployment:
-- Visual configuration interface reduces the chance of configuration errors
-- File upload functionality for RPM and key files
-- Configuration validation and consistency checks
-- Clear warnings about destructive operations (like data directory recreation)
+1. **Environment** - Select OS type (auto-detected), deployment mode (single/multi), and package path (validated in real-time)
+2. **Configuration** - Set admin user, coordinator info, segment hosts (multi-node), data directories, and advanced options. Click **Save Configuration** before proceeding
+3. **Preview** - Review complete deployment summary with warnings for missing mirrors/standby
+4. **Deploy** - Real-time log streaming with phase progress indicators. Shows connection info on success
 
 ### Command-line Deployment
 
-Traditional deployment method using shell scripts directly.
-
-#### For Single-Node Deployment
-
-Only `deploycluster_parameter.sh` needs to be configured.
-
-#### For Multi-Node Deployment
-
-Both `deploycluster_parameter.sh` and `segmenthosts.conf` must be configured.
-
 #### 1. Configure Parameters
 
-Edit the `deploycluster_parameter.sh` file to set the required environment variables.  
-The following parameters are **mandatory** and must be reviewed and set for your installation:
-
-```
-## Mandatory options
-export ADMIN_USER="gpadmin"
-export ADMIN_USER_PASSWORD="Hashdata@123"
-export CLOUDBERRY_RPM="/tmp/hashdata-lightning-release.rpm"
-export COORDINATOR_HOSTNAME="mdw"
-export COORDINATOR_IP="192.168.193.21"
-export DEPLOY_TYPE="single"
-```
-
-- `ADMIN_USER`: OS user for cluster initialization.
-- `ADMIN_USER_PASSWORD`: Password for the OS user.
-- `CLOUDBERRY_RPM`: Path to the database RPM package. 
-  MUST use absolute path for native RPM names (e.g., /root/cloudberry-db-1.6.0-1.el8.x86_64.rpm) for correct product version identification.
-  e.g. Installation paths are different between products, this tool will determine the database binary symlink path from the RPM names, binary symlink paths used by some of the products:
-    `/usr/local/cloudberry-db` (Cloudberry), 
-    `/usr/local/hashdata-lightning` (HashData Lightning), 
-    `/usr/local/greenplum-db` (Greenplum)
-- `COORDINATOR_HOSTNAME`: Hostname for the coordinator server (the tool will set this hostname).
-- `COORDINATOR_IP`: IP address for the coordinator server.
-- `DEPLOY_TYPE`: Set to `single` for single-node or `multi` for multi-node deployment.
-
-With these settings (and defaults for the rest), you can create a single-node cluster on the coordinator server by simply running:
+Edit `deploycluster_parameter.sh`:
 
 ```bash
-sh run.sh
+## Mandatory
+export ADMIN_USER="gpadmin"
+export ADMIN_USER_PASSWORD="Cbdb@1234"
+export CLOUDBERRY_RPM="/root/hashdata-lightning-2.4.0-1.x86_64.rpm"
+export COORDINATOR_HOSTNAME="mdw"
+export COORDINATOR_IP="192.168.1.100"
+export DEPLOY_TYPE="single"   # or "multi"
 ```
 
-##### Additional Parameters for Multi-Node Deployment
+| Parameter | Description |
+|-----------|------------|
+| `ADMIN_USER` | OS user for cluster (default: gpadmin) |
+| `ADMIN_USER_PASSWORD` | Password for OS user and database admin |
+| `CLOUDBERRY_RPM` | Absolute path to RPM/DEB package (filename determines DB type/version) |
+| `COORDINATOR_HOSTNAME` | Hostname for coordinator (tool sets this) |
+| `COORDINATOR_IP` | IP address of coordinator |
+| `DEPLOY_TYPE` | `single` or `multi` |
 
-When `DEPLOY_TYPE` is set to `multi`, review and configure the following:
+#### Multi-node additional parameters:
 
-```
-# Segment host access info ("keyfile" and "password" access are supported)
-export SEGMENT_ACCESS_METHOD="keyfile"
+```bash
+export SEGMENT_ACCESS_METHOD="keyfile"    # or "password"
 export SEGMENT_ACCESS_USER="root"
-export SEGMENT_ACCESS_KEYFILE="/tmp/keyfiles"
+export SEGMENT_ACCESS_KEYFILE="/root/.ssh/id_rsa"
 export SEGMENT_ACCESS_PASSWORD="XXXXXXXX"
 ```
 
-- `SEGMENT_ACCESS_METHOD`: `keyfile` or `password`
-- `SEGMENT_ACCESS_USER`: Must be `root`
-- `SEGMENT_ACCESS_KEYFILE`: Path to the SSH keyfile (if using `keyfile`)
-- `SEGMENT_ACCESS_PASSWORD`: Root password (if using `password`)
+#### Optional parameters:
 
-##### Optional Parameters
+| Parameter | Default | Description |
+|-----------|---------|------------|
+| `INIT_ENV_ONLY` | false | Only configure OS, skip DB install and cluster init |
+| `INSTALL_DB_SOFTWARE` | true | Set false to skip RPM install (for reinit) |
+| `WITH_MIRROR` | false | Enable mirror segments |
+| `WITH_STANDBY` | false | Enable standby coordinator |
+| `MAUNAL_YUM_REPO` | false | Skip auto YUM repo configuration |
+| `COORDINATOR_PORT` | 5432 | Database port |
+| `DATA_DIRECTORY` | /data0/database/primary | Space-separated data directories |
 
-```
-## Set to 'true' to configure OS parameters only
-export INIT_ENV_ONLY="false"
-export CLOUDBERRY_RPM_URL="http://downloadlink.com/cloudberry.rpm"
-export INIT_CONFIGFILE="/tmp/gpinitsystem_config"
-export WITH_MIRROR="false"
-export WITH_STANDBY="false"
-```
+#### 2. Define Hosts (multi-node only)
 
-- `INIT_ENV_ONLY`: If `true`, only the OS environment is configured (no database installation or cluster initialization).
-- `CLOUDBERRY_RPM_URL`: URL to download the RPM if not present locally. Please make sure the RPM name from the URL are identicial with the setting in `CLOUDBERRY_RPM`.
-- `INIT_CONFIGFILE`: Path for the generated cluster initialization config.
-- `WITH_MIRROR`: Set to `true` to enable mirror segments.
+Edit `segmenthosts.conf`:
 
-##### Advanced Cluster Parameters
-
-Adjust these as needed for your environment (see database product manuals for details):
-
-```
-# Cluster initialization parameters
-export COORDINATOR_PORT="5432"
-export COORDINATOR_DIRECTORY="/data0/database/coordinator"
-export ARRAY_NAME="CBDB_SANDBOX"
-export MACHINE_LIST_FILE="/tmp/hostfile_gpinitsystem"
-export SEG_PREFIX="gpseg"
-export PORT_BASE="6000"
-export DATA_DIRECTORY="/data0/database/primary /data0/database/primary"
-export TRUSTED_SHELL="ssh"
-export CHECK_POINT_SEGMENTS="8"
-export ENCODING="UNICODE"
-export DATABASE_NAME="gpadmin"
-
-# Mirror parameters (if WITH_MIRROR is true)
-export MIRROR_PORT_BASE="7000"
-export MIRROR_DATA_DIRECTORY="/data0/database/mirror /data0/database/mirror"
-```
-
-#### 2. Define Hosts
-
-Update the `segmenthosts.conf` file with the IP addresses and hostnames of your coordinator and segment nodes.
-
-- This file **must** be correctly configured for multi-node installations.
-- IP addresses must be reachable within the cluster.
-- Hostnames will be set automatically by the tool.
-- In multi-node setups, this file overrides `COORDINATOR_HOSTNAME` and `COORDINATOR_IP` in `deploycluster_parameter.sh`.
-
-**Example `segmenthosts.conf` for a multi-node cluster:**
 ```
 ##Define hosts used for Hashdata
-
 #Hashdata hosts begin
 ##Coordinator hosts
-192.168.193.21 mdw
+10.14.3.217 mdw
 ##Segment hosts
-192.168.198.201 sdw1
-192.168.198.13 sdw2
+10.14.5.184 sdw1
+10.14.5.177 sdw2
+10.14.5.221 sdw3
+10.14.4.65 sdw4
 #Hashdata hosts end
 ```
 
-- Replace the IP addresses and hostnames with those appropriate for your environment.
-- This format must be followed for the deployment scripts to correctly parse the file.
-
 #### 3. Start Deployment
 
-After configuring the necessary files, start the deployment process:
-
 ```bash
-sh run.sh
+sh run.sh            # Uses DEPLOY_TYPE from config
+sh run.sh single     # Force single-node
+sh run.sh multi      # Force multi-node
 ```
 
-**Options:**
-- No arguments: Uses `DEPLOY_TYPE` from `deploycluster_parameter.sh`
-- `single`: Forces single-node deployment
-- `multi`: Forces multi-node deployment
-- `--help`: Shows usage information
+---
+
+## System Tuning
+
+The deployment automatically applies the following optimizations per Greenplum 7.7 best practices:
+
+| Category | Configuration |
+|----------|--------------|
+| **Kernel parameters** | Shared memory, semaphores, network buffers, IP fragmentation |
+| **Dirty memory** | Ratio-based for ≤64GB RAM, byte-based for >64GB RAM |
+| **Transparent Huge Pages** | Disabled at runtime + persisted (rc.local / systemd) |
+| **Time synchronization** | chrony installed and enabled |
+| **Security limits** | nofile=524288, nproc=131072 (with limits.d override) |
+| **SSH** | Optimized MaxStartups/MaxSessions/ClientAliveInterval |
+| **systemd-logind** | RemoveIPC=no |
+| **Firewall/SELinux** | Disabled |
 
 ---
 
 ## Features
 
-- Automated environment setup across coordinator and segment nodes
-- Support for CentOS/RHEL 7, 8, and 9
-- Comprehensive error handling and logging
-- Automatic system parameter optimization
-- Support for both password and keyfile-based SSH authentication
-- Flexible deployment options (single/multi-node, with/without mirrors)
-- Robust SSH key management for passwordless access
-- Auto-detection and configuration of OS-specific parameters
-- Web-based user interface for simplified deployment
-- Real-time deployment monitoring and logging
-- Configuration validation and consistency checks
+- Auto-detection of database type and version from package filename
+- Support for CentOS/RHEL 7-9, Rocky Linux 8-9, Ubuntu 20.04-24.04
+- Parallel SSH/SCP operations for multi-node setup
+- GP 7.7 compliant system tuning (THP, NTP, dirty memory, nproc)
+- Web UI with 4-step wizard, real-time SSE log streaming, and progress tracking
+- Both password and keyfile SSH authentication
+- Conditional gpinitsystem error handling (warnings vs fatal errors)
 
 ---
 
 ## Scripts Overview
 
-- **deploycluster.sh**  
-  Main deployment script that orchestrates the deployment process.
-
-- **deploycluster_parameter.sh**  
-  Contains environment variables and configuration parameters used across all scripts.
-
-- **init_env.sh**  
-  Sets up the environment on the coordinator node:
-  - Configures system parameters and SSH settings
-  - Installs required dependencies
-  - Sets up authentication between nodes
-  - Handles OS-specific configurations
-  - Creates required directories and users
-
-- **init_env_segment.sh**  
-  Configures segment nodes with:
-  - Optimized system parameters
-  - User and permission setup
-  - Directory structure creation
-  - Database software installation
-  - SSH key distribution
-
-- **init_cluster.sh**  
-  Initializes the database cluster.
-
-- **run.sh**  
-  Entry point script to start the deployment process.
-
-- **segmenthosts.conf**  
-  Defines the coordinator and segment hosts for the cluster.
-
-- **cluster_deploy_web.py**  
-  Flask web application providing a UI for cluster deployment.
-
-- **start_web.sh**  
-  Script to start the web UI application.
-
-- **wsgi.py**  
-  WSGI entry point for the web application.
+| Script | Purpose |
+|--------|---------|
+| `run.sh` | Entry point; prevents duplicate runs, launches deployment in background |
+| `deploycluster.sh` | Orchestrates deployment: DB type detection → init_env → init_cluster |
+| `common.sh` | Shared functions: OS detection, sysctl, limits, THP, NTP, user management, package install |
+| `init_env.sh` | Coordinator setup: deps, system tuning, user creation, SSH keys, DB install, data dirs |
+| `init_env_segment.sh` | Segment setup: same tuning + user + DB install (executed via multissh) |
+| `init_cluster.sh` | gpinitsystem, admin password, pg_hba.conf, environment variables |
+| `cluster_deploy_web.py` | Flask app: config management, deployment orchestration, SSE log streaming |
+| `start_web.sh` | Installs deps, starts gunicorn (1 worker, 4 threads, port 5000) |
 
 ---
 
@@ -366,142 +233,62 @@ sh run.sh
 
 ### multissh.sh
 
-A powerful utility for executing commands across multiple hosts in parallel, with advanced features:
+Parallel command execution across multiple hosts.
 
-- Flexible authentication using SSH keys or passwords
-- Configurable concurrency control
-- Detailed execution tracking and error reporting
-- Output collection and logging
-- Progress monitoring and execution summary
-- Support for connection timeouts and custom SSH ports
-- Color-coded output for better readability
-
-**Usage:**
 ```bash
 sh multissh.sh [options] <command>
-```
-**Options:**
-```
-  -h, --help            Show help message
-  -f, --hosts-file      Hosts file (default: segment_hosts.txt)
-  -u, --user            SSH username (default: current user)
-  -p, --password        SSH password
-  -k, --key-file        SSH private key file
-  -P, --port            SSH port (default: 22)
-  -t, --timeout         Connection timeout (default: 30s)
-  -v, --verbose         Enable verbose output
-  -o, --output          Save output to file
-  -c, --concurrency     Max parallel connections (default: 5)
-```
 
----
+Options:
+  -f, --hosts-file    Hosts file (one hostname/IP per line)
+  -u, --user          SSH username
+  -p, --password      SSH password
+  -k, --key-file      SSH private key file
+  -c, --concurrency   Max parallel connections (default: 5)
+  -t, --timeout       Connection timeout (default: 30s)
+  -P, --port          SSH port (default: 22)
+  -v, --verbose       Verbose output
+  -o, --output        Save output to file
+```
 
 ### multiscp.sh
 
-File distribution utility for copying files to multiple remote hosts simultaneously:
+Parallel file distribution to multiple hosts. Same options as multissh.sh.
 
-- Parallel file transfer capabilities
-- Progress tracking for each transfer
-- Support for both key and password authentication
-- Configurable error handling and retry logic
-- Detailed transfer logs and status reporting
-
-**Usage:**
 ```bash
 sh multiscp.sh [options] source_file destination_path
 ```
-**Options:**
+
+### Examples
+
+```bash
+# Check disk space on all segments
+sh multissh.sh -k ~/.ssh/id_rsa -f hosts.txt -u root "df -h"
+
+# Distribute a file to all segments
+sh multiscp.sh -k ~/.ssh/id_rsa -f hosts.txt -u root ./config.ini /tmp/
 ```
-  -h, --help            Show help message
-  -f, --hosts-file      Hosts file (default: segment_hosts.txt)
-  -u, --user            SSH username (default: current user)
-  -p, --password        SSH password
-  -k, --key-file        SSH private key file
-  -v, --verbose         Enable verbose output
-```
-
----
-
-## Examples
-
-### multissh.sh Examples
-
-1. Execute a command using password authentication:
-    ```bash
-    sh multissh.sh -v -p 'your_password' -f hosts.txt -u gpadmin "date"
-    ```
-
-2. Check disk space on all hosts using an SSH key:
-    ```bash
-    sh multissh.sh -v -k ~/.ssh/id_rsa -f hosts.txt -u gpadmin "df -h"
-    ```
-
-### multiscp.sh Examples
-
-1. Copy a configuration file using password authentication:
-    ```bash
-    sh multiscp.sh -v -p 'your_password' -f hosts.txt -u gpadmin ./config.ini /home/gpadmin/
-    ```
-
-2. Copy and extract an archive using an SSH key:
-    ```bash
-    tar czf scripts.tar.gz *.sh
-    sh multiscp.sh -v -k ~/.ssh/id_rsa -f hosts.txt -u gpadmin ./scripts.tar.gz /home/gpadmin/
-    sh multissh.sh -v -k ~/.ssh/id_rsa -f hosts.txt -u gpadmin "cd /home/gpadmin && tar xzf scripts.tar.gz"
-    ```
-
-**Example `hosts.txt` format:**
-```
-192.168.1.101
-192.168.1.102
-192.168.1.103
-```
-
----
-
-## Notes
-
-- Scripts include comprehensive error handling and logging.
-- System parameters are automatically optimized based on available resources.
-- All operations are logged with timestamps for troubleshooting.
-- Supports automatic failover to source compilation for `sshpass` if package installation fails.
-- Implements safeguards against common deployment issues.
-- Web UI provides visual feedback and real-time deployment monitoring.
-- Data directories will be deleted and recreated during deployment, with clear warnings in the UI.
 
 ---
 
 ## Troubleshooting
 
-**Common issues and solutions:**
+| Issue | Solution |
+|-------|---------|
+| SSH connection timeout to segments | Verify network connectivity, check firewall on segment nodes |
+| `sysctl: Invalid argument` for dirty memory | Fixed in latest version; ensure common.sh is up to date |
+| `gpinitsystem` FATAL errors | Check segment node connectivity, verify hosts in segmenthosts.conf |
+| Web UI "Save request failed" | Refresh browser (Ctrl+F5), ensure gunicorn is running |
+| Web UI shows no logs during deploy | Ensure gunicorn uses `--workers 1` (not multi-worker) |
+| THP not disabled after reboot | Check `/sys/kernel/mm/transparent_hugepage/enabled`, verify rc.local or systemd service |
+| SSH "Warning: Permanently added" | Resolved; admin user SSH config limits StrictHostKeyChecking to cluster hosts |
 
-1. **SSH Connection Issues:**
-   - Check network connectivity.
-   - Verify SSH key permissions.
-   - Ensure correct username/password or key file.
-
-2. **Installation Failures:**
-   - Check system requirements.
-   - Verify RPM package integrity.
-   - Review logs in `/tmp/<username>/`.
-
-3. **Performance Issues:**
-   - Verify system parameters in `sysctl.conf`.
-   - Check resource allocation.
-   - Review segment configuration.
-
-4. **Web UI Issues:**
-   - Ensure port 5000 is accessible through any firewalls.
-   - Check that the web application is running (`ps aux | grep gunicorn`).
-   - Review web application logs for errors.
+**Logs:**
+- CLI deployment: `deploy_cluster_YYYYMMDD_HHMMSS.log` in project directory
+- Web UI: Real-time via SSE + same log file
+- gpinitsystem: `/home/gpadmin/gpAdminLogs/gpinitsystem_*.log`
 
 ---
 
 ## Support
 
-For issues or questions:
-
-1. File an issue in this repository.
-2. Contact the repository maintainer.
-
----
+For issues or questions, file an issue in this repository.

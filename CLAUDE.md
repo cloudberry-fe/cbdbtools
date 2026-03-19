@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-CBDBTools is a suite of shell scripts and a Flask web application for automating deployment and initialization of Cloudberry/Greenplum/HashData MPP database clusters on CentOS/RHEL 7-9.
+CBDBTools is a suite of shell scripts and a Flask web application for automating deployment and initialization of Cloudberry/Greenplum/HashData MPP database clusters on CentOS/RHEL 7-9, Rocky Linux 8-9, and Ubuntu 20.04-24.04.
 
 ## Commands
 
@@ -33,6 +33,16 @@ run.sh → deploycluster.sh → init_env.sh → init_cluster.sh
                          init_env_segment.sh (multi-node only)
 ```
 
+### System Tuning (per GP 7.7 best practices)
+Both coordinator and segment nodes are configured with:
+- Kernel parameters (sysctl): shared memory, semaphores, network, dirty memory (conditional on RAM size)
+- Security limits (limits.conf + limits.d override for nproc)
+- Transparent Huge Pages (THP) disabled and persisted
+- NTP/chrony time synchronization
+- SSH daemon optimization
+- systemd-logind RemoveIPC=no
+- Firewall and SELinux disabled
+
 ### Key Files
 
 | File | Purpose |
@@ -42,13 +52,15 @@ run.sh → deploycluster.sh → init_env.sh → init_cluster.sh
 | `init_env.sh` | Coordinator node setup: packages, system params, users, SSH, DB installation |
 | `init_env_segment.sh` | Segment node setup for multi-node deployments |
 | `init_cluster.sh` | Database cluster initialization using gpinitsystem |
+| `common.sh` | Shared function library (OS detection, system tuning, package management) |
 | `segmenthosts.conf` | Host/IP configuration for multi-node clusters |
 | `run.sh` | Entry point; checks for existing processes, launches deployment in background |
-| `cluster_deploy_web.py` | Flask web UI for remote deployment via SSH |
-| `start_web.sh` | Web UI startup: installs deps, creates venv, starts gunicorn |
+| `cluster_deploy_web.py` | Flask web UI for local deployment on coordinator |
+| `start_web.sh` | Web UI startup: installs deps, creates venv, starts gunicorn (1 worker, 4 threads) |
+| `mirrorlessfailover.sh` | Utility for segment failover without mirrors |
 
 ### Database Type Detection
-`deploycluster.sh` auto-detects database type from RPM filename and sets:
+`deploycluster.sh` auto-detects database type from RPM/DEB filename and sets:
 - `DB_TYPE`, `DB_VERSION`, `DB_KEYWORD`
 - `CLOUDBERRY_BINARY_PATH` (e.g., `/usr/local/cloudberry-db`, `/usr/local/greenplum-db`)
 - `CLUSTER_ENV` (environment script name)
@@ -62,18 +74,18 @@ Supported databases: Cloudberry, Greenplum (5.x/6.x/7.x), HashData Lightning, Sy
 3. Configure segment access (`SEGMENT_ACCESS_METHOD` as `keyfile` or `password`)
 
 ### Web UI Architecture
-- Flask app with paramiko for SSH connections
-- Can run on any machine and deploy to remote servers
-- Uploads deployment scripts via SFTP
+- Flask app running locally on coordinator node
+- Calls `deploycluster.sh` via subprocess (no SSH/paramiko)
+- Gunicorn with `--workers 1 --threads 4` (required: in-process state sharing)
 - Real-time log streaming via Server-Sent Events
-- Configuration stored in Flask session
+- Configuration stored in Flask session + server-side global (single process)
 
 ## Configuration
 
 ### Mandatory Parameters (in `deploycluster_parameter.sh`)
 - `ADMIN_USER` - OS user for cluster (default: gpadmin)
-- `ADMIN_USER_PASSWORD` - Password for OS user
-- `CLOUDBERRY_RPM` - Path to database RPM (must use absolute path)
+- `ADMIN_USER_PASSWORD` - Password for OS user and database admin
+- `CLOUDBERRY_RPM` - Path to database RPM/DEB (must use absolute path)
 - `COORDINATOR_HOSTNAME` / `COORDINATOR_IP`
 - `DEPLOY_TYPE` - `single` or `multi`
 
