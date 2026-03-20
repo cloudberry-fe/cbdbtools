@@ -1,5 +1,7 @@
 # CBDBTools
 
+[中文文档](README_zh.md)
+
 CBDBTools is a suite of scripts designed to automate the deployment and initialization of MPP database clusters. It supports Cloudberry, Greenplum, HashData Lightning, and SynxDB.
 
 The tool provides two deployment methods:

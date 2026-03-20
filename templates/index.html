@@ -138,52 +138,53 @@
 <body>
 <div class="container">
     <div class="header">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:4px"><button class="btn btn-s" style="padding:4px 10px;font-size:11px" onclick="toggleLang()" id="btn_lang">中文</button></div>
         <h1>CBDBTools</h1>
-        <p>MPP Database Cluster Deployment Tool</p>
+        <p data-i18n="subtitle">MPP Database Cluster Deployment Tool</p>
     </div>
 
     <div class="steps">
-        <div class="si active" data-s="1"><div class="sc">1</div><span class="sl">Environment</span></div>
+        <div class="si active" data-s="1"><div class="sc">1</div><span class="sl" data-i18n="step1">Environment</span></div>
         <div class="sline" data-l="1"></div>
-        <div class="si" data-s="2"><div class="sc">2</div><span class="sl">Configuration</span></div>
+        <div class="si" data-s="2"><div class="sc">2</div><span class="sl" data-i18n="step2">Configuration</span></div>
         <div class="sline" data-l="2"></div>
-        <div class="si" data-s="3"><div class="sc">3</div><span class="sl">Confirm</span></div>
+        <div class="si" data-s="3"><div class="sc">3</div><span class="sl" data-i18n="step3">Confirm</span></div>
         <div class="sline" data-l="3"></div>
-        <div class="si" data-s="4"><div class="sc">4</div><span class="sl">Deploy</span></div>
+        <div class="si" data-s="4"><div class="sc">4</div><span class="sl" data-i18n="step4">Deploy</span></div>
     </div>
 
     <div class="card">
         <!-- ==================== STEP 1: Environment ==================== -->
         <div class="step-content active" id="step-1">
-            <div class="card-title">Environment Configuration</div>
+            <div class="card-title" data-i18n="env_config">Environment Configuration</div>
             <div class="section">
-                <div class="section-title">Operating System</div>
+                <div class="section-title" data-i18n="os_section">Operating System</div>
                 <div class="fg">
-                    <label>Detected OS</label>
+                    <label data-i18n="detected_os">Detected OS</label>
                     <input type="text" id="os_display" readonly value="Detecting...">
-                    <div class="hint">Auto-detected from coordinator node</div>
+                    <div class="hint" data-i18n="os_hint">Auto-detected from coordinator node</div>
                 </div>
             </div>
             <div class="section">
-                <div class="section-title">Deploy Type</div>
+                <div class="section-title" data-i18n="deploy_type_section">Deploy Type</div>
                 <div class="rg">
-                    <label><input type="radio" name="deploy_type" value="single" {{ 'checked' if file_config.get('DEPLOY_TYPE','single') == 'single' else '' }} onchange="onDeployTypeChange()"> Single Node</label>
-                    <label><input type="radio" name="deploy_type" value="multi" {{ 'checked' if file_config.get('DEPLOY_TYPE') == 'multi' else '' }} onchange="onDeployTypeChange()"> Multi-node</label>
+                    <label><input type="radio" name="deploy_type" value="single" {{ 'checked' if file_config.get('DEPLOY_TYPE','single') == 'single' else '' }} onchange="onDeployTypeChange()"> <span data-i18n="single_node">Single Node</span></label>
+                    <label><input type="radio" name="deploy_type" value="multi" {{ 'checked' if file_config.get('DEPLOY_TYPE') == 'multi' else '' }} onchange="onDeployTypeChange()"> <span data-i18n="multi_node">Multi-node</span></label>
                 </div>
-                <div class="hint" id="dt_hint">Coordinator and Segments on one machine</div>
+                <div class="hint" id="dt_hint" data-i18n="dt_hint_single">Coordinator and Segments on one machine</div>
             </div>
             <div class="section">
-                <div class="section-title">Database Package</div>
+                <div class="section-title" data-i18n="db_package">Database Package</div>
                 <div class="fg">
-                    <label>Package Path (RPM / DEB)</label>
+                    <label data-i18n="pkg_path_label">Package Path (RPM / DEB)</label>
                     <input type="text" id="pkg_path" placeholder="/opt/cloudberry-db-1.6.0-el8.x86_64.rpm" value="{{ file_config.get('CLOUDBERRY_RPM', '') }}">
-                    <div class="hint">Path to a package already on this server, or upload one below</div>
+                    <div class="hint" data-i18n="pkg_hint">Path to a package already on this server, or upload one below</div>
                     <div id="pkg_val"></div>
                 </div>
                 <div class="fg" style="margin-top:8px">
                     <div id="upload_zone" class="upload-zone" onclick="document.getElementById('pkg_file').click()">
                         <input type="file" id="pkg_file" accept=".rpm,.deb" style="display:none">
-                        <div>Drag &amp; drop a package file here, or click to browse</div>
+                        <div data-i18n="upload_hint">Drag &amp; drop a package file here, or click to browse</div>
                         <div style="font-size:11px;opacity:.5;margin-top:4px">.rpm or .deb</div>
                     </div>
                     <div id="upload_progress" style="display:none;margin-top:8px">
@@ -196,20 +197,20 @@
             </div>
             <div class="nav">
                 <div></div>
-                <button class="btn btn-p" onclick="goStep(2)">Next &rarr;</button>
+                <button class="btn btn-p" onclick="goStep(2)" data-i18n="next">Next &rarr;</button>
             </div>
         </div>
 
         <!-- ==================== STEP 2: Configuration ==================== -->
         <div class="step-content" id="step-2">
-            <div class="card-title">Cluster Configuration</div>
+            <div class="card-title" data-i18n="cluster_config">Cluster Configuration</div>
 
             <!-- Admin User -->
             <div class="section">
-                <div class="section-title">Admin User</div>
+                <div class="section-title" data-i18n="admin_user_section">Admin User</div>
                 <div class="fr">
-                    <div class="fg"><label>Username</label><input type="text" id="admin_user" value="{{ file_config.get('ADMIN_USER', 'gpadmin') }}"></div>
-                    <div class="fg"><label>Password</label><input type="password" id="admin_pwd" value="{{ file_config.get('ADMIN_USER_PASSWORD', '') }}"></div>
+                    <div class="fg"><label data-i18n="username">Username</label><input type="text" id="admin_user" value="{{ file_config.get('ADMIN_USER', 'gpadmin') }}"></div>
+                    <div class="fg"><label data-i18n="password">Password</label><input type="password" id="admin_pwd" value="{{ file_config.get('ADMIN_USER_PASSWORD', '') }}"></div>
                 </div>
             </div>
 
@@ -217,48 +218,48 @@
             <div class="section">
                 <div class="section-title">Coordinator</div>
                 <div class="fr">
-                    <div class="fg"><label>Hostname</label><input type="text" id="c_host" value="{{ file_config.get('COORDINATOR_HOSTNAME', 'mdw') }}"></div>
-                    <div class="fg"><label>IP Address</label><input type="text" id="c_ip" value="{{ file_config.get('COORDINATOR_IP', '') }}"></div>
+                    <div class="fg"><label data-i18n="hostname">Hostname</label><input type="text" id="c_host" value="{{ file_config.get('COORDINATOR_HOSTNAME', 'mdw') }}"></div>
+                    <div class="fg"><label data-i18n="ip_addr">IP Address</label><input type="text" id="c_ip" value="{{ file_config.get('COORDINATOR_IP', '') }}"></div>
                 </div>
                 <div class="fr">
-                    <div class="fg"><label>Port</label><input type="number" id="c_port" value="{{ file_config.get('COORDINATOR_PORT', '5432') }}" min="1" max="65535"></div>
-                    <div class="fg"><label>Data Directory</label><input type="text" id="c_dir" value="{{ file_config.get('COORDINATOR_DIRECTORY', '/data0/database/coordinator') }}"></div>
+                    <div class="fg"><label data-i18n="port">Port</label><input type="number" id="c_port" value="{{ file_config.get('COORDINATOR_PORT', '5432') }}" min="1" max="65535"></div>
+                    <div class="fg"><label data-i18n="data_dir">Data Directory</label><input type="text" id="c_dir" value="{{ file_config.get('COORDINATOR_DIRECTORY', '/data0/database/coordinator') }}"></div>
                 </div>
             </div>
 
             <!-- Segment Hosts (multi-node only) -->
             <div class="section" id="sec_seghosts" style="display:none">
-                <div class="section-title">Segment Hosts</div>
+                <div class="section-title" data-i18n="seg_hosts">Segment Hosts</div>
                 <div class="fr">
                     <div class="fg">
-                        <label>Access Method</label>
+                        <label data-i18n="access_method">Access Method</label>
                         <div class="rg">
                             <label><input type="radio" name="seg_access" value="keyfile" {{ 'checked' if file_config.get('SEGMENT_ACCESS_METHOD','') == 'keyfile' else '' }} onchange="onSegAccessChange()"> SSH Key</label>
                             <label><input type="radio" name="seg_access" value="password" {{ 'checked' if file_config.get('SEGMENT_ACCESS_METHOD','password') != 'keyfile' else '' }} onchange="onSegAccessChange()"> Password</label>
                         </div>
                     </div>
-                    <div class="fg"><label>Access User</label><input type="text" id="seg_user" value="{{ file_config.get('SEGMENT_ACCESS_USER', 'root') }}"></div>
+                    <div class="fg"><label data-i18n="access_user">Access User</label><input type="text" id="seg_user" value="{{ file_config.get('SEGMENT_ACCESS_USER', 'root') }}"></div>
                 </div>
-                <div class="fg" id="seg_key_fg"><label>Key File Path</label><input type="text" id="seg_keyfile" value="{{ file_config.get('SEGMENT_ACCESS_KEYFILE', '') }}"></div>
-                <div class="fg hidden" id="seg_pwd_fg"><label>Password</label><input type="password" id="seg_pwd" value="{{ file_config.get('SEGMENT_ACCESS_PASSWORD', '') }}"></div>
+                <div class="fg" id="seg_key_fg"><label data-i18n="key_file">Key File Path</label><input type="text" id="seg_keyfile" value="{{ file_config.get('SEGMENT_ACCESS_KEYFILE', '') }}"></div>
+                <div class="fg hidden" id="seg_pwd_fg"><label data-i18n="password">Password</label><input type="password" id="seg_pwd" value="{{ file_config.get('SEGMENT_ACCESS_PASSWORD', '') }}"></div>
                 <table class="stbl">
                     <thead><tr><th style="width:30px">#</th><th>IP Address</th><th>Hostname</th><th style="width:36px"></th></tr></thead>
                     <tbody id="seg_tbody"></tbody>
                 </table>
-                <button class="add-row" onclick="addSegRow()">+ Add Segment Host</button>
+                <button class="add-row" onclick="addSegRow()" data-i18n="add_seg">+ Add Segment Host</button>
             </div>
 
             <!-- Primary Segments -->
             <div class="section">
-                <div class="section-title">Primary Segments</div>
+                <div class="section-title" data-i18n="primary_seg">Primary Segments</div>
                 <div class="fr3">
-                    <div class="fg"><label>Data Directory</label><input type="text" id="p_dir" value="{{ file_config.get('DATA_DIRECTORY', '/data0/database/primary').split()[0] }}"></div>
-                    <div class="fg"><label>Segments Per Host</label><input type="number" id="p_count" value="{{ file_config.get('DATA_DIRECTORY', '/data0/database/primary').split()|length }}" min="1" max="32"></div>
-                    <div class="fg"><label>Port Base</label><input type="number" id="p_port" value="{{ file_config.get('PORT_BASE', '6000') }}" min="1" max="65535"></div>
+                    <div class="fg"><label data-i18n="data_dir">Data Directory</label><input type="text" id="p_dir" value="{{ file_config.get('DATA_DIRECTORY', '/data0/database/primary').split()[0] }}"></div>
+                    <div class="fg"><label data-i18n="segs_per_host">Segments Per Host</label><input type="number" id="p_count" value="{{ file_config.get('DATA_DIRECTORY', '/data0/database/primary').split()|length }}" min="1" max="32"></div>
+                    <div class="fg"><label data-i18n="port_base">Port Base</label><input type="number" id="p_port" value="{{ file_config.get('PORT_BASE', '6000') }}" min="1" max="65535"></div>
                 </div>
                 <div class="fr">
-                    <div class="fg"><label>Segment Prefix</label><input type="text" id="p_prefix" value="{{ file_config.get('SEG_PREFIX', 'gpseg') }}"></div>
-                    <div class="fg"><label>Cluster Name</label><input type="text" id="p_cluster" value="{{ file_config.get('ARRAY_NAME', 'CBDB_SANDBOX') }}"></div>
+                    <div class="fg"><label data-i18n="seg_prefix">Segment Prefix</label><input type="text" id="p_prefix" value="{{ file_config.get('SEG_PREFIX', 'gpseg') }}"></div>
+                    <div class="fg"><label data-i18n="cluster_name">Cluster Name</label><input type="text" id="p_cluster" value="{{ file_config.get('ARRAY_NAME', 'CBDB_SANDBOX') }}"></div>
                 </div>
             </div>
 
@@ -266,14 +267,14 @@
             <div class="toggle-section">
                 <label class="toggle-header">
                     <input type="checkbox" id="chk_mirror" {{ 'checked' if file_config.get('WITH_MIRROR') == 'true' else '' }} onchange="onMirrorToggle()">
-                    <span>Mirror Segments</span>
+                    <span data-i18n="mirror_seg">Mirror Segments</span>
                 </label>
                 <div class="toggle-body" id="mirror_body">
                     <div class="fr">
-                        <div class="fg"><label>Mirror Data Directory</label><input type="text" id="m_dir" value="{{ file_config.get('MIRROR_DATA_DIRECTORY', '/data0/database/mirror').split()[0] }}"></div>
-                        <div class="fg"><label>Mirror Port Base</label><input type="number" id="m_port" value="{{ file_config.get('MIRROR_PORT_BASE', '7000') }}" min="1" max="65535"></div>
+                        <div class="fg"><label data-i18n="mirror_dir">Mirror Data Directory</label><input type="text" id="m_dir" value="{{ file_config.get('MIRROR_DATA_DIRECTORY', '/data0/database/mirror').split()[0] }}"></div>
+                        <div class="fg"><label data-i18n="mirror_port">Mirror Port Base</label><input type="number" id="m_port" value="{{ file_config.get('MIRROR_PORT_BASE', '7000') }}" min="1" max="65535"></div>
                     </div>
-                    <div class="hint">Mirror segments provide redundancy. Each primary segment will have a corresponding mirror.</div>
+                    <div class="hint" data-i18n="mirror_hint">Mirror segments provide redundancy. Each primary segment will have a corresponding mirror.</div>
                 </div>
             </div>
 
@@ -281,70 +282,70 @@
             <div class="toggle-section">
                 <label class="toggle-header">
                     <input type="checkbox" id="chk_standby" {{ 'checked' if file_config.get('WITH_STANDBY') == 'true' else '' }}>
-                    <span>Standby Coordinator</span>
+                    <span data-i18n="standby_coord">Standby Coordinator</span>
                 </label>
                 <div class="toggle-body" id="standby_body">
-                    <div class="hint">A standby coordinator will be created on one of the segment hosts for automatic failover.</div>
+                    <div class="hint" data-i18n="standby_hint">A standby coordinator will be created on one of the segment hosts for automatic failover.</div>
                 </div>
             </div>
 
             <!-- Other Options -->
             <div class="section">
-                <div class="section-title">Options</div>
+                <div class="section-title" data-i18n="options">Options</div>
                 <div class="fr">
-                    <div class="fg"><label>Timezone</label><input type="text" id="opt_tz" value="{{ file_config.get('TIMEZONE', 'Asia/Shanghai') }}"></div>
+                    <div class="fg"><label data-i18n="timezone">Timezone</label><input type="text" id="opt_tz" value="{{ file_config.get('TIMEZONE', 'Asia/Shanghai') }}"></div>
                     <div></div>
                 </div>
                 <div class="opts-row">
-                    <label><input type="checkbox" id="opt_skiprepo" {{ 'checked' if file_config.get('MAUNAL_YUM_REPO') == 'true' else '' }}> Skip Repo Config</label>
-                    <label><input type="checkbox" id="opt_envonly" {{ 'checked' if file_config.get('INIT_ENV_ONLY') == 'true' else '' }}> Init Environment Only</label>
-                    <label><input type="checkbox" id="opt_skipinstall" {{ 'checked' if file_config.get('INSTALL_DB_SOFTWARE') == 'false' else '' }}> Skip Software Install</label>
+                    <label><input type="checkbox" id="opt_skiprepo" {{ 'checked' if file_config.get('MAUNAL_YUM_REPO') == 'true' else '' }}> <span data-i18n="skip_repo">Skip Repo Config</span></label>
+                    <label><input type="checkbox" id="opt_envonly" {{ 'checked' if file_config.get('INIT_ENV_ONLY') == 'true' else '' }}> <span data-i18n="env_only">Init Environment Only</span></label>
+                    <label><input type="checkbox" id="opt_skipinstall" {{ 'checked' if file_config.get('INSTALL_DB_SOFTWARE') == 'false' else '' }}> <span data-i18n="skip_install">Skip Software Install</span></label>
                 </div>
             </div>
 
             <!-- Save Bar -->
             <div class="save-bar">
                 <span class="save-msg" id="save_msg"></span>
-                <button class="btn btn-p" onclick="saveConfig()">Save Configuration</button>
+                <button class="btn btn-p" onclick="saveConfig()" data-i18n="save_config">Save Configuration</button>
             </div>
 
             <div class="nav">
-                <button class="btn btn-s" onclick="goStep(1)">&larr; Previous</button>
-                <button class="btn btn-p" id="btn_to3" onclick="goStep(3)" disabled>Next &rarr;</button>
+                <button class="btn btn-s" onclick="goStep(1)" data-i18n="prev">&larr; Previous</button>
+                <button class="btn btn-p" id="btn_to3" onclick="goStep(3)" disabled data-i18n="next">Next &rarr;</button>
             </div>
         </div>
 
         <!-- ==================== STEP 3: Confirm ==================== -->
         <div class="step-content" id="step-3">
-            <div class="card-title">Confirm Deployment</div>
-            <div id="pv_loading" style="text-align:center;padding:40px;color:var(--label)">Loading configuration...</div>
+            <div class="card-title" data-i18n="confirm_deploy">Confirm Deployment</div>
+            <div id="pv_loading" style="text-align:center;padding:40px;color:var(--label)" data-i18n="loading_config">Loading configuration...</div>
             <div id="pv_content" class="hidden"></div>
             <div class="nav">
-                <button class="btn btn-s" onclick="goStep(2)">&larr; Back to Edit</button>
-                <button class="btn btn-ok" onclick="goStep(4);startDeploy()">Confirm &amp; Deploy</button>
+                <button class="btn btn-s" onclick="goStep(2)" data-i18n="back_edit">&larr; Back to Edit</button>
+                <button class="btn btn-ok" onclick="goStep(4);startDeploy()" data-i18n="confirm_btn">Confirm &amp; Deploy</button>
             </div>
         </div>
 
         <!-- ==================== STEP 4: Deploy ==================== -->
         <div class="step-content" id="step-4">
-            <div class="card-title">Deployment</div>
-            <div class="status-bar running" id="d_status">Starting deployment...</div>
+            <div class="card-title" data-i18n="deployment">Deployment</div>
+            <div class="status-bar running" id="d_status" data-i18n="starting">Starting deployment...</div>
             <div class="phases" id="d_phases">
-                <div class="ph" data-ph="env_init">Env Init</div>
-                <div class="ph" data-ph="install_db">Install DB</div>
-                <div class="ph" data-ph="segment_init" id="ph_seg">Segment Init</div>
-                <div class="ph" data-ph="cluster_init">Cluster Init</div>
-                <div class="ph" data-ph="config_done">Complete</div>
+                <div class="ph" data-ph="env_init" data-i18n="ph_env">Env Init</div>
+                <div class="ph" data-ph="install_db" data-i18n="ph_db">Install DB</div>
+                <div class="ph" data-ph="segment_init" id="ph_seg" data-i18n="ph_seg_init">Segment Init</div>
+                <div class="ph" data-ph="cluster_init" data-i18n="ph_cluster">Cluster Init</div>
+                <div class="ph" data-ph="config_done" data-i18n="ph_done">Complete</div>
             </div>
             <div class="log-area" id="d_log"></div>
             <div id="d_conn" class="conn-box hidden">
-                <h4>Connection Info</h4>
+                <h4 data-i18n="conn_info">Connection Info</h4>
                 <div class="pv-grid" id="d_conn_grid"></div>
                 <code id="d_conn_cmd"></code>
             </div>
             <div class="nav" id="d_nav" class="hidden">
                 <div></div>
-                <button class="btn btn-w hidden" id="btn_reset" onclick="resetDeploy()">New Deployment</button>
+                <button class="btn btn-w hidden" id="btn_reset" onclick="resetDeploy()" data-i18n="new_deploy">New Deployment</button>
             </div>
         </div>
     </div>
@@ -372,7 +373,9 @@ document.addEventListener('DOMContentLoaded', () => {
 // ==================== Deploy Type ====================
 function onDeployTypeChange() {
     deployType = document.querySelector('input[name="deploy_type"]:checked')?.value || 'single';
-    document.getElementById('dt_hint').textContent = deployType === 'single' ? 'Coordinator and Segments on one machine' : 'Coordinator + dedicated Segment hosts';
+    const hintKey = deployType === 'single' ? 'dt_hint_single' : 'dt_hint_multi';
+    document.getElementById('dt_hint').textContent = I18N[hintKey][curLang];
+    document.getElementById('dt_hint').dataset.i18n = hintKey;
     document.getElementById('sec_seghosts').style.display = deployType === 'multi' ? 'block' : 'none';
     document.getElementById('ph_seg').style.display = deployType === 'multi' ? 'block' : 'none';
     configSaved = false; updateSaveState();
@@ -419,7 +422,7 @@ function validatePkg() {
     const p = document.getElementById('pkg_path').value.trim();
     const el = document.getElementById('pkg_val');
     if (!p) { el.innerHTML = ''; pkgOk = false; return; }
-    el.innerHTML = '<div class="vmsg wait">Validating...</div>';
+    el.innerHTML = '<div class="vmsg wait">' + I18N.validating[curLang] + '</div>';
     pkgOk = false;
     const fd = new FormData(); fd.append('pkg_path', p);
     fetch('/validate_pkg_path', {method:'POST', body:fd}).then(r=>r.json()).then(d => {
@@ -454,7 +457,7 @@ function fmtSize(b) { if (b > 1073741824) return (b/1073741824).toFixed(1)+' GB'
             return;
         }
         const el = document.getElementById('pkg_val');
-        el.innerHTML = '<div class="vmsg wait">Uploading...</div>';
+        el.innerHTML = '<div class="vmsg wait">' + I18N.uploading[curLang] + '</div>';
         progress.style.display = 'block';
         bar.style.width = '0%';
         zone.style.pointerEvents = 'none'; zone.style.opacity = '.5';
@@ -550,16 +553,16 @@ function saveConfig() {
     }
 
     const msg = document.getElementById('save_msg');
-    msg.textContent = 'Saving...'; msg.className = 'save-msg';
+    msg.textContent = I18N.saving[curLang]; msg.className = 'save-msg';
 
     fetch('/save_config', {method:'POST', body:fd}).then(r=>r.json()).then(d => {
         if (d.success) {
-            configSaved = true; msg.textContent = 'Configuration saved successfully'; msg.className = 'save-msg ok';
+            configSaved = true; msg.textContent = I18N.config_saved[curLang]; msg.className = 'save-msg ok';
         } else {
             configSaved = false; msg.textContent = 'Error: ' + d.message; msg.className = 'save-msg err';
         }
         updateSaveState();
-    }).catch(() => { configSaved = false; msg.textContent = 'Save request failed'; msg.className = 'save-msg err'; updateSaveState(); });
+    }).catch(() => { configSaved = false; msg.textContent = I18N.save_failed[curLang]; msg.className = 'save-msg err'; updateSaveState(); });
 }
 
 function updateSaveState() {
@@ -659,7 +662,7 @@ function startDeploy() {
 
     fetch('/deploy', {method:'POST'}).then(r=>r.json()).then(d => {
         if (!d.success) { endDeploy(false, d.message); return; }
-        document.getElementById('d_status').textContent = 'Deployment in progress...';
+        document.getElementById('d_status').textContent = I18N.deploy_progress[curLang];
         startLogStream();
         pollTimer = setInterval(pollPhase, 2500);
     }).catch(e => endDeploy(false, 'Failed: '+e));
@@ -711,13 +714,13 @@ function endDeploy(success, msg) {
     document.querySelectorAll('.ph').forEach(p => p.classList.remove('active'));
 
     if (success === true) {
-        sb.className = 'status-bar ok'; sb.textContent = 'Deployment Successful!';
+        sb.className = 'status-bar ok'; sb.textContent = I18N.deploy_success[curLang];
         document.querySelectorAll('.ph').forEach(p => p.classList.add('done'));
         showConnInfo();
     } else if (success === false) {
-        sb.className = 'status-bar fail'; sb.textContent = msg || 'Deployment Failed';
+        sb.className = 'status-bar fail'; sb.textContent = msg || I18N.deploy_failed[curLang];
     } else {
-        sb.className = 'status-bar fail'; sb.textContent = msg || 'Deployment status unknown — check logs for details';
+        sb.className = 'status-bar fail'; sb.textContent = msg || I18N.deploy_unknown[curLang];
     }
 }
 
@@ -736,6 +739,85 @@ function resetDeploy() {
 }
 
 function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+// ==================== i18n ====================
+const I18N = {
+    subtitle: { en: 'MPP Database Cluster Deployment Tool', zh: 'MPP 数据库集群部署工具' },
+    step1: { en: 'Environment', zh: '环境配置' }, step2: { en: 'Configuration', zh: '集群配置' },
+    step3: { en: 'Confirm', zh: '确认部署' }, step4: { en: 'Deploy', zh: '执行部署' },
+    env_config: { en: 'Environment Configuration', zh: '环境配置' },
+    os_section: { en: 'Operating System', zh: '操作系统' },
+    detected_os: { en: 'Detected OS', zh: '检测到的操作系统' },
+    os_hint: { en: 'Auto-detected from coordinator node', zh: '从 Coordinator 节点自动检测' },
+    deploy_type_section: { en: 'Deploy Type', zh: '部署类型' },
+    single_node: { en: 'Single Node', zh: '单机模式' }, multi_node: { en: 'Multi-node', zh: '多机模式' },
+    dt_hint_single: { en: 'Coordinator and Segments on one machine', zh: 'Coordinator 和 Segment 在同一台机器' },
+    dt_hint_multi: { en: 'Coordinator + dedicated Segment hosts', zh: 'Coordinator + 独立 Segment 主机' },
+    db_package: { en: 'Database Package', zh: '数据库安装包' },
+    pkg_path_label: { en: 'Package Path (RPM / DEB)', zh: '安装包路径 (RPM / DEB)' },
+    pkg_hint: { en: 'Path to a package already on this server, or upload one below', zh: '服务器上已有的安装包路径，或在下方上传' },
+    upload_hint: { en: 'Drag & drop a package file here, or click to browse', zh: '将安装包拖拽到此处，或点击选择文件' },
+    next: { en: 'Next \u2192', zh: '下一步 \u2192' }, prev: { en: '\u2190 Previous', zh: '\u2190 上一步' },
+    cluster_config: { en: 'Cluster Configuration', zh: '集群配置' },
+    admin_user_section: { en: 'Admin User', zh: '管理员用户' },
+    username: { en: 'Username', zh: '用户名' }, password: { en: 'Password', zh: '密码' },
+    hostname: { en: 'Hostname', zh: '主机名' }, ip_addr: { en: 'IP Address', zh: 'IP 地址' },
+    port: { en: 'Port', zh: '端口' }, data_dir: { en: 'Data Directory', zh: '数据目录' },
+    seg_hosts: { en: 'Segment Hosts', zh: 'Segment 主机' },
+    access_method: { en: 'Access Method', zh: '访问方式' },
+    access_user: { en: 'Access User', zh: '访问用户' },
+    key_file: { en: 'Key File Path', zh: '密钥文件路径' },
+    add_seg: { en: '+ Add Segment Host', zh: '+ 添加 Segment 主机' },
+    primary_seg: { en: 'Primary Segments', zh: '主 Segment' },
+    segs_per_host: { en: 'Segments Per Host', zh: '每主机 Segment 数' },
+    port_base: { en: 'Port Base', zh: '起始端口' },
+    seg_prefix: { en: 'Segment Prefix', zh: 'Segment 前缀' },
+    cluster_name: { en: 'Cluster Name', zh: '集群名称' },
+    mirror_seg: { en: 'Mirror Segments', zh: 'Mirror Segment' },
+    mirror_dir: { en: 'Mirror Data Directory', zh: 'Mirror 数据目录' },
+    mirror_port: { en: 'Mirror Port Base', zh: 'Mirror 起始端口' },
+    mirror_hint: { en: 'Mirror segments provide redundancy. Each primary segment will have a corresponding mirror.', zh: 'Mirror 提供数据冗余，每个主 Segment 会有一个对应的 Mirror 副本。' },
+    standby_coord: { en: 'Standby Coordinator', zh: 'Standby Coordinator' },
+    standby_hint: { en: 'A standby coordinator will be created on one of the segment hosts for automatic failover.', zh: '将在一台 Segment 主机上创建 Standby Coordinator，用于自动故障切换。' },
+    options: { en: 'Options', zh: '选项' }, timezone: { en: 'Timezone', zh: '时区' },
+    skip_repo: { en: 'Skip Repo Config', zh: '跳过软件源配置' },
+    env_only: { en: 'Init Environment Only', zh: '仅初始化环境' },
+    skip_install: { en: 'Skip Software Install', zh: '跳过软件安装' },
+    save_config: { en: 'Save Configuration', zh: '保存配置' },
+    confirm_deploy: { en: 'Confirm Deployment', zh: '确认部署' },
+    loading_config: { en: 'Loading configuration...', zh: '加载配置中...' },
+    back_edit: { en: '\u2190 Back to Edit', zh: '\u2190 返回修改' },
+    confirm_btn: { en: 'Confirm & Deploy', zh: '确认并部署' },
+    deployment: { en: 'Deployment', zh: '部署执行' },
+    starting: { en: 'Starting deployment...', zh: '正在启动部署...' },
+    ph_env: { en: 'Env Init', zh: '环境初始化' }, ph_db: { en: 'Install DB', zh: '安装数据库' },
+    ph_seg_init: { en: 'Segment Init', zh: 'Segment 初始化' },
+    ph_cluster: { en: 'Cluster Init', zh: '集群初始化' }, ph_done: { en: 'Complete', zh: '完成' },
+    conn_info: { en: 'Connection Info', zh: '连接信息' },
+    new_deploy: { en: 'New Deployment', zh: '重新部署' },
+    deploy_success: { en: 'Deployment Successful!', zh: '部署成功！' },
+    deploy_failed: { en: 'Deployment Failed', zh: '部署失败' },
+    deploy_unknown: { en: 'Deployment status unknown \u2014 check logs for details', zh: '部署状态未知 \u2014 请查看日志详情' },
+    deploy_progress: { en: 'Deployment in progress...', zh: '部署进行中...' },
+    saving: { en: 'Saving...', zh: '保存中...' },
+    config_saved: { en: 'Configuration saved successfully', zh: '配置保存成功' },
+    save_failed: { en: 'Save request failed', zh: '保存请求失败' },
+    validating: { en: 'Validating...', zh: '验证中...' },
+    uploading: { en: 'Uploading...', zh: '上传中...' },
+};
+let curLang = localStorage.getItem('cbdb_lang') || 'en';
+
+function setLang(lang) {
+    curLang = lang;
+    localStorage.setItem('cbdb_lang', lang);
+    document.getElementById('btn_lang').textContent = lang === 'en' ? '中文' : 'EN';
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.dataset.i18n;
+        if (I18N[key] && I18N[key][lang]) el.textContent = I18N[key][lang];
+    });
+}
+function toggleLang() { setLang(curLang === 'en' ? 'zh' : 'en'); }
+if (curLang !== 'en') setLang(curLang);
 </script>
 </body>
 </html>
